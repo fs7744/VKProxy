@@ -1,0 +1,21 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<PropertyGroup>
+		<VersionSuffix>$(VersionSuffix)</VersionSuffix>
+		<Version>0.0.0.1</Version>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<FileVersion>$(Version)</FileVersion>
+		<Version Condition=" '$(VersionSuffix)' != '' ">$(Version)$(VersionSuffix)</Version>
+		<Authors>Victor.x.qu</Authors>
+		<Company>Victor.x.qu</Company>
+		<Copyright>@2025 Victor.x.qu</Copyright>
+		<PackageProjectUrl>https://github.com/fs7744/VKProxy</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/fs7744/VKProxy</RepositoryUrl>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<TargetFrameworks>net9.0</TargetFrameworks>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="../../README.md" Pack="true" PackagePath="/" />
+	</ItemGroup>
+</Project>
