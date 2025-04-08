@@ -1,13 +1,7 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
@@ -48,7 +42,6 @@ internal class UdpListenHandler : ListenHandlerBase
             await udp.SendToAsync(socket, proxyServer, context.ReceivedBytes, CancellationToken.None);
             var r = await udp.ReceiveAsync(socket, CancellationToken.None);
             await udp.SendToAsync(context.Socket, context.RemoteEndPoint, r.GetReceivedBytes(), CancellationToken.None);
-            //context.Abort();
         }
     }
 }

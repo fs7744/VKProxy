@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 using System.Net;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;

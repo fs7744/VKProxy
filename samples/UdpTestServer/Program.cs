@@ -1,5 +1,6 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+
+using System.Net.Sockets;
 using System.Text;
 
 static void StartListener()
