@@ -10,7 +10,7 @@ using VKProxy.Core.Config;
 
 namespace VKProxy.Core.Adapters;
 
-public class TransportManagerAdapter
+public class TransportManagerAdapter : ITransportManager, IHeartbeat
 {
     private static MethodInfo StopAsyncMethod;
     private static MethodInfo StopEndpointsAsyncMethod;
@@ -102,14 +102,14 @@ public class TransportManagerAdapter
         }
     }
 
-    public Task<EndPoint> BindAsync(EndPoint endPoint, ConnectionDelegate connectionDelegate, EndPointOptions? endpointConfig, CancellationToken cancellationToken)
+    public Task<EndPoint> BindAsync(EndPointOptions endpointConfig, ConnectionDelegate connectionDelegate, CancellationToken cancellationToken)
     {
-        return BindAsyncMethod.Invoke(transportManager, new object[] { endPoint, connectionDelegate, endpointConfig?.Init(), cancellationToken }) as Task<EndPoint>;
+        return BindAsyncMethod.Invoke(transportManager, new object[] { endpointConfig.EndPoint, connectionDelegate, endpointConfig.Init(), cancellationToken }) as Task<EndPoint>;
     }
 
-    public Task<EndPoint> BindAsync(EndPoint endPoint, MultiplexedConnectionDelegate multiplexedConnectionDelegate, EndPointOptions? endpointConfig, CancellationToken cancellationToken)
+    public Task<EndPoint> BindAsync(EndPointOptions endpointConfig, MultiplexedConnectionDelegate multiplexedConnectionDelegate, CancellationToken cancellationToken)
     {
-        return MultiplexedBindAsyncMethod.Invoke(transportManager, new object[] { endPoint, multiplexedConnectionDelegate, endpointConfig?.Init(), cancellationToken }) as Task<EndPoint>;
+        return MultiplexedBindAsyncMethod.Invoke(transportManager, new object[] { endpointConfig.EndPoint, multiplexedConnectionDelegate, endpointConfig.Init(), cancellationToken }) as Task<EndPoint>;
     }
 
     public Task StopEndpointsAsync(List<EndPointOptions> endpointsToStop, CancellationToken cancellationToken)
@@ -127,6 +127,14 @@ public class TransportManagerAdapter
         if (heartbeat != null)
         {
             StartHeartbeatMethod.Invoke(heartbeat, null);
+        }
+    }
+
+    public void StopHeartbeat()
+    {
+        if (heartbeat is IDisposable disposable)
+        {
+            disposable.Dispose();
         }
     }
 }

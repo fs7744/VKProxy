@@ -1,4 +1,4 @@
-﻿namespace VKProxy.Core.Config;
+﻿namespace VKProxy.Config;
 
 [Flags]
 public enum GatewayProtocols

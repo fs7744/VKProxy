@@ -14,8 +14,6 @@ public class EndPointOptions
 
     public string Key { get; set; }
 
-    public GatewayProtocols Protocols { get; set; }
-
     public EndPoint EndPoint { get; set; }
 
     internal object EndpointConfig { get; set; }
@@ -24,18 +22,17 @@ public class EndPointOptions
     {
         if (obj is null) return false;
         return Key.Equals(obj.Key, StringComparison.OrdinalIgnoreCase)
-            && Protocols == obj.Protocols
             && EndPoint.GetHashCode() == EndPoint.GetHashCode();
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Key?.GetHashCode(StringComparison.OrdinalIgnoreCase), Protocols, EndPoint.GetHashCode());
+        return HashCode.Combine(Key?.GetHashCode(StringComparison.OrdinalIgnoreCase), EndPoint.GetHashCode());
     }
 
     public override string ToString()
     {
-        return $"[Protocols: {Protocols},Route: {Key},EndPoint: {EndPoint}]";
+        return $"Key: {Key},EndPoint: {EndPoint}]";
     }
 
     static EndPointOptions()
