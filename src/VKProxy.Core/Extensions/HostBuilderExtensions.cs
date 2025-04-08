@@ -15,9 +15,9 @@ public static class HostBuilderExtensions
     {
         hostBuilder.ConfigureServices(services =>
         {
+            services.UseInternalKestrel();
             services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();
             services.AddSingleton<IConnectionListenerFactory, UdpTransportFactory>();
-            services.UseInternalKestrel();
             services.AddSingleton<GeneralLogger>();
             services.AddSingleton<IHostedService, VKHostedService>();
             services.TryAddSingleton<IServer, VKServer>();

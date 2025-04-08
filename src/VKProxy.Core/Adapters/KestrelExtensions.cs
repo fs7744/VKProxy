@@ -12,7 +12,7 @@ public static class KestrelExtensions
     internal static IServiceCollection UseInternalKestrel(this IServiceCollection services, Action<KestrelServerOptions> options = null)
     {
         services.TryAddSingleton(typeof(IConnectionFactory), typeof(SocketTransportFactory).Assembly.DefinedTypes.First(i => i.Name == "SocketConnectionFactory"));
-        services.TryAddSingleton<IConnectionListenerFactory, SocketTransportFactory>();
+        services.AddSingleton<IConnectionListenerFactory, SocketTransportFactory>();
         services.TryAddEnumerable(ServiceDescriptor.Transient<IConfigureOptions<KestrelServerOptions>, KestrelServerOptionsSetup>());
         services.Configure<KestrelServerOptions>(o =>
         {
