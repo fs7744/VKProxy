@@ -8,19 +8,19 @@ using VKProxy.Core.Hosting;
 
 namespace CoreDemo;
 
-internal class ListenHandler : IListenHandler
+internal class TcpListenHandler : ListenHandlerBase
 {
     private readonly List<EndPointOptions> endPointOptions = new List<EndPointOptions>();
-    private readonly ILogger<ListenHandler> logger;
+    private readonly ILogger<TcpListenHandler> logger;
     private readonly IConnectionFactory connectionFactory;
 
-    public ListenHandler(ILogger<ListenHandler> logger, IConnectionFactory connectionFactory)
+    public TcpListenHandler(ILogger<TcpListenHandler> logger, IConnectionFactory connectionFactory)
     {
         this.logger = logger;
         this.connectionFactory = connectionFactory;
     }
 
-    public Task InitAsync(CancellationToken cancellationToken)
+    public override Task InitAsync(CancellationToken cancellationToken)
     {
         endPointOptions.Add(new EndPointOptions()
         {
@@ -30,7 +30,7 @@ internal class ListenHandler : IListenHandler
         return Task.CompletedTask;
     }
 
-    public async Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
+    public override async Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
     {
         foreach (var item in endPointOptions)
         {
@@ -44,16 +44,6 @@ internal class ListenHandler : IListenHandler
                 logger.LogError(ex.Message, ex);
             }
         }
-    }
-
-    public IChangeToken? GetReloadToken()
-    {
-        return null;
-    }
-
-    public Task RebindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
     }
 
     private async Task Proxy(ConnectionContext connection)

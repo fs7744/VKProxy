@@ -18,7 +18,7 @@ public class EndPointOptions
 
     internal object EndpointConfig { get; set; }
 
-    public bool Equals(EndPointOptions? obj)
+    public virtual bool Equals(EndPointOptions? obj)
     {
         if (obj is null) return false;
         return Key.Equals(obj.Key, StringComparison.OrdinalIgnoreCase)
