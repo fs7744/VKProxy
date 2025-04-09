@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -10,27 +11,25 @@ using VKProxy.Core.Config;
 
 namespace VKProxy.Core.Adapters;
 
-public class TransportManagerAdapter : ITransportManager, IHeartbeat
+public class TransportManagerAdapter : ITransportManager, IHeartbeat, IHttpServerBuilder
 {
     private static MethodInfo StopAsyncMethod;
     private static MethodInfo StopEndpointsAsyncMethod;
     private static MethodInfo MultiplexedBindAsyncMethod;
     private static MethodInfo BindAsyncMethod;
+    private static MethodInfo StartHeartbeatMethod;
     private object transportManager;
     private object heartbeat;
-    private static MethodInfo StartHeartbeatMethod;
+    private object serviceContext;
 
     public TransportManagerAdapter(IServiceProvider serviceProvider)
     {
-        (transportManager, heartbeat) = CreateTransportManager(serviceProvider);
+        (transportManager, heartbeat, serviceContext) = CreateTransportManager(serviceProvider);
     }
 
-    private static (object, object) CreateTransportManager(IServiceProvider serviceProvider)
+    private static (object, object, object) CreateTransportManager(IServiceProvider serviceProvider)
     {
-        var types = typeof(KestrelServer).Assembly.GetTypes();
-        var TransportManagerType = types.First(i => i.Name == "TransportManager");
-
-        foreach (var item in TransportManagerType.GetTypeInfo().DeclaredMethods)
+        foreach (var item in KestrelExtensions.TransportManagerType.GetTypeInfo().DeclaredMethods)
         {
             if (item.Name == "StopAsync")
             {
@@ -53,52 +52,45 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
             }
         }
 
-        var s = CreateServiceContext(serviceProvider, types);
-        var r = Activator.CreateInstance(TransportManagerType,
+        var s = CreateServiceContext(serviceProvider);
+        var r = Activator.CreateInstance(KestrelExtensions.TransportManagerType,
                     Enumerable.Reverse(serviceProvider.GetServices<IConnectionListenerFactory>()).ToList(),
                     Enumerable.Reverse(serviceProvider.GetServices<IMultiplexedConnectionListenerFactory>()).ToList(),
-                    CreateHttpsConfigurationService(serviceProvider, types),
+                    CreateHttpsConfigurationService(serviceProvider),
                     s.context
                     );
-        return (r, s.heartbeat);
+        return (r, s.heartbeat, s.context);
 
-        static object CreateHttpsConfigurationService(IServiceProvider serviceProvider, Type[] types)
+        static object CreateHttpsConfigurationService(IServiceProvider serviceProvider)
         {
-            var HttpsConfigurationServiceType = types.First(i => i.Name == "HttpsConfigurationService");
-            var HttpsConnectionMiddlewareType = types.First(i => i.Name == "HttpsConnectionMiddleware");
             var CreateLogger = typeof(LoggerFactoryExtensions).GetTypeInfo().DeclaredMethods.First(i => i.Name == "CreateLogger" && i.ContainsGenericParameters);
-            var r = Activator.CreateInstance(HttpsConfigurationServiceType);
-            var m = HttpsConfigurationServiceType.GetMethod("Initialize");
+            var r = Activator.CreateInstance(KestrelExtensions.HttpsConfigurationServiceType);
+            var m = KestrelExtensions.HttpsConfigurationServiceType.GetMethod("Initialize");
             var log = serviceProvider.GetRequiredService<ILoggerFactory>();
-            var l = CreateLogger.MakeGenericMethod(HttpsConnectionMiddlewareType).Invoke(null, new object[] { log });
+            var l = CreateLogger.MakeGenericMethod(KestrelExtensions.HttpsConnectionMiddlewareType).Invoke(null, new object[] { log });
             m.Invoke(r, new object[] { serviceProvider.GetRequiredService<IHostEnvironment>(), log.CreateLogger<KestrelServer>(), l });
             return r;
         }
 
-        static (object context, object heartbeat) CreateServiceContext(IServiceProvider serviceProvider, Type[] types)
+        static (object context, object heartbeat) CreateServiceContext(IServiceProvider serviceProvider)
         {
-            var KestrelServerImplType = types.First(i => i.Name == "KestrelServerImpl");
-            var KestrelCreateServiceContext = KestrelServerImplType.GetMethod("CreateServiceContext", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+            var KestrelCreateServiceContext = KestrelExtensions.KestrelServerImplType.GetMethod("CreateServiceContext", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
             var r = KestrelCreateServiceContext.Invoke(null, new object[]
             {
                 serviceProvider.GetRequiredService<IOptions<KestrelServerOptions>>(),
                 serviceProvider.GetRequiredService<ILoggerFactory>(),
                 null,
-                CreateKestrelMetrics(types)
+                CreateKestrelMetrics()
             });
-            var ServiceContextType = types.First(i => i.Name == "ServiceContext");
-            var h = ServiceContextType.GetTypeInfo().DeclaredProperties.First(i => i.Name == "Heartbeat");
+            var h = KestrelExtensions.ServiceContextType.GetTypeInfo().DeclaredProperties.First(i => i.Name == "Heartbeat");
 
-            var HeartbeatType = types.First(i => i.Name == "Heartbeat");
-            StartHeartbeatMethod = HeartbeatType.GetTypeInfo().DeclaredMethods.First(i => i.Name == "Start");
+            StartHeartbeatMethod = KestrelExtensions.HeartbeatType.GetTypeInfo().DeclaredMethods.First(i => i.Name == "Start");
             return (r, h.GetGetMethod().Invoke(r, null));
         }
 
-        static object CreateKestrelMetrics(Type[] types)
+        static object CreateKestrelMetrics()
         {
-            var KestrelMetricsType = types.First(i => i.Name == "KestrelMetrics");
-            var DummyMeterFactoryType = types.First(i => i.Name == "DummyMeterFactory");
-            return Activator.CreateInstance(KestrelMetricsType, Activator.CreateInstance(DummyMeterFactoryType));
+            return Activator.CreateInstance(KestrelExtensions.KestrelMetricsType, Activator.CreateInstance(KestrelExtensions.DummyMeterFactoryType));
         }
     }
 
@@ -136,5 +128,17 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
         {
             disposable.Dispose();
         }
+    }
+
+    public IConnectionBuilder UseHttpServer(IConnectionBuilder builder, IHttpApplication<HttpApplication.Context> application, HttpProtocols protocols, bool addAltSvcHeader)
+    {
+        KestrelExtensions.UseHttpServerMethod.Invoke(null, new object[] { builder, serviceContext, application, protocols, addAltSvcHeader });
+        return builder;
+    }
+
+    public IMultiplexedConnectionBuilder UseHttp3Server(IMultiplexedConnectionBuilder builder, IHttpApplication<HttpApplication.Context> application, HttpProtocols protocols, bool addAltSvcHeader)
+    {
+        KestrelExtensions.UseHttp3ServerMethod.Invoke(null, new object[] { builder, serviceContext, application, protocols, addAltSvcHeader });
+        return builder;
     }
 }

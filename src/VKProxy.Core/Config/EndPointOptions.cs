@@ -1,17 +1,11 @@
-﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
-using System.Collections;
+﻿using System.Collections;
 using System.Net;
-using System.Reflection;
+using VKProxy.Core.Adapters;
 
 namespace VKProxy.Core.Config;
 
 public class EndPointOptions
 {
-    private static readonly Type typeEndpointConfig;
-    private static readonly ConstructorInfo initMethod;
-    private static readonly ConstructorInfo initListMethod;
-
     public string Key { get; set; }
 
     public EndPoint EndPoint { get; set; }
@@ -35,32 +29,18 @@ public class EndPointOptions
         return $"Key: {Key},EndPoint: {EndPoint}]";
     }
 
-    static EndPointOptions()
-    {
-        var types = typeof(KestrelServer).Assembly.GetTypes();
-        typeEndpointConfig = types.First(i => i.Name == "EndpointConfig");
-        initMethod = typeEndpointConfig.GetTypeInfo().DeclaredConstructors.First();
-        var list = typeof(List<>).MakeGenericType(typeEndpointConfig).GetTypeInfo();
-        initListMethod = list.DeclaredConstructors.First(i => i.GetParameters().Length == 0);
-    }
-
-    private static object InitEndpointConfig(string key, string url, IConfigurationSection section)
-    {
-        return initMethod.Invoke(new object[] { key, url, null, section });
-    }
-
     internal object Init()
     {
         if (EndpointConfig is null)
         {
-            EndpointConfig = InitEndpointConfig(Key, null, NothingConfigurationSection.Nothing);
+            EndpointConfig = KestrelExtensions.InitEndpointConfig(Key, null, NothingConfigurationSection.Nothing);
         }
         return EndpointConfig;
     }
 
     internal static object Init(List<EndPointOptions> endpointsToStop)
     {
-        var endpoints = initListMethod.Invoke(null) as IList;
+        var endpoints = KestrelExtensions.EndpointConfigInitListMethod.Invoke(null) as IList;
         foreach (EndPointOptions endpoint in endpointsToStop)
         {
             endpoints.Add(endpoint.Init());

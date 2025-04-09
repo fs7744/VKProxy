@@ -6,8 +6,9 @@ using VKProxy.Core.Hosting;
 var app = Host.CreateDefaultBuilder(args).UseVKProxyCore()
     .ConfigureServices(i =>
     {
-        i.AddSingleton<IListenHandler, TcpListenHandler>();
+        //i.AddSingleton<IListenHandler, TcpListenHandler>();
         //i.AddSingleton<IListenHandler, UdpListenHandler>();
+        i.AddSingleton<IListenHandler, HttpListenHandler>();
     })
     .Build();
 
