@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using VKProxy.Core.Adapters;
@@ -11,17 +9,11 @@ namespace CoreDemo;
 
 public class HttpListenHandler : ListenHandlerBase
 {
-    private readonly IServiceProvider serviceProvider;
-    private readonly IHttpServerBuilder httpServerBuilder;
     private readonly ILogger<HttpListenHandler> logger;
-    private readonly HttpApplication application;
 
-    public HttpListenHandler(IServiceProvider serviceProvider, IHttpServerBuilder httpServerBuilder, ILogger<HttpListenHandler> logger)
+    public HttpListenHandler(ILogger<HttpListenHandler> logger)
     {
-        this.serviceProvider = serviceProvider;
-        this.httpServerBuilder = httpServerBuilder;
         this.logger = logger;
-        application = new HttpApplication(Proxy, serviceProvider.GetRequiredService<IHttpContextFactory>());
     }
 
     private async Task Proxy(HttpContext context)
@@ -34,8 +26,6 @@ public class HttpListenHandler : ListenHandlerBase
 
     public override async Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
     {
-        var a = new HttpConnectionBuilder(serviceProvider);
-        httpServerBuilder.UseHttpServer(a, application, HttpProtocols.Http1, true);
         try
         {
             var ip = new EndPointOptions()
@@ -43,7 +33,7 @@ public class HttpListenHandler : ListenHandlerBase
                 EndPoint = IPEndPoint.Parse("127.0.0.1:5000"),
                 Key = "http"
             };
-            await transportManager.BindAsync(ip, a.Build(), cancellationToken);
+            await transportManager.BindHttpAsync(ip, Proxy, false, cancellationToken);
             logger.LogInformation($"listen {ip.EndPoint}");
         }
         catch (Exception ex)

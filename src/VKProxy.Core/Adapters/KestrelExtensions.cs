@@ -11,10 +11,11 @@ using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using System.Net.Quic;
 using System.Reflection;
+using VKProxy.Core.Config;
 
 namespace VKProxy.Core.Adapters;
 
-internal static class KestrelExtensions
+public static class KestrelExtensions
 {
     internal static readonly ConstructorInfo EndpointConfigInitMethod;
     internal static readonly ConstructorInfo EndpointConfigInitListMethod;
@@ -79,7 +80,13 @@ internal static class KestrelExtensions
         services.AddSingleton<TransportManagerAdapter>();
         services.AddSingleton<ITransportManager>(i => i.GetRequiredService<TransportManagerAdapter>());
         services.AddSingleton<IHeartbeat>(i => i.GetRequiredService<TransportManagerAdapter>());
-        services.AddSingleton<IHttpServerBuilder>(i => i.GetRequiredService<TransportManagerAdapter>());
         return services;
+    }
+
+    public static Task BindHttpAsync(this ITransportManager transportManager, EndPointOptions options, RequestDelegate requestDelegate, bool isTls, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
+    , Action<IMultiplexedConnectionBuilder> configMultiplexed = null)
+    {
+        return transportManager.BindHttpApplicationAsync(options, new HttpApplication(requestDelegate, transportManager.ServiceProvider.GetRequiredService<IHttpContextFactory>()), isTls,
+            cancellationToken, protocols, addAltSvcHeader, config, configMultiplexed);
     }
 }

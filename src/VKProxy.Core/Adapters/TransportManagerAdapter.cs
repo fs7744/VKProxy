@@ -11,7 +11,7 @@ using VKProxy.Core.Config;
 
 namespace VKProxy.Core.Adapters;
 
-public class TransportManagerAdapter : ITransportManager, IHeartbeat, IHttpServerBuilder
+public class TransportManagerAdapter : ITransportManager, IHeartbeat
 {
     private static MethodInfo StopAsyncMethod;
     private static MethodInfo StopEndpointsAsyncMethod;
@@ -21,10 +21,18 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat, IHttpServe
     private object transportManager;
     private object heartbeat;
     private object serviceContext;
+    private int multiplexedTransportCount;
+    private int transportCount;
+    internal readonly IServiceProvider serviceProvider;
 
-    public TransportManagerAdapter(IServiceProvider serviceProvider)
+    IServiceProvider ITransportManager.ServiceProvider => serviceProvider;
+
+    public TransportManagerAdapter(IServiceProvider serviceProvider, IEnumerable<IConnectionListenerFactory> transportFactories, IEnumerable<IMultiplexedConnectionListenerFactory> multiplexedConnectionListenerFactories)
     {
         (transportManager, heartbeat, serviceContext) = CreateTransportManager(serviceProvider);
+        multiplexedTransportCount = multiplexedConnectionListenerFactories.Count();
+        transportCount = transportFactories.Count();
+        this.serviceProvider = serviceProvider;
     }
 
     private static (object, object, object) CreateTransportManager(IServiceProvider serviceProvider)
@@ -140,5 +148,64 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat, IHttpServe
     {
         KestrelExtensions.UseHttp3ServerMethod.Invoke(null, new object[] { builder, serviceContext, application, protocols, addAltSvcHeader });
         return builder;
+    }
+
+    public async Task BindHttpApplicationAsync(EndPointOptions options, IHttpApplication<HttpApplication.Context> application, bool isTls, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
+        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null)
+    {
+        var hasHttp1 = protocols.HasFlag(HttpProtocols.Http1);
+        var hasHttp2 = protocols.HasFlag(HttpProtocols.Http2);
+        var hasHttp3 = protocols.HasFlag(HttpProtocols.Http3);
+        var hasTls = isTls;
+
+        if (!hasTls)
+        {
+            // Http/1 without TLS, no-op HTTP/2 and 3.
+            if (hasHttp1)
+            {
+                hasHttp2 = false;
+                hasHttp3 = false;
+            }
+            // Http/3 requires TLS. Note we only let it fall back to HTTP/1, not HTTP/2
+            else if (hasHttp3)
+            {
+                throw new InvalidOperationException("HTTP/3 requires HTTPS.");
+            }
+        }
+
+        // Quic isn't registered if it's not supported, throw if we can't fall back to 1 or 2
+        if (hasHttp3 && multiplexedTransportCount == 0 && !(hasHttp1 || hasHttp2))
+        {
+            throw new InvalidOperationException("Unable to bind an HTTP/3 endpoint. This could be because QUIC has not been configured using UseQuic, or the platform doesn't support QUIC or HTTP/3.");
+        }
+
+        addAltSvcHeader = addAltSvcHeader && multiplexedTransportCount > 0;
+
+        // Add the HTTP middleware as the terminal connection middleware
+        if (hasHttp1 || hasHttp2
+            || protocols == HttpProtocols.None)
+        {
+            if (transportCount == 0)
+            {
+                throw new InvalidOperationException($"Cannot start HTTP/1.x or HTTP/2 server if no {nameof(IConnectionListenerFactory)} is registered.");
+            }
+
+            var builder = new HttpConnectionBuilder(serviceProvider);
+            config?.Invoke(builder);
+            UseHttpServer(builder, application, protocols, addAltSvcHeader);
+            var connectionDelegate = builder.Build();
+
+            options.EndPoint = await BindAsync(options, connectionDelegate, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (hasHttp3 && multiplexedTransportCount > 0)
+        {
+            var builder = new HttpMultiplexedConnectionBuilder(serviceProvider);
+            configMultiplexed?.Invoke(builder);
+            UseHttp3Server(builder, application, protocols, addAltSvcHeader);
+            var multiplexedConnectionDelegate = builder.Build();
+
+            options.EndPoint = await BindAsync(options, multiplexedConnectionDelegate, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Net;
 using VKProxy.Core.Config;
 
@@ -6,6 +8,8 @@ namespace VKProxy.Core.Adapters;
 
 public interface ITransportManager
 {
+    internal IServiceProvider ServiceProvider { get; }
+
     Task<EndPoint> BindAsync(EndPointOptions endpointConfig, ConnectionDelegate connectionDelegate, CancellationToken cancellationToken);
 
     Task<EndPoint> BindAsync(EndPointOptions endpointConfig, MultiplexedConnectionDelegate multiplexedConnectionDelegate, CancellationToken cancellationToken);
@@ -19,4 +23,7 @@ public interface ITransportManager
     Task StopEndpointsAsync(List<EndPointOptions> endpointsToStop, CancellationToken cancellationToken);
 
     Task StopAsync(CancellationToken cancellationToken);
+
+    Task BindHttpApplicationAsync(EndPointOptions endpointConfig, IHttpApplication<HttpApplication.Context> application, bool isTls, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
+        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null);
 }
