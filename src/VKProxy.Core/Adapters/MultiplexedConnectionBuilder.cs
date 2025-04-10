@@ -2,11 +2,11 @@
 
 namespace VKProxy.Core.Adapters;
 
-public class HttpMultiplexedConnectionBuilder : IMultiplexedConnectionBuilder
+public class MultiplexedConnectionBuilder : IMultiplexedConnectionBuilder
 {
     private readonly List<Func<MultiplexedConnectionDelegate, MultiplexedConnectionDelegate>> multiplexedMiddlewares = new List<Func<MultiplexedConnectionDelegate, MultiplexedConnectionDelegate>>();
 
-    public HttpMultiplexedConnectionBuilder(IServiceProvider serviceProvider)
+    public MultiplexedConnectionBuilder(IServiceProvider serviceProvider)
     {
         ApplicationServices = serviceProvider;
     }

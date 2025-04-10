@@ -214,7 +214,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
                 throw new InvalidOperationException($"Cannot start HTTP/1.x or HTTP/2 server if no {nameof(IConnectionListenerFactory)} is registered.");
             }
 
-            var builder = new HttpConnectionBuilder(serviceProvider);
+            var builder = new ConnectionBuilder(serviceProvider);
             config?.Invoke(builder);
             UseHttpServer(builder, application, protocols, addAltSvcHeader);
             var connectionDelegate = UseHttps(builder.Build(), callbackOptions, protocols);
@@ -224,7 +224,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
 
         if (hasHttp3 && multiplexedTransportCount > 0)
         {
-            var builder = new HttpMultiplexedConnectionBuilder(serviceProvider);
+            var builder = new MultiplexedConnectionBuilder(serviceProvider);
             configMultiplexed?.Invoke(builder);
             UseHttp3Server(builder, application, protocols, addAltSvcHeader);
             var multiplexedConnectionDelegate = builder.Build();

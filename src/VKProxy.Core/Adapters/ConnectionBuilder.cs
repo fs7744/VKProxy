@@ -2,11 +2,11 @@
 
 namespace VKProxy.Core.Adapters;
 
-public class HttpConnectionBuilder : IConnectionBuilder
+public class ConnectionBuilder : IConnectionBuilder
 {
     private readonly List<Func<ConnectionDelegate, ConnectionDelegate>> middlewares = new List<Func<ConnectionDelegate, ConnectionDelegate>>();
 
-    public HttpConnectionBuilder(IServiceProvider serviceProvider)
+    public ConnectionBuilder(IServiceProvider serviceProvider)
     {
         ApplicationServices = serviceProvider;
     }
