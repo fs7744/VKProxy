@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using System.Net;
 using VKProxy.Core.Config;
 
@@ -24,6 +25,6 @@ public interface ITransportManager
 
     Task StopAsync(CancellationToken cancellationToken);
 
-    Task BindHttpApplicationAsync(EndPointOptions endpointConfig, IHttpApplication<HttpApplication.Context> application, bool isTls, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
-        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null);
+    Task BindHttpApplicationAsync(EndPointOptions endpointConfig, IHttpApplication<HttpApplication.Context> application, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
+        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, TlsHandshakeCallbackOptions callbackOptions = null);
 }

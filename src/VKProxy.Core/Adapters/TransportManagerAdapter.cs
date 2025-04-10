@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
     private object transportManager;
     private object heartbeat;
     private object serviceContext;
+    private object metrics;
     private int multiplexedTransportCount;
     private int transportCount;
     internal readonly IServiceProvider serviceProvider;
@@ -29,13 +31,13 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
 
     public TransportManagerAdapter(IServiceProvider serviceProvider, IEnumerable<IConnectionListenerFactory> transportFactories, IEnumerable<IMultiplexedConnectionListenerFactory> multiplexedConnectionListenerFactories)
     {
-        (transportManager, heartbeat, serviceContext) = CreateTransportManager(serviceProvider);
+        (transportManager, heartbeat, serviceContext, metrics) = CreateTransportManager(serviceProvider);
         multiplexedTransportCount = multiplexedConnectionListenerFactories.Count();
         transportCount = transportFactories.Count();
         this.serviceProvider = serviceProvider;
     }
 
-    private static (object, object, object) CreateTransportManager(IServiceProvider serviceProvider)
+    private static (object, object, object, object) CreateTransportManager(IServiceProvider serviceProvider)
     {
         foreach (var item in KestrelExtensions.TransportManagerType.GetTypeInfo().DeclaredMethods)
         {
@@ -67,7 +69,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
                     CreateHttpsConfigurationService(serviceProvider),
                     s.context
                     );
-        return (r, s.heartbeat, s.context);
+        return (r, s.heartbeat, s.context, s.metrics);
 
         static object CreateHttpsConfigurationService(IServiceProvider serviceProvider)
         {
@@ -80,20 +82,20 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
             return r;
         }
 
-        static (object context, object heartbeat) CreateServiceContext(IServiceProvider serviceProvider)
+        static (object context, object heartbeat, object metrics) CreateServiceContext(IServiceProvider serviceProvider)
         {
+            var m = CreateKestrelMetrics();
             var KestrelCreateServiceContext = KestrelExtensions.KestrelServerImplType.GetMethod("CreateServiceContext", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
             var r = KestrelCreateServiceContext.Invoke(null, new object[]
             {
                 serviceProvider.GetRequiredService<IOptions<KestrelServerOptions>>(),
                 serviceProvider.GetRequiredService<ILoggerFactory>(),
                 null,
-                CreateKestrelMetrics()
+                m
             });
             var h = KestrelExtensions.ServiceContextType.GetTypeInfo().DeclaredProperties.First(i => i.Name == "Heartbeat");
-
             StartHeartbeatMethod = KestrelExtensions.HeartbeatType.GetTypeInfo().DeclaredMethods.First(i => i.Name == "Start");
-            return (r, h.GetGetMethod().Invoke(r, null));
+            return (r, h.GetGetMethod().Invoke(r, null), m);
         }
 
         static object CreateKestrelMetrics()
@@ -150,15 +152,27 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
         return builder;
     }
 
-    public async Task BindHttpApplicationAsync(EndPointOptions options, IHttpApplication<HttpApplication.Context> application, bool isTls, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
-        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null)
+    public ConnectionDelegate UseHttps(ConnectionDelegate next, TlsHandshakeCallbackOptions tlsCallbackOptions)
+    {
+        if (tlsCallbackOptions == null)
+            return next;
+        var o = KestrelExtensions.HttpsConnectionMiddlewareInitMethod.Invoke(new object[] { next, tlsCallbackOptions, serviceProvider.GetRequiredService<ILoggerFactory>(), metrics });
+        return KestrelExtensions.HttpsConnectionMiddlewareOnConnectionAsyncMethod.CreateDelegate<ConnectionDelegate>(o);
+    }
+
+    public async Task BindHttpApplicationAsync(EndPointOptions options, IHttpApplication<HttpApplication.Context> application, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
+        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, TlsHandshakeCallbackOptions callbackOptions = null)
     {
         var hasHttp1 = protocols.HasFlag(HttpProtocols.Http1);
         var hasHttp2 = protocols.HasFlag(HttpProtocols.Http2);
         var hasHttp3 = protocols.HasFlag(HttpProtocols.Http3);
-        var hasTls = isTls;
+        var hasTls = callbackOptions is not null;
 
-        if (!hasTls)
+        if (hasTls)
+        {
+            callbackOptions.SetHttpProtocols(protocols);
+        }
+        else
         {
             // Http/1 without TLS, no-op HTTP/2 and 3.
             if (hasHttp1)
@@ -193,7 +207,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
             var builder = new HttpConnectionBuilder(serviceProvider);
             config?.Invoke(builder);
             UseHttpServer(builder, application, protocols, addAltSvcHeader);
-            var connectionDelegate = builder.Build();
+            var connectionDelegate = UseHttps(builder.Build(), callbackOptions);
 
             options.EndPoint = await BindAsync(options, connectionDelegate, cancellationToken).ConfigureAwait(false);
         }

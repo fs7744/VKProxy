@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.NamedPipes;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Quic;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
@@ -18,10 +19,13 @@ namespace VKProxy.Core.Adapters;
 
 public static class KestrelExtensions
 {
+    private static readonly MethodInfo? TlsHandshakeCallbackOptionsSetHttpProtocolsMethod;
     internal static readonly ConstructorInfo ListenOptionsInitMethod;
     internal static readonly ConstructorInfo EndpointConfigInitMethod;
     internal static readonly ConstructorInfo EndpointConfigInitListMethod;
     internal static readonly MethodInfo ListenOptionsSetEndpointConfig;
+    internal static readonly ConstructorInfo HttpsConnectionMiddlewareInitMethod;
+    internal static readonly MethodInfo HttpsConnectionMiddlewareOnConnectionAsyncMethod;
     internal static readonly MethodInfo UseHttpServerMethod;
     internal static readonly MethodInfo UseHttp3ServerMethod;
     internal static readonly Type TransportManagerType;
@@ -56,6 +60,15 @@ public static class KestrelExtensions
         var typeListenOptions = typeof(ListenOptions).GetTypeInfo();
         ListenOptionsInitMethod = typeListenOptions.DeclaredConstructors.First(i => i.GetParameters().Any(i => i.Name == "endPoint"));
         ListenOptionsSetEndpointConfig = typeListenOptions.DeclaredProperties.First(i => i.Name == "EndpointConfig").SetMethod;
+        TlsHandshakeCallbackOptionsSetHttpProtocolsMethod = typeof(TlsHandshakeCallbackOptions).GetTypeInfo().DeclaredProperties.First(i => i.Name == "HttpProtocols").SetMethod;
+        var typeHttpsConnectionMiddleware = types.First(i => i.Name == "HttpsConnectionMiddleware").GetTypeInfo();
+        HttpsConnectionMiddlewareInitMethod = typeHttpsConnectionMiddleware.DeclaredConstructors.First(i => i.GetParameters().Any(i => i.ParameterType == typeof(TlsHandshakeCallbackOptions)));
+        HttpsConnectionMiddlewareOnConnectionAsyncMethod = typeHttpsConnectionMiddleware.DeclaredMethods.First(i => i.Name == "OnConnectionAsync");
+    }
+
+    public static void SetHttpProtocols(this TlsHandshakeCallbackOptions options, HttpProtocols protocols)
+    {
+        TlsHandshakeCallbackOptionsSetHttpProtocolsMethod.Invoke(options, new object[] { protocols });
     }
 
     internal static object InitEndpointConfig(string key, string url, IConfigurationSection section)
@@ -99,10 +112,10 @@ public static class KestrelExtensions
         return services;
     }
 
-    public static Task BindHttpAsync(this ITransportManager transportManager, EndPointOptions options, RequestDelegate requestDelegate, bool isTls, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
-    , Action<IMultiplexedConnectionBuilder> configMultiplexed = null)
+    public static Task BindHttpAsync(this ITransportManager transportManager, EndPointOptions options, RequestDelegate requestDelegate, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
+    , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, TlsHandshakeCallbackOptions callbackOptions = null)
     {
-        return transportManager.BindHttpApplicationAsync(options, new HttpApplication(requestDelegate, transportManager.ServiceProvider.GetRequiredService<IHttpContextFactory>()), isTls,
-            cancellationToken, protocols, addAltSvcHeader, config, configMultiplexed);
+        return transportManager.BindHttpApplicationAsync(options, new HttpApplication(requestDelegate, transportManager.ServiceProvider.GetRequiredService<IHttpContextFactory>()),
+            cancellationToken, protocols, addAltSvcHeader, config, configMultiplexed, callbackOptions);
     }
 }

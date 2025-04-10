@@ -1,6 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Logging;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
@@ -10,10 +14,12 @@ namespace CoreDemo;
 public class HttpListenHandler : ListenHandlerBase
 {
     private readonly ILogger<HttpListenHandler> logger;
+    private readonly ICertificateLoader certificateLoader;
 
-    public HttpListenHandler(ILogger<HttpListenHandler> logger)
+    public HttpListenHandler(ILogger<HttpListenHandler> logger, ICertificateLoader certificateLoader)
     {
         this.logger = logger;
+        this.certificateLoader = certificateLoader;
     }
 
     private async Task Proxy(HttpContext context)
@@ -33,7 +39,27 @@ public class HttpListenHandler : ListenHandlerBase
                 EndPoint = IPEndPoint.Parse("127.0.0.1:5000"),
                 Key = "http"
             };
-            await transportManager.BindHttpAsync(ip, Proxy, false, cancellationToken);
+            await transportManager.BindHttpAsync(ip, Proxy, cancellationToken);
+            logger.LogInformation($"listen {ip.EndPoint}");
+            ip = new EndPointOptions()
+            {
+                EndPoint = IPEndPoint.Parse("127.0.0.1:5001"),
+                Key = "https"
+            };
+
+            var (c, f) = certificateLoader.LoadCertificate(new SslConfig() { Path = "testCert.pfx", Password = "testPassword" });
+            await transportManager.BindHttpAsync(ip, Proxy, cancellationToken, HttpProtocols.Http1AndHttp2, callbackOptions: new TlsHandshakeCallbackOptions()
+            {
+                OnConnection = c => (ValueTask<SslServerAuthenticationOptions>)c.State,
+                OnConnectionState = ValueTask.FromResult(new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = c,
+                    ServerCertificateContext = SslStreamCertificateContext.Create(c, additionalCertificates: f),
+                    ClientCertificateRequired = false,
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    EncryptionPolicy = EncryptionPolicy.RequireEncryption,
+                })
+            });
             logger.LogInformation($"listen {ip.EndPoint}");
         }
         catch (Exception ex)
