@@ -26,5 +26,5 @@ public interface ITransportManager
     Task StopAsync(CancellationToken cancellationToken);
 
     Task BindHttpApplicationAsync(EndPointOptions endpointConfig, IHttpApplication<HttpApplication.Context> application, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
-        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, TlsHandshakeCallbackOptions callbackOptions = null);
+        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, HttpsConnectionAdapterOptions callbackOptions = null);
 }

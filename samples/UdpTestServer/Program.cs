@@ -1,6 +1,7 @@
 ﻿using System.Net;
-
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 static void StartListener()
@@ -46,6 +47,25 @@ static void Client(string[] args)
 
     Console.WriteLine($"Receive Message : {Encoding.ASCII.GetString(sendbuf)}");
 }
+async Task TestHttp3(string[] args)
+{
+    using var client = new HttpClient(
+        new SocketsHttpHandler()
+        {
+            SslOptions = new System.Net.Security.SslClientAuthenticationOptions()
+            {
+                RemoteCertificateValidationCallback = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) => true
+            }
+        }
+        )
+    {
+        DefaultRequestVersion = HttpVersion.Version30,
+        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact,
+    };
+    HttpResponseMessage resp = await client.GetAsync("https://127.0.0.1:5001/");
+    string body = await resp.Content.ReadAsStringAsync();
+    Console.WriteLine(body);
+}
 
 if (args.Length == 0)
 {
@@ -58,4 +78,8 @@ if (args[0].Equals("server"))
 else if (args[0].Equals("client"))
 {
     Client(args);
+}
+else if (args[0].Equals("http3"))
+{
+    await TestHttp3(args);
 }

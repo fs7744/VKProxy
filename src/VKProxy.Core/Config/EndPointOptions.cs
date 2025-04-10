@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
 using System.Collections;
 using System.Net;
 using VKProxy.Core.Adapters;
@@ -11,7 +12,9 @@ public class EndPointOptions
 
     public EndPoint EndPoint { get; set; }
 
-    internal object EndpointConfig { get; set; }
+    private object EndpointConfig;
+
+    private ListenOptions ListenOptions;
 
     public virtual bool Equals(EndPointOptions? obj)
     {
@@ -32,7 +35,23 @@ public class EndPointOptions
 
     public ListenOptions GetListenOptions()
     {
-        return KestrelExtensions.InitListenOptions(EndPoint, Init());
+        if (ListenOptions is null)
+        {
+            ListenOptions = KestrelExtensions.InitListenOptions(EndPoint, Init());
+        }
+        return ListenOptions;
+    }
+
+    public void SetHttpsCallbackOptions(TlsHandshakeCallbackOptions callbackOptions)
+    {
+        var o = GetListenOptions();
+        KestrelExtensions.ListenOptionsSetHttpsCallbackOptions.Invoke(o, new object[] { callbackOptions });
+    }
+
+    public void SetHttpsOptions(HttpsConnectionAdapterOptions callbackOptions)
+    {
+        var o = GetListenOptions();
+        KestrelExtensions.ListenOptionsSetHttpsOptions.Invoke(o, new object[] { callbackOptions });
     }
 
     internal object Init()

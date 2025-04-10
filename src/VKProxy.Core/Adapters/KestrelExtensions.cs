@@ -24,6 +24,8 @@ public static class KestrelExtensions
     internal static readonly ConstructorInfo EndpointConfigInitMethod;
     internal static readonly ConstructorInfo EndpointConfigInitListMethod;
     internal static readonly MethodInfo ListenOptionsSetEndpointConfig;
+    internal static readonly MethodInfo? ListenOptionsSetHttpsCallbackOptions;
+    internal static readonly MethodInfo? ListenOptionsSetHttpsOptions;
     internal static readonly ConstructorInfo HttpsConnectionMiddlewareInitMethod;
     internal static readonly MethodInfo HttpsConnectionMiddlewareOnConnectionAsyncMethod;
     internal static readonly MethodInfo UseHttpServerMethod;
@@ -60,9 +62,15 @@ public static class KestrelExtensions
         var typeListenOptions = typeof(ListenOptions).GetTypeInfo();
         ListenOptionsInitMethod = typeListenOptions.DeclaredConstructors.First(i => i.GetParameters().Any(i => i.Name == "endPoint"));
         ListenOptionsSetEndpointConfig = typeListenOptions.DeclaredProperties.First(i => i.Name == "EndpointConfig").SetMethod;
+        ListenOptionsSetHttpsCallbackOptions = typeListenOptions.DeclaredProperties.First(i => i.Name == "HttpsCallbackOptions").SetMethod;
+        ListenOptionsSetHttpsOptions = typeListenOptions.DeclaredProperties.First(i => i.Name == "HttpsOptions").SetMethod;
         TlsHandshakeCallbackOptionsSetHttpProtocolsMethod = typeof(TlsHandshakeCallbackOptions).GetTypeInfo().DeclaredProperties.First(i => i.Name == "HttpProtocols").SetMethod;
         var typeHttpsConnectionMiddleware = types.First(i => i.Name == "HttpsConnectionMiddleware").GetTypeInfo();
-        HttpsConnectionMiddlewareInitMethod = typeHttpsConnectionMiddleware.DeclaredConstructors.First(i => i.GetParameters().Any(i => i.ParameterType == typeof(TlsHandshakeCallbackOptions)));
+        HttpsConnectionMiddlewareInitMethod = typeHttpsConnectionMiddleware.DeclaredConstructors.First(i =>
+        {
+            var p = i.GetParameters();
+            return p.Length == 5 && p.Any(i => i.ParameterType == typeof(HttpsConnectionAdapterOptions));
+        });
         HttpsConnectionMiddlewareOnConnectionAsyncMethod = typeHttpsConnectionMiddleware.DeclaredMethods.First(i => i.Name == "OnConnectionAsync");
     }
 
@@ -113,7 +121,7 @@ public static class KestrelExtensions
     }
 
     public static Task BindHttpAsync(this ITransportManager transportManager, EndPointOptions options, RequestDelegate requestDelegate, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
-    , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, TlsHandshakeCallbackOptions callbackOptions = null)
+    , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, HttpsConnectionAdapterOptions callbackOptions = null)
     {
         return transportManager.BindHttpApplicationAsync(options, new HttpApplication(requestDelegate, transportManager.ServiceProvider.GetRequiredService<IHttpContextFactory>()),
             cancellationToken, protocols, addAltSvcHeader, config, configMultiplexed, callbackOptions);

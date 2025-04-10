@@ -152,16 +152,16 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
         return builder;
     }
 
-    public ConnectionDelegate UseHttps(ConnectionDelegate next, TlsHandshakeCallbackOptions tlsCallbackOptions)
+    public ConnectionDelegate UseHttps(ConnectionDelegate next, HttpsConnectionAdapterOptions tlsCallbackOptions, HttpProtocols protocols)
     {
         if (tlsCallbackOptions == null)
             return next;
-        var o = KestrelExtensions.HttpsConnectionMiddlewareInitMethod.Invoke(new object[] { next, tlsCallbackOptions, serviceProvider.GetRequiredService<ILoggerFactory>(), metrics });
+        var o = KestrelExtensions.HttpsConnectionMiddlewareInitMethod.Invoke(new object[] { next, tlsCallbackOptions, protocols, serviceProvider.GetRequiredService<ILoggerFactory>(), metrics });
         return KestrelExtensions.HttpsConnectionMiddlewareOnConnectionAsyncMethod.CreateDelegate<ConnectionDelegate>(o);
     }
 
     public async Task BindHttpApplicationAsync(EndPointOptions options, IHttpApplication<HttpApplication.Context> application, CancellationToken cancellationToken, HttpProtocols protocols = HttpProtocols.Http1AndHttp2AndHttp3, bool addAltSvcHeader = true, Action<IConnectionBuilder> config = null
-        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, TlsHandshakeCallbackOptions callbackOptions = null)
+        , Action<IMultiplexedConnectionBuilder> configMultiplexed = null, HttpsConnectionAdapterOptions callbackOptions = null)
     {
         var hasHttp1 = protocols.HasFlag(HttpProtocols.Http1);
         var hasHttp2 = protocols.HasFlag(HttpProtocols.Http2);
@@ -170,7 +170,17 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
 
         if (hasTls)
         {
-            callbackOptions.SetHttpProtocols(protocols);
+            if (hasHttp3)
+            {
+                options.GetListenOptions().Protocols = protocols;
+                options.SetHttpsOptions(callbackOptions);
+            }
+            //callbackOptions.SetHttpProtocols(protocols);
+            //if (hasHttp3)
+            //{
+            //    HttpsConnectionAdapterOptions
+            //    options.SetHttpsCallbackOptions(callbackOptions);
+            //}
         }
         else
         {
@@ -207,7 +217,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
             var builder = new HttpConnectionBuilder(serviceProvider);
             config?.Invoke(builder);
             UseHttpServer(builder, application, protocols, addAltSvcHeader);
-            var connectionDelegate = UseHttps(builder.Build(), callbackOptions);
+            var connectionDelegate = UseHttps(builder.Build(), callbackOptions, protocols);
 
             options.EndPoint = await BindAsync(options, connectionDelegate, cancellationToken).ConfigureAwait(false);
         }
