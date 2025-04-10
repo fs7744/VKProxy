@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
+using System.Net;
 using System.Net.Quic;
 using System.Reflection;
 using VKProxy.Core.Config;
@@ -17,8 +18,10 @@ namespace VKProxy.Core.Adapters;
 
 public static class KestrelExtensions
 {
+    internal static readonly ConstructorInfo ListenOptionsInitMethod;
     internal static readonly ConstructorInfo EndpointConfigInitMethod;
     internal static readonly ConstructorInfo EndpointConfigInitListMethod;
+    internal static readonly MethodInfo ListenOptionsSetEndpointConfig;
     internal static readonly MethodInfo UseHttpServerMethod;
     internal static readonly MethodInfo UseHttp3ServerMethod;
     internal static readonly Type TransportManagerType;
@@ -50,11 +53,24 @@ public static class KestrelExtensions
         var httpConnectionBuilderExtensionsType = types.First(i => i.Name == "HttpConnectionBuilderExtensions").GetTypeInfo();
         UseHttpServerMethod = httpConnectionBuilderExtensionsType.DeclaredMethods.First(i => i.Name == "UseHttpServer").MakeGenericMethod(typeof(HttpApplication.Context));
         UseHttp3ServerMethod = httpConnectionBuilderExtensionsType.DeclaredMethods.First(i => i.Name == "UseHttp3Server").MakeGenericMethod(typeof(HttpApplication.Context));
+        var typeListenOptions = typeof(ListenOptions).GetTypeInfo();
+        ListenOptionsInitMethod = typeListenOptions.DeclaredConstructors.First(i => i.GetParameters().Any(i => i.Name == "endPoint"));
+        ListenOptionsSetEndpointConfig = typeListenOptions.DeclaredProperties.First(i => i.Name == "EndpointConfig").SetMethod;
     }
 
     internal static object InitEndpointConfig(string key, string url, IConfigurationSection section)
     {
         return EndpointConfigInitMethod.Invoke(new object[] { key, url, null, section });
+    }
+
+    internal static ListenOptions InitListenOptions(EndPoint endPoint, object endpointConfig)
+    {
+        var r = ListenOptionsInitMethod.Invoke(new object[] { endPoint }) as ListenOptions;
+        if (endpointConfig != null)
+        {
+            ListenOptionsSetEndpointConfig.Invoke(r, new object[] { endpointConfig });
+        }
+        return r;
     }
 
     internal static IServiceCollection UseInternalKestrel(this IServiceCollection services, Action<KestrelServerOptions> options = null)

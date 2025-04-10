@@ -109,7 +109,7 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
 
     public Task<EndPoint> BindAsync(EndPointOptions endpointConfig, MultiplexedConnectionDelegate multiplexedConnectionDelegate, CancellationToken cancellationToken)
     {
-        return MultiplexedBindAsyncMethod.Invoke(transportManager, new object[] { endpointConfig.EndPoint, multiplexedConnectionDelegate, endpointConfig.Init(), cancellationToken }) as Task<EndPoint>;
+        return MultiplexedBindAsyncMethod.Invoke(transportManager, new object[] { endpointConfig.EndPoint, multiplexedConnectionDelegate, endpointConfig.GetListenOptions(), cancellationToken }) as Task<EndPoint>;
     }
 
     public Task StopEndpointsAsync(List<EndPointOptions> endpointsToStop, CancellationToken cancellationToken)

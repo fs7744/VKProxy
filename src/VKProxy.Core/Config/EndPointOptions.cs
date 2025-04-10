@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
+using System.Collections;
 using System.Net;
 using VKProxy.Core.Adapters;
 
@@ -27,6 +28,11 @@ public class EndPointOptions
     public override string ToString()
     {
         return $"Key: {Key},EndPoint: {EndPoint}]";
+    }
+
+    public ListenOptions GetListenOptions()
+    {
+        return KestrelExtensions.InitListenOptions(EndPoint, Init());
     }
 
     internal object Init()
