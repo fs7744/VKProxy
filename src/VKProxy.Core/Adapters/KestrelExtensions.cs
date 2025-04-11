@@ -106,7 +106,6 @@ public static class KestrelExtensions
             services.AddSingleton(typeof(IConnectionListenerFactory), typeof(NamedPipeTransportOptions).Assembly.DefinedTypes.First(i => i.Name == "NamedPipeTransportFactory"));
         }
         services.AddSingleton<IConnectionListenerFactory, SocketTransportFactory>();
-        services.TryAddEnumerable(ServiceDescriptor.Transient<IConfigureOptions<KestrelServerOptions>, KestrelServerOptionsSetup>());
         services.Configure<KestrelServerOptions>(o =>
         {
             options?.Invoke(o);
