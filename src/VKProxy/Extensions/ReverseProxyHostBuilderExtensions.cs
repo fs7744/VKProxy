@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using System.Net.Quic;
 using VKProxy;
 using VKProxy.Config;
+using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
 using VKProxy.Core.Sockets.Udp;
 
@@ -31,6 +32,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddTransient<IConfigureOptions<SocketTransportOptions>, SocketTransportOptionsSetup>();
             services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelServerOptionsSetup>();
             services.AddSingleton<IListenHandler, ListenHandler>();
+            services.AddSingleton<IConfigSource<IProxyConfig>, ProxyConfigSource>();
         });
 
         return hostBuilder;

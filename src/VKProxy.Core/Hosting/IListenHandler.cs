@@ -27,4 +27,6 @@ public interface IListenHandler
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task RebindAsync(ITransportManager transportManager, CancellationToken cancellationToken);
+
+    Task StopAsync(ITransportManager transportManager, CancellationToken cancellationToken);
 }

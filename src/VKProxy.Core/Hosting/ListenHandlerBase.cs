@@ -21,4 +21,9 @@ public abstract class ListenHandlerBase : IListenHandler
     {
         throw new NotImplementedException();
     }
+
+    public virtual Task StopAsync(ITransportManager transportManager, CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 }

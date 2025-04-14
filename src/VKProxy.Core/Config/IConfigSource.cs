@@ -2,7 +2,7 @@
 
 namespace VKProxy.Core.Config;
 
-public interface IConfigSource<T>
+public interface IConfigSource<T> : IDisposable
 {
     T CurrentSnapshot { get; }
 

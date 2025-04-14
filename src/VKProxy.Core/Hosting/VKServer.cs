@@ -116,6 +116,7 @@ public class VKServer : IServer
 
         try
         {
+            await listenHandler.StopAsync(transportManager, cancellationToken).ConfigureAwait(false);
             await transportManager.StopAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
