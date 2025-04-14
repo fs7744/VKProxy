@@ -22,6 +22,8 @@ public class ListenConfig
     public ClientCertificateMode? ClientCertificateMode { get; set; }
 
     internal List<ListenEndPointOptions> ListenEndPointOptions { get; set; }
+    public string SniId { get; set; }
+
     private HttpsConnectionAdapterOptions httpsConnectionAdapterOptions;
 
     internal HttpsConnectionAdapterOptions GetHttpsOptions()
@@ -65,6 +67,7 @@ public class ListenEndPointOptions : EndPointOptions
     internal ListenConfig Parent { get; set; }
 
     public GatewayProtocols Protocols { get; set; }
+    public string SniId => Parent?.SniId;
 
     internal HttpProtocols GetHttpProtocols()
     {

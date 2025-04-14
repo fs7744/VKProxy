@@ -91,7 +91,14 @@ internal class ListenHandler : ListenHandlerBase
             var https = options.GetHttpsOptions();
             if (https != null)
             {
-                https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
+                if (!string.IsNullOrWhiteSpace(options.SniId))
+                {
+                    https.ServerCertificate = current?.Sni[options.SniId].Certificate;
+                }
+                else
+                {
+                    https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
+                }
             }
             await transportManager.BindHttpAsync(options, DoHttp, cancellationToken, options.GetHttpProtocols(), true, null, null, https);
         }

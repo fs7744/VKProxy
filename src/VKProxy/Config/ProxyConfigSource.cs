@@ -53,7 +53,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         {
             Key = section.Key,
             Host = section.GetSection(nameof(SniConfig.Host)).ReadStringArray(),
-            Tls = CreateSslConfig(section.GetSection(nameof(SniConfig.Tls)))
+            Tls = CreateSslConfig(section.GetSection(nameof(SniConfig.Tls))),
+            Order = section.ReadInt32(nameof(SniConfig.Order)).GetValueOrDefault()
         };
     }
 
@@ -98,7 +99,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             CheckCertificateRevocation = section.ReadBool(nameof(ListenConfig.CheckCertificateRevocation)),
             HandshakeTimeout = section.ReadTimeSpan(nameof(ListenConfig.HandshakeTimeout)),
             TlsProtocols = section.ReadEnum<SslProtocols>(nameof(ListenConfig.TlsProtocols)),
-            ClientCertificateMode = section.ReadEnum<ClientCertificateMode>(nameof(ListenConfig.ClientCertificateMode))
+            ClientCertificateMode = section.ReadEnum<ClientCertificateMode>(nameof(ListenConfig.ClientCertificateMode)),
+            SniId = section[nameof(ListenConfig.SniId)]
         };
     }
 
