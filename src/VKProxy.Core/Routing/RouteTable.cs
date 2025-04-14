@@ -69,6 +69,34 @@ public class RouteTable<T> : IRouteTable<T>
         }
     }
 
+    public T[] FindAll(string key)
+    {
+        if (cache.TryRead(key, out var session))
+        {
+            return session.Value;
+        }
+        else
+        {
+            using var writeSession = cache.Change(key, OrderComparer.Timeout);
+            if (!writeSession.TryGetValue(out var value))
+            {
+                if (exact.TryGetValue(key, out var result))
+                {
+                    value = result;
+                }
+                else
+                {
+                    value = trie.Search(key, comparison).SelectMany(i => i.Values.SelectMany(j => j)).ToArray();
+                    if (value.Length == 0)
+                        value = Array.Empty<T>();
+                }
+                writeSession.SetValue(value);
+            }
+
+            return value;
+        }
+    }
+
     public ValueTask DisposeAsync()
     {
         Dispose();
@@ -87,5 +115,19 @@ public class RouteTable<T> : IRouteTable<T>
             c?.Dispose();
             r?.Dispose();
         }
+    }
+
+    public T Match<R>(string key, R data, Func<T, R, bool> match)
+    {
+        var all = FindAll(key);
+        if (all.Length == 0) return default;
+        foreach (var v in all.AsSpan())
+        {
+            if (match(v, data))
+            {
+                return v;
+            }
+        }
+        return default;
     }
 }

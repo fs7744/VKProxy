@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Primitives;
-using System.Collections.Frozen;
+using System.Security.Authentication;
 using VKProxy.Core.Config;
 
 namespace VKProxy.Config;
@@ -32,10 +33,11 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         if (!section.Exists()) return;
         lock (configChangedLock)
         {
-            var c = new ProxyConfigSnapshot();
-            c.Routes = configuration.GetSection(nameof(ProxyConfigSnapshot.Routes)).GetChildren().Select(CreateRoute).ToFrozenDictionary(i => i.Id, StringComparer.OrdinalIgnoreCase);
-            c.Clusters = configuration.GetSection(nameof(ProxyConfigSnapshot.Clusters)).GetChildren().Select(CreateCluster).ToFrozenDictionary(i => i.Id, StringComparer.OrdinalIgnoreCase);
-            c.Listen = configuration.GetSection(nameof(ProxyConfigSnapshot.Listen)).GetChildren().Select(CreateListen).ToFrozenDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase);
+            var c = new ProxyConfigSnapshot(
+                section.GetSection(nameof(ProxyConfigSnapshot.Routes)).GetChildren().Select(CreateRoute).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                , section.GetSection(nameof(ProxyConfigSnapshot.Clusters)).GetChildren().Select(CreateCluster).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                , section.GetSection(nameof(ProxyConfigSnapshot.Listen)).GetChildren().Select(CreateListen).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase)
+                , section.GetSection(nameof(ProxyConfigSnapshot.Sni)).GetChildren().Select(CreateSni).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase));
             snapshot = c;
 
             var oldToken = cts;
@@ -45,11 +47,43 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         subscription = ChangeToken.OnChange(section.GetReloadToken, UpdateSnapshot);
     }
 
+    private SniConfig CreateSni(IConfigurationSection section, int arg2)
+    {
+        return new SniConfig()
+        {
+            Key = section.Key,
+            Host = section.GetSection(nameof(SniConfig.Host)).ReadStringArray(),
+            Tls = CreateSslConfig(section.GetSection(nameof(SniConfig.Tls)))
+        };
+    }
+
+    private SslConfig CreateSslConfig(IConfigurationSection section)
+    {
+        if (!section.Exists()) return null;
+        var s = new SslConfig()
+        {
+            Path = section[nameof(SslConfig.Path)],
+            KeyPath = section[nameof(SslConfig.KeyPath)],
+            Password = section[nameof(SslConfig.Password)],
+            Subject = section[nameof(SslConfig.Subject)],
+            Store = section[nameof(SslConfig.Store)],
+            Location = section[nameof(SslConfig.Location)],
+            AllowInvalid = section.ReadBool(nameof(SslConfig.AllowInvalid))
+        };
+
+        //s.SupportSslProtocols = section.ReadSslProtocols(nameof(SslConfig.SupportSslProtocols)).GetValueOrDefault(s.SupportSslProtocols);
+        //s.Passthrough = section.ReadBool(nameof(SslConfig.Passthrough)).GetValueOrDefault(s.Passthrough);
+        //s.HandshakeTimeout = section.ReadTimeSpan(nameof(SslConfig.HandshakeTimeout)).GetValueOrDefault(s.HandshakeTimeout);
+        //s.ClientCertificateRequired = section.ReadBool(nameof(SslConfig.ClientCertificateRequired)).GetValueOrDefault(s.ClientCertificateRequired);
+        //s.CheckCertificateRevocation = section.ReadBool(nameof(SslConfig.CheckCertificateRevocation)).GetValueOrDefault(s.CheckCertificateRevocation);
+        return s;
+    }
+
     private RouteConfig CreateRoute(IConfigurationSection section)
     {
         return new RouteConfig()
         {
-            Id = section.Key,
+            Key = section.Key,
         };
     }
 
@@ -58,6 +92,13 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return new ListenConfig()
         {
             Key = section.Key,
+            Protocols = section.ReadGatewayProtocols(nameof(ListenConfig.Protocols)).GetValueOrDefault(GatewayProtocols.HTTP1),
+            Address = section.GetSection(nameof(ListenConfig.Address)).ReadStringArray(),
+            UseSni = section.ReadBool(nameof(ListenConfig.UseSni)).GetValueOrDefault(),
+            CheckCertificateRevocation = section.ReadBool(nameof(ListenConfig.CheckCertificateRevocation)),
+            HandshakeTimeout = section.ReadTimeSpan(nameof(ListenConfig.HandshakeTimeout)),
+            TlsProtocols = section.ReadEnum<SslProtocols>(nameof(ListenConfig.TlsProtocols)),
+            ClientCertificateMode = section.ReadEnum<ClientCertificateMode>(nameof(ListenConfig.ClientCertificateMode))
         };
     }
 
@@ -65,7 +106,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
     {
         return new ClusterConfig()
         {
-            Id = section.Key,
+            Key = section.Key,
         };
     }
 
@@ -74,13 +115,4 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         subscription?.Dispose();
         subscription = null;
     }
-}
-
-public class ProxyConfigSnapshot : IProxyConfig
-{
-    public IReadOnlyDictionary<string, RouteConfig> Routes { get; set; }
-
-    public IReadOnlyDictionary<string, ClusterConfig> Clusters { get; set; }
-
-    public IReadOnlyDictionary<string, ListenConfig> Listen { get; set; }
 }

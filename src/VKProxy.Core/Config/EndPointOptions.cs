@@ -30,7 +30,7 @@ public class EndPointOptions
 
     public override string ToString()
     {
-        return $"Key: {Key},EndPoint: {EndPoint}]";
+        return $"[Key: {Key},EndPoint: {EndPoint}]";
     }
 
     public ListenOptions GetListenOptions()

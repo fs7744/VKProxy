@@ -11,6 +11,8 @@ public class PriorityRouteDataList<T> : SortedDictionary<int, List<T>>
 
 public class OrderComparer : IComparer<int>
 {
+    internal static readonly TimeSpan Timeout = TimeSpan.FromSeconds(3);
+
     public int Compare(int x, int y)
     {
         return y.CompareTo(x);

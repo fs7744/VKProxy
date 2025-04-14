@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using VKProxy.Config;
+using VKProxy.Config.Validators;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
@@ -14,12 +15,16 @@ internal class ListenHandler : ListenHandlerBase
 {
     private readonly IConfigSource<IProxyConfig> configSource;
     private readonly ProxyLogger logger;
+    private readonly IValidator<IProxyConfig> validator;
+    private readonly ISniSelector sniSelector;
     private IProxyConfig current;
 
-    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger)
+    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator, ISniSelector sniSelector)
     {
         this.configSource = configSource;
         this.logger = logger;
+        this.validator = validator;
+        this.sniSelector = sniSelector;
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -61,6 +66,7 @@ internal class ListenHandler : ListenHandlerBase
                 try
                 {
                     await OnBindAsync(transportManager, s, cancellationToken).ConfigureAwait(false);
+                    logger.BindListenOptions(s);
                 }
                 catch (Exception ex)
                 {
@@ -70,7 +76,7 @@ internal class ListenHandler : ListenHandlerBase
         }
     }
 
-    private async Task OnBindAsync(ITransportManager transportManager, ListenConfig options, CancellationToken cancellationToken)
+    private async Task OnBindAsync(ITransportManager transportManager, ListenEndPointOptions options, CancellationToken cancellationToken)
     {
         if (options.Protocols == GatewayProtocols.UDP)
         {
@@ -82,7 +88,12 @@ internal class ListenHandler : ListenHandlerBase
         }
         else
         {
-            await transportManager.BindHttpAsync(options, DoHttp, cancellationToken, options.GetHttpProtocols(), true, null, null, options.GetHttpsOptions());
+            var https = options.GetHttpsOptions();
+            if (https != null)
+            {
+                https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
+            }
+            await transportManager.BindHttpAsync(options, DoHttp, cancellationToken, options.GetHttpProtocols(), true, null, null, https);
         }
     }
 
@@ -101,9 +112,20 @@ internal class ListenHandler : ListenHandlerBase
         }
     }
 
-    private Task<(IEnumerable<ListenConfig> stop, IEnumerable<ListenConfig> start)> GenerateDiffAsync(IProxyConfig old, IProxyConfig current, CancellationToken cancellationToken)
+    private async Task<(IEnumerable<ListenEndPointOptions> stop, IEnumerable<ListenEndPointOptions> start)> GenerateDiffAsync(IProxyConfig old, IProxyConfig current, CancellationToken cancellationToken)
     {
-        // todo check  option
-        return Task.FromResult<(IEnumerable<ListenConfig> stop, IEnumerable<ListenConfig> start)>((null, current.Listen.Values));
+        if (current == null && old == null) return (null, null);
+
+        var errors = new List<Exception>();
+        if (!await validator.ValidateAsync(current, errors, cancellationToken))
+        {
+            foreach (var error in errors)
+            {
+                logger.IngoreErrorConfig(error.Message);
+            }
+        }
+        await sniSelector.ReBuildAsync(current.Sni, cancellationToken);
+        //todo diff
+        return (null, current?.Listen.Values.SelectMany(i => i.ListenEndPointOptions));
     }
 }

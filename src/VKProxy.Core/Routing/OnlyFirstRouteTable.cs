@@ -33,11 +33,11 @@ public class OnlyFirstRouteTable<T> : IRouteTable<T>
             {
                 if (exact.TryGetValue(key, out var result))
                 {
-                    value = Match(result, data, match);
+                    value = DoMatch(result, data, match);
                 }
                 else
                 {
-                    value = MatchEnumerable(trie.Search(key, comparison).SelectMany(i => i.Values.SelectMany(j => j)), data, match);
+                    value = DoMatchEnumerable(trie.Search(key, comparison).SelectMany(i => i.Values.SelectMany(j => j)), data, match);
                 }
                 writeSession.SetValue(value);
             }
@@ -46,7 +46,33 @@ public class OnlyFirstRouteTable<T> : IRouteTable<T>
         }
     }
 
-    public T Match<R>(T[] all, R data, Func<T, R, bool> match)
+    public T Match<R>(string key, R data, Func<T, R, bool> match)
+    {
+        if (cache.TryRead(key, out var session))
+        {
+            return session.Value;
+        }
+        else
+        {
+            using var writeSession = cache.Change(key, OrderComparer.Timeout);
+            if (!writeSession.TryGetValue(out var value))
+            {
+                if (exact.TryGetValue(key, out var result))
+                {
+                    value = DoMatch(result, data, match);
+                }
+                else
+                {
+                    value = DoMatchEnumerable(trie.Search(key, comparison).SelectMany(i => i.Values.SelectMany(j => j)), data, match);
+                }
+                writeSession.SetValue(value);
+            }
+
+            return value;
+        }
+    }
+
+    public T DoMatch<R>(T[] all, R data, Func<T, R, bool> match)
     {
         if (all.Length == 0) return default;
         foreach (var v in all.AsSpan())
@@ -59,7 +85,7 @@ public class OnlyFirstRouteTable<T> : IRouteTable<T>
         return default;
     }
 
-    public T MatchEnumerable<R>(IEnumerable<T> all, R data, Func<T, R, bool> match)
+    public T DoMatchEnumerable<R>(IEnumerable<T> all, R data, Func<T, R, bool> match)
     {
         foreach (var v in all)
         {
