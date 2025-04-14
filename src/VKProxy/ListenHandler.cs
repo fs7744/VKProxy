@@ -8,6 +8,8 @@ using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
+using VKProxy.Features;
+using static VKProxy.Core.Adapters.HttpApplication;
 
 namespace VKProxy;
 
@@ -106,16 +108,22 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task DoHttp(HttpContext context)
     {
+        var proxyFeature = new ReverseProxyFeature();
+        context.Features.Set<IReverseProxyFeature>(proxyFeature);
     }
 
     private async Task DoTcp(ConnectionContext connection)
     {
+        var proxyFeature = new ReverseProxyFeature();
+        connection.Features.Set<IReverseProxyFeature>(proxyFeature);
     }
 
     private async Task DoUdp(ConnectionContext connection)
     {
         if (connection is UdpConnectionContext context)
         {
+            var proxyFeature = new ReverseProxyFeature();
+            context.Features.Set<IReverseProxyFeature>(proxyFeature);
         }
     }
 

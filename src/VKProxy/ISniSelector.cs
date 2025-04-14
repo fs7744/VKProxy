@@ -17,7 +17,7 @@ public interface ISniSelector
 public class SniSelector : ISniSelector
 {
     private readonly ReverseProxyOptions options;
-    private IRouteTable<X509Certificate2> route;
+    private IRouteTable<SniConfig> route;
 
     public SniSelector(IOptions<ReverseProxyOptions> options)
     {
@@ -26,7 +26,7 @@ public class SniSelector : ISniSelector
 
     public async Task ReBuildAsync(IReadOnlyDictionary<string, SniConfig> sni, CancellationToken cancellationToken)
     {
-        var sniRouteBuilder = new RouteTableBuilder<X509Certificate2>(StringComparison.OrdinalIgnoreCase, options.SniRouteCahceSize);
+        var sniRouteBuilder = new RouteTableBuilder<SniConfig>(StringComparison.OrdinalIgnoreCase, options.SniRouteCahceSize);
         foreach (var route in sni.Values.Where(i => i.Certificate != null))
         {
             foreach (var host in route.Host)
@@ -42,15 +42,15 @@ public class SniSelector : ISniSelector
 
         route = sniRouteBuilder.Build(RouteTableType.OnlyFirst);
 
-        static void Set(RouteTableBuilder<X509Certificate2> builder, SniConfig? route, string host)
+        static void Set(RouteTableBuilder<SniConfig> builder, SniConfig? route, string host)
         {
             if (host.StartsWith('*'))
             {
-                builder.Add(host[1..].Reverse(), route.Certificate, RouteType.Prefix, route.Order);
+                builder.Add(host[1..].Reverse(), route, RouteType.Prefix, route.Order);
             }
             else
             {
-                builder.Add(host.Reverse(), route.Certificate, RouteType.Exact, route.Order);
+                builder.Add(host.Reverse(), route, RouteType.Exact, route.Order);
             }
         }
     }
@@ -59,6 +59,6 @@ public class SniSelector : ISniSelector
     {
         if (string.IsNullOrWhiteSpace(host)) return null;
         var s = route.Match<SniConfig>(host.Reverse(), null, static (c, r) => true);
-        return s;
+        return s?.Certificate;
     }
 }
