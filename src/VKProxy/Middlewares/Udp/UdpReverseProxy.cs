@@ -6,8 +6,6 @@ using VKProxy.Core.Sockets.Udp;
 using VKProxy.Core.Sockets.Udp.Client;
 using VKProxy.Features;
 using VKProxy.LoadBalancing;
-using static System.Net.Mime.MediaTypeNames;
-using static VKProxy.Core.Adapters.HttpApplication;
 
 namespace VKProxy.Middlewares;
 
@@ -16,7 +14,6 @@ internal class UdpReverseProxy : IUdpReverseProxy
     private readonly IUdpConnectionFactory udp;
     private readonly ProxyLogger logger;
     private readonly ILoadBalancingPolicyFactory loadBalancing;
-    private readonly IUdpProxyMiddleware middleware;
     private readonly UdpProxyDelegate req;
     private readonly UdpProxyDelegate resp;
     private readonly UdpDelegate init;

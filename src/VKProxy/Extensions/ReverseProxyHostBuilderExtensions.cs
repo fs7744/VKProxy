@@ -63,6 +63,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton(TimeProvider.System);
 
             services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();
+            services.AddSingleton<ITcpReverseProxy, TcpReverseProxy>();
         });
 
         return hostBuilder;
@@ -71,6 +72,12 @@ public static class ReverseProxyHostBuilderExtensions
     public static IServiceCollection UseUdpMiddleware<T>(this IServiceCollection services) where T : class, IUdpProxyMiddleware
     {
         services.AddTransient<IUdpProxyMiddleware, T>();
+        return services;
+    }
+
+    public static IServiceCollection UseTcpMiddleware<T>(this IServiceCollection services) where T : class, ITcpProxyMiddleware
+    {
+        services.AddTransient<ITcpProxyMiddleware, T>();
         return services;
     }
 }

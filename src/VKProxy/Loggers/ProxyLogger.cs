@@ -60,6 +60,11 @@ public partial class ProxyLogger : ILogger
         GeneralLog.ConnectUpstreamTimeout(generalLogger, routeId);
     }
 
+    public void ProxyTimeout(string routeId, TimeSpan time)
+    {
+        GeneralLog.ProxyTimeout(generalLogger, routeId, time);
+    }
+
     private static partial class GeneralLog
     {
         [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
@@ -85,5 +90,8 @@ public partial class ProxyLogger : ILogger
 
         [LoggerMessage(7, LogLevel.Information, @"Connect upstream timeout for route {routeId}.", EventName = "ConnectUpstreamTimeout")]
         public static partial void ConnectUpstreamTimeout(ILogger logger, string routeId);
+
+        [LoggerMessage(8, LogLevel.Information, @"Proxy timeout ({time}) for route {routeId}.", EventName = "ProxyTimeout")]
+        public static partial void ProxyTimeout(ILogger logger, string routeId, TimeSpan time);
     }
 }
