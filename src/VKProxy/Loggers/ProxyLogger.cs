@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Net;
 using VKProxy.Config;
 
 namespace VKProxy.Core.Loggers;
@@ -24,9 +25,9 @@ public partial class ProxyLogger : ILogger
         GeneralLog.BindListenOptionsError(generalLogger, endPoint, ex);
     }
 
-    public void IngoreErrorConfig(string message)
+    public void ErrorConfig(string message)
     {
-        GeneralLog.IngoreErrorConfig(generalLogger, message);
+        GeneralLog.ErrorConfig(generalLogger, message);
     }
 
     public void BindListenOptions(ListenEndPointOptions s)
@@ -34,15 +35,39 @@ public partial class ProxyLogger : ILogger
         GeneralLog.BindListenOptions(generalLogger, s);
     }
 
+    public void UnexpectedException(string msg, Exception ex)
+    {
+        GeneralLog.UnexpectedException(generalLogger, msg, ex);
+    }
+
+    public void NotFoundActiveHealthCheckPolicy(string policy)
+    {
+        GeneralLog.NotFoundActiveHealthCheckPolicy(generalLogger, policy);
+    }
+
+    public void SocketConnectionCheckFailed(EndPoint endPoint, Exception ex)
+    {
+        GeneralLog.SocketConnectionCheckFailed(generalLogger, endPoint, ex.Message);
+    }
+
     private static partial class GeneralLog
     {
-        [LoggerMessage(0, LogLevel.Critical, @"Unable to bind to {Endpoint} on config reload.", EventName = "BindListenOptionsError")]
+        [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
+        public static partial void UnexpectedException(ILogger logger, string msg, Exception ex);
+
+        [LoggerMessage(1, LogLevel.Critical, @"Unable to bind to {Endpoint} on config reload.", EventName = "BindListenOptionsError")]
         public static partial void BindListenOptionsError(ILogger logger, ListenEndPointOptions endpoint, Exception ex);
 
-        [LoggerMessage(1, LogLevel.Warning, @"Ingore error config {msg}", EventName = "IngoreErrorConfig")]
-        public static partial void IngoreErrorConfig(ILogger logger, string msg);
+        [LoggerMessage(2, LogLevel.Warning, @"{msg}", EventName = "ErrorConfig")]
+        public static partial void ErrorConfig(ILogger logger, string msg);
 
-        [LoggerMessage(2, LogLevel.Information, @"Listening on: {s}", EventName = "BindListenOptions")]
+        [LoggerMessage(3, LogLevel.Information, @"Listening on: {s}", EventName = "BindListenOptions")]
         public static partial void BindListenOptions(ILogger logger, ListenEndPointOptions s);
+
+        [LoggerMessage(4, LogLevel.Warning, @"Not found active health check policy {policy}.", EventName = "NotFoundActiveHealthCheckPolicy")]
+        public static partial void NotFoundActiveHealthCheckPolicy(ILogger logger, string policy);
+
+        [LoggerMessage(5, LogLevel.Warning, @"Active health failed, can not connect socket {endPoint} {ex}.", EventName = "SocketConnectionCheckFailed")]
+        public static partial void SocketConnectionCheckFailed(ILogger logger, EndPoint endPoint, string ex);
     }
 }

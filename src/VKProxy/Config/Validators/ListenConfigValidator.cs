@@ -22,9 +22,19 @@ public class ListenConfigValidator : IValidator<ListenConfig>
                 exceptions.Add(new ArgumentException($"Listen ({value.Key}) Address can not be empty."));
                 r = false;
             }
-            else if (value.SniId == null && value.Protocols.HasFlag(GatewayProtocols.HTTP3))
+            else if (string.IsNullOrWhiteSpace(value.SniId) && value.Protocols.HasFlag(GatewayProtocols.HTTP3))
             {
-                exceptions.Add(new ArgumentException($"Listen ({value.Key}) use HTTP3 but no sniId. (Quic no support sni)"));
+                exceptions.Add(new ArgumentException($"Listen ({value.Key}) use HTTP3 but no sniId. (Quic no support sni.)"));
+                r = false;
+            }
+            else if (string.IsNullOrWhiteSpace(value.RouteId) && value.Protocols.HasFlag(GatewayProtocols.UDP))
+            {
+                exceptions.Add(new ArgumentException($"Listen ({value.Key}) must has RouteId use udp."));
+                r = false;
+            }
+            else if (string.IsNullOrWhiteSpace(value.RouteId) && value.Protocols.HasFlag(GatewayProtocols.TCP) && !value.UseSni)
+            {
+                exceptions.Add(new ArgumentException($"Listen ({value.Key}) must has RouteId when use tcp and no sni."));
                 r = false;
             }
             else

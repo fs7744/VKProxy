@@ -1,7 +1,8 @@
 ﻿using DotNext.Collections.Generic;
 using DotNext.Runtime.Caching;
-using VKProxy.Core.Infrastructure;
 using System.Collections.Frozen;
+
+using VKProxy.Core.Infrastructure;
 
 namespace VKProxy.Core.Routing;
 

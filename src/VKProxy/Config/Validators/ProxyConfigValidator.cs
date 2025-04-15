@@ -4,12 +4,18 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
 {
     private readonly IEnumerable<IValidator<ListenConfig>> listenConfigValidators;
     private readonly IEnumerable<IValidator<SniConfig>> sniConfigValidators;
+    private readonly IEnumerable<IValidator<RouteConfig>> routeConfigValidators;
+    private readonly IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators;
 
     public ProxyConfigValidator(IEnumerable<IValidator<ListenConfig>> listenConfigValidators,
-        IEnumerable<IValidator<SniConfig>> sniConfigValidators)
+        IEnumerable<IValidator<SniConfig>> sniConfigValidators,
+        IEnumerable<IValidator<RouteConfig>> routeConfigValidators,
+        IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators)
     {
-        this.listenConfigValidators = Enumerable.Reverse(listenConfigValidators).ToArray();
-        this.sniConfigValidators = Enumerable.Reverse(sniConfigValidators).ToArray();
+        this.listenConfigValidators = listenConfigValidators;
+        this.sniConfigValidators = sniConfigValidators;
+        this.routeConfigValidators = routeConfigValidators;
+        this.clusterConfigValidators = clusterConfigValidators;
     }
 
     public async Task<bool> ValidateAsync(IProxyConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -18,6 +24,44 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
 
         if (value != null)
         {
+            if (value.Clusters != null)
+            {
+                foreach (var l in value.Clusters)
+                {
+                    var ll = l.Value;
+                    foreach (var v in clusterConfigValidators)
+                    {
+                        if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
+                        {
+                            value.RemoveCluster(l.Key);
+                            r = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (value.Routes != null)
+            {
+                foreach (var l in value.Routes)
+                {
+                    var ll = l.Value;
+                    foreach (var v in routeConfigValidators)
+                    {
+                        if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
+                        {
+                            value.RemoveRoute(l.Key);
+                            r = false;
+                            break;
+                        }
+                    }
+                    if (!string.IsNullOrWhiteSpace(l.Value.ClusterId) && value.Clusters.TryGetValue(l.Value.ClusterId, out var cluster))
+                    {
+                        l.Value.ClusterConfig = cluster;
+                    }
+                }
+            }
+
             if (value.Listen != null)
             {
                 foreach (var l in value.Listen)
@@ -27,7 +71,9 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                     {
                         if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
                         {
+                            value.RemoveListen(l.Key);
                             r = false;
+                            break;
                         }
                     }
                     if (ll.ListenEndPointOptions == null || ll.ListenEndPointOptions.Count == 0)
@@ -46,12 +92,10 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                     {
                         if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
                         {
+                            value.RemoveListen(l.Key);
                             r = false;
+                            break;
                         }
-                    }
-                    if (ll.Certificate == null)
-                    {
-                        value.RemoveListen(l.Key);
                     }
                 }
             }

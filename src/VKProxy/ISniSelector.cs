@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Connections;
+﻿using DotNext;
+
+using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography.X509Certificates;
 using VKProxy.Config;
 using VKProxy.Core.Routing;
-using DotNext;
 
 namespace VKProxy;
 

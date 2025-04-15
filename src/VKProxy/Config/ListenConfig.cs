@@ -20,10 +20,11 @@ public class ListenConfig
     public SslProtocols? TlsProtocols { get; set; }
     public bool? CheckCertificateRevocation { get; set; }
     public ClientCertificateMode? ClientCertificateMode { get; set; }
+    public string? SniId { get; set; }
+
+    public string? RouteId { get; set; }
 
     internal List<ListenEndPointOptions> ListenEndPointOptions { get; set; }
-    public string SniId { get; set; }
-
     private HttpsConnectionAdapterOptions httpsConnectionAdapterOptions;
 
     internal HttpsConnectionAdapterOptions GetHttpsOptions()
@@ -68,6 +69,8 @@ public class ListenEndPointOptions : EndPointOptions
 
     public GatewayProtocols Protocols { get; set; }
     public string SniId => Parent?.SniId;
+
+    public string RouteId => Parent?.RouteId;
 
     internal HttpProtocols GetHttpProtocols()
     {

@@ -9,7 +9,6 @@ using VKProxy.Core.Hosting;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
-using static VKProxy.Core.Adapters.HttpApplication;
 
 namespace VKProxy;
 
@@ -80,13 +79,14 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task OnBindAsync(ITransportManager transportManager, ListenEndPointOptions options, CancellationToken cancellationToken)
     {
+        var route = string.IsNullOrWhiteSpace(options.RouteId) ? null : (current?.Routes.TryGetValue(options.RouteId, out var r) == true ? r : null);
         if (options.Protocols == GatewayProtocols.UDP)
         {
-            await transportManager.BindAsync(options, DoUdp, cancellationToken);
+            await transportManager.BindAsync(options, c => DoUdp(c, route), cancellationToken);
         }
         else if (options.Protocols == GatewayProtocols.TCP)
         {
-            await transportManager.BindAsync(options, DoTcp, cancellationToken);
+            await transportManager.BindAsync(options, c => DoTcp(c, route), cancellationToken);
         }
         else
         {
@@ -95,34 +95,35 @@ internal class ListenHandler : ListenHandlerBase
             {
                 if (!string.IsNullOrWhiteSpace(options.SniId))
                 {
-                    https.ServerCertificate = current?.Sni[options.SniId].Certificate;
+                    https.ServerCertificate = current?.Sni.TryGetValue(options.SniId, out var rr) == true ? rr.Certificate : null;
                 }
-                else
+
+                if (https.ServerCertificate == null)
                 {
                     https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
                 }
             }
-            await transportManager.BindHttpAsync(options, DoHttp, cancellationToken, options.GetHttpProtocols(), true, null, null, https);
+            await transportManager.BindHttpAsync(options, c => DoHttp(c, route), cancellationToken, options.GetHttpProtocols(), true, null, null, https);
         }
     }
 
-    private async Task DoHttp(HttpContext context)
+    private async Task DoHttp(HttpContext context, RouteConfig? route)
     {
-        var proxyFeature = new ReverseProxyFeature();
+        var proxyFeature = new ReverseProxyFeature() { Route = route };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
     }
 
-    private async Task DoTcp(ConnectionContext connection)
+    private async Task DoTcp(ConnectionContext connection, RouteConfig? route)
     {
-        var proxyFeature = new ReverseProxyFeature();
+        var proxyFeature = new ReverseProxyFeature() { Route = route };
         connection.Features.Set<IReverseProxyFeature>(proxyFeature);
     }
 
-    private async Task DoUdp(ConnectionContext connection)
+    private async Task DoUdp(ConnectionContext connection, RouteConfig? route)
     {
         if (connection is UdpConnectionContext context)
         {
-            var proxyFeature = new ReverseProxyFeature();
+            var proxyFeature = new ReverseProxyFeature() { Route = route };
             context.Features.Set<IReverseProxyFeature>(proxyFeature);
         }
     }
@@ -136,7 +137,7 @@ internal class ListenHandler : ListenHandlerBase
         {
             foreach (var error in errors)
             {
-                logger.IngoreErrorConfig(error.Message);
+                logger.ErrorConfig(error.Message);
             }
         }
         await sniSelector.ReBuildAsync(current.Sni, cancellationToken);

@@ -12,6 +12,10 @@ using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
+using VKProxy.Health;
+using VKProxy.Health.ActiveHealthCheckers;
+using VKProxy.LoadBalancing;
+using VKProxy.ServiceDiscovery;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -40,8 +44,22 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IValidator<IProxyConfig>, ProxyConfigValidator>();
             services.AddSingleton<IValidator<ListenConfig>, ListenConfigValidator>();
             services.AddSingleton<IValidator<SniConfig>, SniConfigValidator>();
+            services.AddSingleton<IValidator<ClusterConfig>, ClusterConfigValidator>();
             services.AddSingleton<IEndPointConvertor, CommonEndPointConvertor>();
             services.AddSingleton<ISniSelector, SniSelector>();
+            services.AddSingleton<IDestinationResolver, DnsDestinationResolver>();
+
+            services.AddSingleton<ILoadBalancingPolicy, RandomLoadBalancingPolicy>();
+            services.AddSingleton<ILoadBalancingPolicy, RoundRobinLoadBalancingPolicy>();
+            services.AddSingleton<ILoadBalancingPolicy, LeastRequestsLoadBalancingPolicy>();
+            services.AddSingleton<ILoadBalancingPolicy, PowerOfTwoChoicesLoadBalancingPolicy>();
+            services.AddSingleton<ILoadBalancingPolicyFactory, LoadBalancingPolicy>();
+
+            services.AddSingleton<IHealthReporter, PassiveHealthReporter>();
+            services.AddSingleton<IHealthUpdater, HealthyAndUnknownDestinationsUpdater>();
+            services.AddSingleton<IActiveHealthCheckMonitor, ActiveHealthCheckMonitor>();
+            services.AddSingleton<IActiveHealthChecker, ConnectionActiveHealthChecker>();
+            services.AddSingleton(TimeProvider.System);
         });
 
         return hostBuilder;

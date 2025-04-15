@@ -100,7 +100,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             HandshakeTimeout = section.ReadTimeSpan(nameof(ListenConfig.HandshakeTimeout)),
             TlsProtocols = section.ReadEnum<SslProtocols>(nameof(ListenConfig.TlsProtocols)),
             ClientCertificateMode = section.ReadEnum<ClientCertificateMode>(nameof(ListenConfig.ClientCertificateMode)),
-            SniId = section[nameof(ListenConfig.SniId)]
+            SniId = section[nameof(ListenConfig.SniId)],
+            RouteId = section[nameof(ListenConfig.RouteId)]
         };
     }
 
