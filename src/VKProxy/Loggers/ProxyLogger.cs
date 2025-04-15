@@ -50,6 +50,16 @@ public partial class ProxyLogger : ILogger
         GeneralLog.SocketConnectionCheckFailed(generalLogger, endPoint, ex.Message);
     }
 
+    public void NotFoundAvailableUpstream(string clusterId)
+    {
+        GeneralLog.NotFoundAvailableUpstream(generalLogger, clusterId);
+    }
+
+    public void ConnectUpstreamTimeout(string routeId)
+    {
+        GeneralLog.ConnectUpstreamTimeout(generalLogger, routeId);
+    }
+
     private static partial class GeneralLog
     {
         [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
@@ -69,5 +79,11 @@ public partial class ProxyLogger : ILogger
 
         [LoggerMessage(5, LogLevel.Warning, @"Active health failed, can not connect socket {endPoint} {ex}.", EventName = "SocketConnectionCheckFailed")]
         public static partial void SocketConnectionCheckFailed(ILogger logger, EndPoint endPoint, string ex);
+
+        [LoggerMessage(6, LogLevel.Warning, @"Not found available upstream for cluster ""{ClusterId}"".", EventName = "NotFoundAvailableUpstream")]
+        public static partial void NotFoundAvailableUpstream(ILogger logger, string clusterId);
+
+        [LoggerMessage(7, LogLevel.Information, @"Connect upstream timeout for route {routeId}.", EventName = "ConnectUpstreamTimeout")]
+        public static partial void ConnectUpstreamTimeout(ILogger logger, string routeId);
     }
 }

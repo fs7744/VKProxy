@@ -10,6 +10,13 @@ public sealed class CancellationTokenSourcePool
     private readonly ConcurrentQueue<PooledCancellationTokenSource> _queue = new();
     private int _count;
 
+    public CancellationTokenSource Rent(TimeSpan timeout)
+    {
+        var cts = Rent();
+        cts.CancelAfter(timeout);
+        return cts;
+    }
+
     public PooledCancellationTokenSource Rent()
     {
         if (_queue.TryDequeue(out var cts))

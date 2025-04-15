@@ -9,6 +9,7 @@ using VKProxy.Core.Hosting;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
+using VKProxy.Middlewares;
 
 namespace VKProxy;
 
@@ -18,14 +19,16 @@ internal class ListenHandler : ListenHandlerBase
     private readonly ProxyLogger logger;
     private readonly IValidator<IProxyConfig> validator;
     private readonly ISniSelector sniSelector;
+    private readonly IUdpReverseProxy udp;
     private IProxyConfig current;
 
-    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator, ISniSelector sniSelector)
+    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator, ISniSelector sniSelector, IUdpReverseProxy udp)
     {
         this.configSource = configSource;
         this.logger = logger;
         this.validator = validator;
         this.sniSelector = sniSelector;
+        this.udp = udp;
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -125,6 +128,7 @@ internal class ListenHandler : ListenHandlerBase
         {
             var proxyFeature = new ReverseProxyFeature() { Route = route };
             context.Features.Set<IReverseProxyFeature>(proxyFeature);
+            await udp.Proxy(context, proxyFeature);
         }
     }
 

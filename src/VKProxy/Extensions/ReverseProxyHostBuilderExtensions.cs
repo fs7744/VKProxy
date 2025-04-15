@@ -15,6 +15,7 @@ using VKProxy.Core.Sockets.Udp;
 using VKProxy.Health;
 using VKProxy.Health.ActiveHealthCheckers;
 using VKProxy.LoadBalancing;
+using VKProxy.Middlewares;
 using VKProxy.ServiceDiscovery;
 
 namespace Microsoft.Extensions.Hosting;
@@ -60,8 +61,16 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IActiveHealthCheckMonitor, ActiveHealthCheckMonitor>();
             services.AddSingleton<IActiveHealthChecker, ConnectionActiveHealthChecker>();
             services.AddSingleton(TimeProvider.System);
+
+            services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();
         });
 
         return hostBuilder;
+    }
+
+    public static IServiceCollection UseUdpMiddleware<T>(this IServiceCollection services) where T : class, IUdpProxyMiddleware
+    {
+        services.AddTransient<IUdpProxyMiddleware, T>();
+        return services;
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Security.Authentication;
 using VKProxy.Core.Config;
@@ -12,6 +13,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
     private ProxyConfigSnapshot snapshot;
     private IDisposable subscription;
     private readonly IConfiguration configuration;
+    private readonly ReverseProxyOptions options;
     private readonly Lock configChangedLock = new Lock();
 
     public IProxyConfig CurrentSnapshot => snapshot;
@@ -21,9 +23,10 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return cts == null ? null : new CancellationChangeToken(cts.Token);
     }
 
-    public ProxyConfigSource(IConfiguration configuration)
+    public ProxyConfigSource(IConfiguration configuration, IOptions<ReverseProxyOptions> options)
     {
         this.configuration = configuration;
+        this.options = options.Value;
         UpdateSnapshot();
     }
 
@@ -72,11 +75,6 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             AllowInvalid = section.ReadBool(nameof(SslConfig.AllowInvalid))
         };
 
-        //s.SupportSslProtocols = section.ReadSslProtocols(nameof(SslConfig.SupportSslProtocols)).GetValueOrDefault(s.SupportSslProtocols);
-        //s.Passthrough = section.ReadBool(nameof(SslConfig.Passthrough)).GetValueOrDefault(s.Passthrough);
-        //s.HandshakeTimeout = section.ReadTimeSpan(nameof(SslConfig.HandshakeTimeout)).GetValueOrDefault(s.HandshakeTimeout);
-        //s.ClientCertificateRequired = section.ReadBool(nameof(SslConfig.ClientCertificateRequired)).GetValueOrDefault(s.ClientCertificateRequired);
-        //s.CheckCertificateRevocation = section.ReadBool(nameof(SslConfig.CheckCertificateRevocation)).GetValueOrDefault(s.CheckCertificateRevocation);
         return s;
     }
 
@@ -85,6 +83,22 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return new RouteConfig()
         {
             Key = section.Key,
+            Order = section.ReadInt32(nameof(RouteConfig.Order)).GetValueOrDefault(),
+            ClusterId = section[nameof(RouteConfig.ClusterId)],
+            RetryCount = section.ReadInt32(nameof(RouteConfig.RetryCount)).GetValueOrDefault(),
+            UdpResponses = section.ReadInt32(nameof(RouteConfig.UdpResponses)).GetValueOrDefault(),
+            Timeout = section.ReadTimeSpan(nameof(RouteConfig.Timeout)).GetValueOrDefault(options.DefaultProxyTimeout),
+            Protocols = section.ReadGatewayProtocols(nameof(RouteConfig.Protocols)).GetValueOrDefault(GatewayProtocols.HTTP1),
+            Match = CreateRouteMatch(section.GetSection(nameof(RouteConfig.Match))),
+        };
+    }
+
+    private RouteMatch CreateRouteMatch(IConfigurationSection section)
+    {
+        if (!section.Exists()) return null;
+        return new RouteMatch()
+        {
+            Hosts = section.GetSection(nameof(RouteMatch.Hosts)).ReadStringArray()
         };
     }
 
@@ -110,7 +124,55 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return new ClusterConfig()
         {
             Key = section.Key,
+            LoadBalancingPolicy = section[nameof(ClusterConfig.LoadBalancingPolicy)],
+            HealthCheck = CreateHealthCheck(section.GetSection(nameof(ClusterConfig.HealthCheck))),
+            Destinations = section.GetSection(nameof(ClusterConfig.Destinations)).GetChildren().Select(CreateDestination).ToList()
         };
+    }
+
+    private DestinationConfig CreateDestination(IConfigurationSection section)
+    {
+        if (!section.Exists()) return null;
+        return new DestinationConfig()
+        {
+            Address = section[nameof(DestinationConfig.Address)],
+            Host = section[nameof(DestinationConfig.Host)],
+        };
+    }
+
+    private HealthCheckConfig CreateHealthCheck(IConfigurationSection section)
+    {
+        if (!section.Exists()) return null;
+        return new HealthCheckConfig()
+        {
+            Passive = CreatePassiveHealthCheckConfig(section.GetSection(nameof(HealthCheckConfig.Passive))),
+            Active = CreateActiveHealthCheckConfig(section.GetSection(nameof(HealthCheckConfig.Active)))
+        };
+    }
+
+    private PassiveHealthCheckConfig CreatePassiveHealthCheckConfig(IConfigurationSection section)
+    {
+        if (!section.Exists() || !section.ReadBool("Enable").GetValueOrDefault()) return null;
+        var s = new PassiveHealthCheckConfig();
+        s.DetectionWindowSize = section.ReadTimeSpan(nameof(PassiveHealthCheckConfig.DetectionWindowSize)).GetValueOrDefault(s.DetectionWindowSize);
+        s.MinimalTotalCountThreshold = section.ReadInt32(nameof(PassiveHealthCheckConfig.MinimalTotalCountThreshold)).GetValueOrDefault(s.MinimalTotalCountThreshold);
+        s.FailureRateLimit = section.ReadDouble(nameof(PassiveHealthCheckConfig.FailureRateLimit)).GetValueOrDefault(s.FailureRateLimit);
+        s.ReactivationPeriod = section.ReadTimeSpan(nameof(PassiveHealthCheckConfig.ReactivationPeriod)).GetValueOrDefault(s.ReactivationPeriod);
+        return s;
+    }
+
+    private ActiveHealthCheckConfig CreateActiveHealthCheckConfig(IConfigurationSection section)
+    {
+        if (!section.Exists() || !section.ReadBool("Enable").GetValueOrDefault()) return null;
+        var s = new ActiveHealthCheckConfig();
+        s.Interval = section.ReadTimeSpan(nameof(ActiveHealthCheckConfig.Interval)).GetValueOrDefault(s.Interval);
+        s.Timeout = section.ReadTimeSpan(nameof(ActiveHealthCheckConfig.Timeout)).GetValueOrDefault(s.Timeout);
+        s.Policy = section[nameof(ActiveHealthCheckConfig.Policy)] ?? s.Policy;
+        s.Path = section[nameof(ActiveHealthCheckConfig.Path)];
+        s.Query = section[nameof(ActiveHealthCheckConfig.Query)];
+        s.Passes = section.ReadInt32(nameof(ActiveHealthCheckConfig.Passes)).GetValueOrDefault(s.Passes);
+        s.Fails = section.ReadInt32(nameof(ActiveHealthCheckConfig.Fails)).GetValueOrDefault(s.Fails);
+        return s;
     }
 
     public void Dispose()
