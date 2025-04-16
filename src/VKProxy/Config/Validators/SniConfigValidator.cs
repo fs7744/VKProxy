@@ -22,7 +22,7 @@ public class SniConfigValidator : IValidator<SniConfig>
                 exceptions.Add(new ArgumentException($"Sni ({value.Key}) Host can not be empty."));
                 r = false;
             }
-            else if (value.Tls == null)
+            else if (value.Certificate == null && !value.Passthrough)
             {
                 exceptions.Add(new ArgumentException($"Sni ({value.Key}) Tls can not be empty."));
                 r = false;
@@ -31,8 +31,9 @@ public class SniConfigValidator : IValidator<SniConfig>
             {
                 try
                 {
-                    var (c, f) = certificateLoader.LoadCertificate(value.Tls);
-                    value.Certificate = c;
+                    var (c, f) = certificateLoader.LoadCertificate(value.Certificate);
+                    value.X509Certificate2 = c;
+                    value.X509CertificateFullChain = f;
                     if (c == null)
                         r = false;
                 }

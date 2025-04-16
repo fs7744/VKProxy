@@ -13,7 +13,7 @@ public class CertificateLoader : ICertificateLoader
         this.hostEnvironment = hostEnvironment;
     }
 
-    public (X509Certificate2?, X509Certificate2Collection?) LoadCertificate(SslConfig? certInfo)
+    public (X509Certificate2?, X509Certificate2Collection?) LoadCertificate(CertificateConfig? certInfo)
     {
         if (certInfo is null)
         {
@@ -153,7 +153,7 @@ public class CertificateLoader : ICertificateLoader
         }
     }
 
-    private static X509Certificate2 LoadFromStoreCert(SslConfig certInfo)
+    private static X509Certificate2 LoadFromStoreCert(CertificateConfig certInfo)
     {
         var subject = certInfo.Subject!;
         var storeName = string.IsNullOrEmpty(certInfo.Store) ? StoreName.My.ToString() : certInfo.Store;

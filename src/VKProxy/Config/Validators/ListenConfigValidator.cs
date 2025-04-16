@@ -24,7 +24,7 @@ public class ListenConfigValidator : IValidator<ListenConfig>
             }
             else if (string.IsNullOrWhiteSpace(value.SniId) && value.Protocols.HasFlag(GatewayProtocols.HTTP3))
             {
-                exceptions.Add(new ArgumentException($"Listen ({value.Key}) use HTTP3 but no sniId. (Quic no support sni.)"));
+                exceptions.Add(new ArgumentException($"Listen ({value.Key}) use HTTP3 but no sniId. (Quic not support sni.)"));
                 r = false;
             }
             else if (string.IsNullOrWhiteSpace(value.RouteId) && value.Protocols.HasFlag(GatewayProtocols.UDP))
@@ -35,6 +35,13 @@ public class ListenConfigValidator : IValidator<ListenConfig>
             else if (string.IsNullOrWhiteSpace(value.RouteId) && value.Protocols.HasFlag(GatewayProtocols.TCP) && !value.UseSni)
             {
                 exceptions.Add(new ArgumentException($"Listen ({value.Key}) must has RouteId when use tcp and no sni."));
+                r = false;
+            }
+            else if ((value.Protocols.HasFlag(GatewayProtocols.HTTP1) || value.Protocols.HasFlag(GatewayProtocols.HTTP2) || value.Protocols.HasFlag(GatewayProtocols.HTTP3))
+                && value.UseSni
+                && value.SniConfig != null && value.SniConfig.Passthrough)
+            {
+                exceptions.Add(new ArgumentException($"Listen ({value.Key} sni: {value.SniId}) can not use sni passthrough .(Http not support sni passthrough.)"));
                 r = false;
             }
             else
@@ -67,7 +74,8 @@ public class ListenConfigValidator : IValidator<ListenConfig>
                     EndPoint = i,
                     Protocols = value.Protocols,
                     Key = value.Key,
-                    Parent = value
+                    Parent = value,
+                    UseSni = value.UseSni
                 }).ToList();
             }
         }

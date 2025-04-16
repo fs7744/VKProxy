@@ -46,6 +46,10 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                 foreach (var l in value.Routes)
                 {
                     var ll = l.Value;
+                    if (!string.IsNullOrWhiteSpace(l.Value.ClusterId) && value.Clusters.TryGetValue(l.Value.ClusterId, out var cluster))
+                    {
+                        l.Value.ClusterConfig = cluster;
+                    }
                     foreach (var v in routeConfigValidators)
                     {
                         if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
@@ -55,9 +59,26 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                             break;
                         }
                     }
-                    if (!string.IsNullOrWhiteSpace(l.Value.ClusterId) && value.Clusters.TryGetValue(l.Value.ClusterId, out var cluster))
+                }
+            }
+
+            if (value.Sni != null)
+            {
+                foreach (var l in value.Sni)
+                {
+                    var ll = l.Value;
+                    if (!string.IsNullOrWhiteSpace(l.Value.RouteId) && value.Routes.TryGetValue(l.Value.RouteId, out var route))
                     {
-                        l.Value.ClusterConfig = cluster;
+                        l.Value.RouteConfig = route;
+                    }
+                    foreach (var v in sniConfigValidators)
+                    {
+                        if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
+                        {
+                            value.RemoveListen(l.Key);
+                            r = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -67,6 +88,14 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                 foreach (var l in value.Listen)
                 {
                     var ll = l.Value;
+                    if (!string.IsNullOrWhiteSpace(l.Value.SniId) && value.Sni.TryGetValue(l.Value.SniId, out var sni))
+                    {
+                        l.Value.SniConfig = sni;
+                    }
+                    if (!string.IsNullOrWhiteSpace(l.Value.RouteId) && value.Routes.TryGetValue(l.Value.RouteId, out var route))
+                    {
+                        l.Value.RouteConfig = route;
+                    }
                     foreach (var v in listenConfigValidators)
                     {
                         if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
@@ -79,23 +108,6 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                     if (ll.ListenEndPointOptions == null || ll.ListenEndPointOptions.Count == 0)
                     {
                         value.RemoveListen(l.Key);
-                    }
-                }
-            }
-
-            if (value.Sni != null)
-            {
-                foreach (var l in value.Sni)
-                {
-                    var ll = l.Value;
-                    foreach (var v in sniConfigValidators)
-                    {
-                        if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
-                        {
-                            value.RemoveListen(l.Key);
-                            r = false;
-                            break;
-                        }
                     }
                 }
             }

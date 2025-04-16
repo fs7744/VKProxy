@@ -51,6 +51,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
     {
         var route = feature.Route;
         if (route is null) return;
+        logger.ProxyBegin(route.Key);
         try
         {
             using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout);
@@ -87,6 +88,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
         finally
         {
             feature.SelectedDestination?.ConcurrencyCounter.Decrement();
+            logger.ProxyEnd(route.Key);
         }
     }
 

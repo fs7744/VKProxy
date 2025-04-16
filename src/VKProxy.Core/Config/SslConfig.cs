@@ -2,7 +2,7 @@
 
 namespace VKProxy.Core.Config;
 
-public class SslConfig
+public class CertificateConfig
 {
     public bool IsFileCert => !string.IsNullOrEmpty(Path);
 

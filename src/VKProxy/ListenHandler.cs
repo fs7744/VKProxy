@@ -10,6 +10,7 @@ using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
 using VKProxy.Middlewares;
+using static System.Net.WebRequestMethods;
 
 namespace VKProxy;
 
@@ -85,29 +86,23 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task OnBindAsync(ITransportManager transportManager, ListenEndPointOptions options, CancellationToken cancellationToken)
     {
-        var route = string.IsNullOrWhiteSpace(options.RouteId) ? null : (current?.Routes.TryGetValue(options.RouteId, out var r) == true ? r : null);
+        var route = options.RouteConfig;
         if (options.Protocols == GatewayProtocols.UDP)
         {
             await transportManager.BindAsync(options, c => DoUdp(c, route), cancellationToken);
         }
         else if (options.Protocols == GatewayProtocols.TCP)
         {
-            await transportManager.BindAsync(options, c => DoTcp(c, route), cancellationToken);
+            var sni = options.SniConfig;
+            var useSni = options.UseSni;
+            await transportManager.BindAsync(options, c => DoTcp(c, route, useSni, sni), cancellationToken);
         }
         else
         {
             var https = options.GetHttpsOptions();
-            if (https != null)
+            if (https != null && https.ServerCertificate == null && https.ServerCertificateSelector == null)
             {
-                if (!string.IsNullOrWhiteSpace(options.SniId))
-                {
-                    https.ServerCertificate = current?.Sni.TryGetValue(options.SniId, out var rr) == true ? rr.Certificate : null;
-                }
-
-                if (https.ServerCertificate == null)
-                {
-                    https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
-                }
+                https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
             }
             await transportManager.BindHttpAsync(options, c => DoHttp(c, route), cancellationToken, options.GetHttpProtocols(), true, null, null, https);
         }
@@ -120,9 +115,9 @@ internal class ListenHandler : ListenHandlerBase
         return Task.CompletedTask;
     }
 
-    private Task DoTcp(ConnectionContext connection, RouteConfig? route)
+    private Task DoTcp(ConnectionContext connection, RouteConfig? route, bool useSni, SniConfig? sni)
     {
-        var proxyFeature = new ReverseProxyFeature() { Route = route };
+        var proxyFeature = new ReverseProxyFeature() { Route = route, IsSni = useSni, SelectedSni = sni };
         connection.Features.Set<IReverseProxyFeature>(proxyFeature);
         return tcp.Proxy(connection, proxyFeature);
     }

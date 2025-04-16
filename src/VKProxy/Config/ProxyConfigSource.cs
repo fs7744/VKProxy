@@ -52,27 +52,36 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
 
     private SniConfig CreateSni(IConfigurationSection section, int arg2)
     {
-        return new SniConfig()
+        var s = new SniConfig()
         {
             Key = section.Key,
             Host = section.GetSection(nameof(SniConfig.Host)).ReadStringArray(),
-            Tls = CreateSslConfig(section.GetSection(nameof(SniConfig.Tls))),
-            Order = section.ReadInt32(nameof(SniConfig.Order)).GetValueOrDefault()
+            Certificate = CreateSslConfig(section.GetSection(nameof(SniConfig.Certificate))),
+            Order = section.ReadInt32(nameof(SniConfig.Order)).GetValueOrDefault(),
+            RouteId = section[nameof(SniConfig.RouteId)],
+            Passthrough = section.ReadBool(nameof(SniConfig.Passthrough)).GetValueOrDefault(),
+            CheckCertificateRevocation = section.ReadBool(nameof(SniConfig.CheckCertificateRevocation)),
+            Protocols = section.ReadEnum<SslProtocols>(nameof(SniConfig.Protocols)),
+            ClientCertificateMode = section.ReadEnum<ClientCertificateMode>(nameof(SniConfig.ClientCertificateMode)),
         };
+
+        var t = section.ReadTimeSpan(nameof(SniConfig.HandshakeTimeout));
+        if (t.HasValue) s.HandshakeTimeout = t.Value;
+        return s;
     }
 
-    private SslConfig CreateSslConfig(IConfigurationSection section)
+    private CertificateConfig CreateSslConfig(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
-        var s = new SslConfig()
+        var s = new CertificateConfig()
         {
-            Path = section[nameof(SslConfig.Path)],
-            KeyPath = section[nameof(SslConfig.KeyPath)],
-            Password = section[nameof(SslConfig.Password)],
-            Subject = section[nameof(SslConfig.Subject)],
-            Store = section[nameof(SslConfig.Store)],
-            Location = section[nameof(SslConfig.Location)],
-            AllowInvalid = section.ReadBool(nameof(SslConfig.AllowInvalid))
+            Path = section[nameof(CertificateConfig.Path)],
+            KeyPath = section[nameof(CertificateConfig.KeyPath)],
+            Password = section[nameof(CertificateConfig.Password)],
+            Subject = section[nameof(CertificateConfig.Subject)],
+            Store = section[nameof(CertificateConfig.Store)],
+            Location = section[nameof(CertificateConfig.Location)],
+            AllowInvalid = section.ReadBool(nameof(CertificateConfig.AllowInvalid))
         };
 
         return s;
@@ -110,10 +119,6 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Protocols = section.ReadGatewayProtocols(nameof(ListenConfig.Protocols)).GetValueOrDefault(GatewayProtocols.HTTP1),
             Address = section.GetSection(nameof(ListenConfig.Address)).ReadStringArray(),
             UseSni = section.ReadBool(nameof(ListenConfig.UseSni)).GetValueOrDefault(),
-            CheckCertificateRevocation = section.ReadBool(nameof(ListenConfig.CheckCertificateRevocation)),
-            HandshakeTimeout = section.ReadTimeSpan(nameof(ListenConfig.HandshakeTimeout)),
-            TlsProtocols = section.ReadEnum<SslProtocols>(nameof(ListenConfig.TlsProtocols)),
-            ClientCertificateMode = section.ReadEnum<ClientCertificateMode>(nameof(ListenConfig.ClientCertificateMode)),
             SniId = section[nameof(ListenConfig.SniId)],
             RouteId = section[nameof(ListenConfig.RouteId)]
         };

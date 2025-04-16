@@ -45,7 +45,7 @@ public class HttpListenHandler : ListenHandlerBase
                 Key = "https"
             };
 
-            var (c, f) = certificateLoader.LoadCertificate(new SslConfig() { Path = "testCert.pfx", Password = "testPassword" });
+            var (c, f) = certificateLoader.LoadCertificate(new CertificateConfig() { Path = "testCert.pfx", Password = "testPassword" });
             await transportManager.BindHttpAsync(ip, Proxy, cancellationToken, HttpProtocols.Http1AndHttp2AndHttp3, callbackOptions: new HttpsConnectionAdapterOptions()
             {
                 //ServerCertificateSelector = (context, host) => c
