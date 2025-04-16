@@ -12,6 +12,7 @@ public class ReverseProxyOptions
 
     public TimeSpan? DnsRefreshPeriod { get; set; } = TimeSpan.FromMinutes(5);
     public AddressFamily? DnsAddressFamily { get; set; }
+    public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
 }
 
 internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
@@ -36,6 +37,9 @@ internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
 
         t = section.ReadTimeSpan(nameof(ReverseProxyOptions.DnsRefreshPeriod));
         if (t.HasValue) options.DnsRefreshPeriod = t.Value;
+
+        t = section.ReadTimeSpan(nameof(ReverseProxyOptions.ConnectionTimeout));
+        if (t.HasValue) options.ConnectionTimeout = t.Value;
 
         var tt = section.ReadEnum<AddressFamily>(nameof(ReverseProxyOptions.DnsAddressFamily));
         if (tt.HasValue) options.DnsAddressFamily = tt.Value;

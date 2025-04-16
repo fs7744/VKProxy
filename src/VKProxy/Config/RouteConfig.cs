@@ -17,8 +17,7 @@ public class RouteConfig
 
     public int RetryCount { get; set; }
     public int UdpResponses { get; set; }
-    public RouteMatch Match { get; init; }
-    public TimeSpan ConnectionTimeout { get; internal set; }
+    public RouteMatch Match { get; set; }
 
     public bool Equals(RouteConfig? other)
     {

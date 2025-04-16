@@ -20,15 +20,18 @@ internal class ListenHandler : ListenHandlerBase
     private readonly IValidator<IProxyConfig> validator;
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
+    private readonly ITcpReverseProxy tcp;
     private IProxyConfig current;
 
-    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator, ISniSelector sniSelector, IUdpReverseProxy udp)
+    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator,
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp)
     {
         this.configSource = configSource;
         this.logger = logger;
         this.validator = validator;
         this.sniSelector = sniSelector;
         this.udp = udp;
+        this.tcp = tcp;
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -110,26 +113,29 @@ internal class ListenHandler : ListenHandlerBase
         }
     }
 
-    private async Task DoHttp(HttpContext context, RouteConfig? route)
+    private Task DoHttp(HttpContext context, RouteConfig? route)
     {
         var proxyFeature = new ReverseProxyFeature() { Route = route };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
+        return Task.CompletedTask;
     }
 
-    private async Task DoTcp(ConnectionContext connection, RouteConfig? route)
+    private Task DoTcp(ConnectionContext connection, RouteConfig? route)
     {
         var proxyFeature = new ReverseProxyFeature() { Route = route };
         connection.Features.Set<IReverseProxyFeature>(proxyFeature);
+        return tcp.Proxy(connection, proxyFeature);
     }
 
-    private async Task DoUdp(ConnectionContext connection, RouteConfig? route)
+    private Task DoUdp(ConnectionContext connection, RouteConfig? route)
     {
         if (connection is UdpConnectionContext context)
         {
             var proxyFeature = new ReverseProxyFeature() { Route = route };
             context.Features.Set<IReverseProxyFeature>(proxyFeature);
-            await udp.Proxy(context, proxyFeature);
+            return udp.Proxy(context, proxyFeature);
         }
+        return Task.CompletedTask;
     }
 
     private async Task<(IEnumerable<ListenEndPointOptions> stop, IEnumerable<ListenEndPointOptions> start)> GenerateDiffAsync(IProxyConfig old, IProxyConfig current, CancellationToken cancellationToken)

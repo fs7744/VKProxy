@@ -18,15 +18,17 @@ internal class TcpReverseProxy : ITcpReverseProxy
     private readonly IConnectionFactory tcp;
     private readonly ProxyLogger logger;
     private readonly ILoadBalancingPolicyFactory loadBalancing;
+    private readonly ReverseProxyOptions options;
     private readonly TcpProxyDelegate req;
     private readonly TcpProxyDelegate resp;
     private readonly TcpDelegate init;
 
-    public TcpReverseProxy(IConnectionFactory tcp, ProxyLogger logger, ILoadBalancingPolicyFactory loadBalancing, IEnumerable<ITcpProxyMiddleware> middlewares)
+    public TcpReverseProxy(IConnectionFactory tcp, ProxyLogger logger, ILoadBalancingPolicyFactory loadBalancing, IEnumerable<ITcpProxyMiddleware> middlewares, IOptions<ReverseProxyOptions> options)
     {
         this.tcp = tcp;
         this.logger = logger;
         this.loadBalancing = loadBalancing;
+        this.options = options.Value;
         (init, req, resp) = BuildMiddlewares(middlewares);
     }
 
@@ -104,12 +106,12 @@ internal class TcpReverseProxy : ITcpReverseProxy
             {
                 return null;
             }
-            using var cts = CancellationTokenSourcePool.Default.Rent(route.ConnectionTimeout);
+            using var cts = CancellationTokenSourcePool.Default.Rent(options.ConnectionTimeout);
             var c = await tcp.ConnectAsync(selectedDestination.EndPoint, cts.Token);
             selectedDestination.ReportSuccessed();
             return c;
         }
-        catch (Exception ex)
+        catch
         {
             selectedDestination?.ReportFailed();
             retryCount--;
