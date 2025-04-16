@@ -20,6 +20,11 @@ public class CollectionUtilities
         return Equals(list1, list2, comparer ?? StringComparer.OrdinalIgnoreCase);
     }
 
+    public static bool EqualsString(IReadOnlySet<string>? list1, IReadOnlySet<string>? list2, StringComparer comparer = null)
+    {
+        return Equals(list1, list2, comparer ?? StringComparer.OrdinalIgnoreCase);
+    }
+
     public static bool Equals<T>(IReadOnlyList<T>? list1, IReadOnlyList<T>? list2, IEqualityComparer<T>? valueComparer = null)
     {
         if (ReferenceEquals(list1, list2))
@@ -48,6 +53,15 @@ public class CollectionUtilities
         }
 
         return true;
+    }
+
+    public static bool Equals<T>(IReadOnlySet<T>? list1, IReadOnlySet<T>? list2, IEqualityComparer<T> comparer = null)
+    {
+        if (list1 is null || list2 is null)
+        {
+            return false;
+        }
+        return Equals(list1.ToList(), list2.ToList(), comparer);
     }
 
     public static bool Equals<T>(IReadOnlyDictionary<string, T>? dictionary1, IReadOnlyDictionary<string, T>? dictionary2, IEqualityComparer<T>? valueComparer = null)
@@ -97,12 +111,12 @@ public class CollectionUtilities
         return Equals(dictionary1, dictionary2, valueComparer ?? StringComparer.Ordinal);
     }
 
-    public static int GetStringHashCode(IReadOnlyList<string>? values, StringComparer comparer = null)
+    public static int GetStringHashCode(IEnumerable<string>? values, StringComparer comparer = null)
     {
         return GetHashCode(values, comparer ?? StringComparer.OrdinalIgnoreCase);
     }
 
-    public static int GetHashCode<T>(IReadOnlyList<T>? values, IEqualityComparer<T>? valueComparer = null)
+    public static int GetHashCode<T>(IEnumerable<T>? values, IEqualityComparer<T>? valueComparer = null)
     {
         if (values is null)
         {

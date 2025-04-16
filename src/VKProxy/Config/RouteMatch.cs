@@ -1,4 +1,5 @@
-﻿using VKProxy.Core.Infrastructure;
+﻿using System.Collections.Frozen;
+using VKProxy.Core.Infrastructure;
 
 namespace VKProxy.Config;
 
@@ -11,6 +12,8 @@ public sealed record RouteMatch
 
     public IReadOnlyList<string>? Paths { get; init; }
 
+    public IReadOnlySet<string>? Methods { get; init; }
+
     public static bool Equals(RouteMatch? t, RouteMatch? other)
     {
         if (t is null && other is null) return true;
@@ -19,8 +22,9 @@ public sealed record RouteMatch
             return false;
         }
 
-        return CollectionUtilities.Equals(t.Hosts, other.Hosts)
-            && CollectionUtilities.Equals(t.Paths, other.Paths);
+        return CollectionUtilities.EqualsString(t.Hosts, other.Hosts)
+            && CollectionUtilities.EqualsString(t.Paths, other.Paths)
+            && CollectionUtilities.EqualsString(t.Methods, other.Methods);
     }
 
     public bool Equals(RouteMatch? other)
@@ -30,7 +34,7 @@ public sealed record RouteMatch
 
     public static int GetHashCode(RouteMatch t)
     {
-        return HashCode.Combine(CollectionUtilities.GetStringHashCode(t.Hosts), CollectionUtilities.GetStringHashCode(t.Paths));
+        return HashCode.Combine(CollectionUtilities.GetStringHashCode(t.Hosts), CollectionUtilities.GetStringHashCode(t.Paths), CollectionUtilities.GetStringHashCode(t.Methods));
     }
 
     public override int GetHashCode()

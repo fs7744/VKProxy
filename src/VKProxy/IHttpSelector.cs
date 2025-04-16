@@ -99,7 +99,11 @@ public class HttpSelector : IHttpSelector
 
     private bool MatchHttp(RouteConfig config, HttpContext context)
     {
-        //todo
+        var match = config.Match;
+        if (match is null) return false;
+        var req = context.Request;
+        if (match.Methods is not null && !match.Methods.Contains(req.Method))
+            return false;
         return true;
     }
 
