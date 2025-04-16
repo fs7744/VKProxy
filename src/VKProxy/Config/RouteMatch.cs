@@ -9,6 +9,8 @@ public sealed record RouteMatch
     /// </summary>
     public IReadOnlyList<string>? Hosts { get; init; }
 
+    public IReadOnlyList<string>? Paths { get; init; }
+
     public static bool Equals(RouteMatch? t, RouteMatch? other)
     {
         if (t is null && other is null) return true;
@@ -17,7 +19,8 @@ public sealed record RouteMatch
             return false;
         }
 
-        return CollectionUtilities.Equals(t.Hosts, other.Hosts);
+        return CollectionUtilities.Equals(t.Hosts, other.Hosts)
+            && CollectionUtilities.Equals(t.Paths, other.Paths);
     }
 
     public bool Equals(RouteMatch? other)
@@ -27,7 +30,7 @@ public sealed record RouteMatch
 
     public static int GetHashCode(RouteMatch t)
     {
-        return HashCode.Combine(CollectionUtilities.GetStringHashCode(t.Hosts));
+        return HashCode.Combine(CollectionUtilities.GetStringHashCode(t.Hosts), CollectionUtilities.GetStringHashCode(t.Paths));
     }
 
     public override int GetHashCode()

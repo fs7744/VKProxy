@@ -10,8 +10,27 @@ public interface IHttpReverseProxy
 
 public class HttpReverseProxy : IHttpReverseProxy
 {
-    public Task Proxy(HttpContext context, IReverseProxyFeature proxyFeature)
+    private readonly IHttpSelector selector;
+
+    public HttpReverseProxy(IHttpSelector selector)
     {
-        return Task.CompletedTask;
+        this.selector = selector;
+    }
+
+    public async Task Proxy(HttpContext context, IReverseProxyFeature proxyFeature)
+    {
+        var resp = context.Response;
+        if (resp.HasStarted) return;
+        var route = proxyFeature.Route;
+        if (route is null)
+        {
+            route = proxyFeature.Route = await selector.MatchAsync(context);
+        }
+        if (route is null)
+        {
+            resp.StatusCode = 404;
+            await resp.CompleteAsync();
+            return;
+        }
     }
 }

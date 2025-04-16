@@ -80,6 +80,11 @@ public partial class ProxyLogger : ILogger
         GeneralLog.NotFoundRouteSni(generalLogger, host);
     }
 
+    public void NotFoundRouteHttp(string host, string path)
+    {
+        GeneralLog.NotFoundRouteHttp(generalLogger, host, path);
+    }
+
     private static partial class GeneralLog
     {
         [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
@@ -115,7 +120,10 @@ public partial class ProxyLogger : ILogger
         [LoggerMessage(10, LogLevel.Information, @"End proxy for route {routeId}.", EventName = "ProxyEnd")]
         public static partial void ProxyEnd(ILogger logger, string routeId);
 
-        [LoggerMessage(11, LogLevel.Warning, @"Not found sni route for ""{host}"".", EventName = "NotFoundRouteSni")]
+        [LoggerMessage(11, LogLevel.Information, @"Not found sni route for ""{host}"".", EventName = "NotFoundRouteSni")]
         public static partial void NotFoundRouteSni(ILogger logger, string host);
+
+        [LoggerMessage(12, LogLevel.Information, @"Not found http route for ""{host} {path}"".", EventName = "NotFoundRouteHttp")]
+        public static partial void NotFoundRouteHttp(ILogger logger, string host, string path);
     }
 }

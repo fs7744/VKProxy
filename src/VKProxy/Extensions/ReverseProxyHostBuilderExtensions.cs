@@ -49,6 +49,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IValidator<ClusterConfig>, ClusterConfigValidator>();
             services.AddSingleton<IEndPointConvertor, CommonEndPointConvertor>();
             services.AddSingleton<ISniSelector, SniSelector>();
+            services.AddSingleton<IHttpSelector, HttpSelector>();
             services.AddSingleton<IDestinationResolver, DnsDestinationResolver>();
 
             services.AddSingleton<ILoadBalancingPolicy, RandomLoadBalancingPolicy>();

@@ -33,7 +33,7 @@ public class SniSelector : ISniSelector
         this.logger = logger;
     }
 
-    public async Task ReBuildAsync(IReadOnlyDictionary<string, SniConfig> sni, CancellationToken cancellationToken)
+    public Task ReBuildAsync(IReadOnlyDictionary<string, SniConfig> sni, CancellationToken cancellationToken)
     {
         var sniRouteBuilder = new RouteTableBuilder<SniConfig>(StringComparison.OrdinalIgnoreCase, options.SniRouteCahceSize);
         foreach (var route in sni.Values.Where(i => i.Passthrough || i.Certificate != null))
@@ -62,6 +62,8 @@ public class SniSelector : ISniSelector
                 builder.Add(host.Reverse(), route, RouteType.Exact, route.Order);
             }
         }
+
+        return Task.CompletedTask;
     }
 
     public X509Certificate2? ServerCertificateSelector(ConnectionContext? context, string? host)

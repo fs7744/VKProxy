@@ -23,6 +23,7 @@ public class RouteTable<T> : IRouteTable<T>
 
     public async ValueTask<T> MatchAsync<R>(string key, R data, Func<T, R, bool> match)
     {
+        if (trie == null) return default;
         var all = await FindAllAsync(key);
         if (all.Length == 0) return default;
         foreach (var v in all.AsSpan())
@@ -120,6 +121,7 @@ public class RouteTable<T> : IRouteTable<T>
 
     public T Match<R>(string key, R data, Func<T, R, bool> match)
     {
+        if (trie == null) return default;
         var all = FindAll(key);
         if (all.Length == 0) return default;
         foreach (var v in all.AsSpan())

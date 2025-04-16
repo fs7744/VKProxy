@@ -8,6 +8,7 @@ namespace VKProxy;
 public class ReverseProxyOptions
 {
     public int SniRouteCahceSize { get; set; } = 100;
+    public int HttpRouteCahceSize { get; set; } = 10000;
     public TimeSpan DefaultProxyTimeout { get; set; } = TimeSpan.FromSeconds(300);
 
     public TimeSpan? DnsRefreshPeriod { get; set; } = TimeSpan.FromMinutes(5);
@@ -31,6 +32,9 @@ internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
 
         var i = section.ReadInt32(nameof(ReverseProxyOptions.SniRouteCahceSize));
         if (i.HasValue) options.SniRouteCahceSize = i.Value;
+
+        i = section.ReadInt32(nameof(ReverseProxyOptions.HttpRouteCahceSize));
+        if (i.HasValue) options.HttpRouteCahceSize = i.Value;
 
         var t = section.ReadTimeSpan(nameof(ReverseProxyOptions.DefaultProxyTimeout));
         if (t.HasValue) options.DefaultProxyTimeout = t.Value;

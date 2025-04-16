@@ -23,10 +23,11 @@ internal class ListenHandler : ListenHandlerBase
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
     private readonly IHttpReverseProxy http;
+    private readonly IHttpSelector httpSelector;
     private IProxyConfig current;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IHttpReverseProxy http)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IHttpReverseProxy http, IHttpSelector httpSelector)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -35,6 +36,7 @@ internal class ListenHandler : ListenHandlerBase
         this.udp = udp;
         this.tcp = tcp;
         this.http = http;
+        this.httpSelector = httpSelector;
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -148,6 +150,7 @@ internal class ListenHandler : ListenHandlerBase
             }
         }
         await sniSelector.ReBuildAsync(current.Sni, cancellationToken);
+        await httpSelector.ReBuildAsync(current.Routes, cancellationToken);
         //todo diff
         return (null, current?.Listen.Values.SelectMany(i => i.ListenEndPointOptions));
     }

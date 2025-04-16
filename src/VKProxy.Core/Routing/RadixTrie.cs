@@ -156,6 +156,36 @@ public class RadixTrie<T> : IDisposable
             r?.Dispose();
         }
     }
+
+    public IEnumerable<T> GetAll()
+    {
+        if (all != null)
+        {
+            return GetAll(trie).Union(all);
+        }
+        return GetAll(trie);
+    }
+
+    private static IEnumerable<T> GetAll(RadixTrieNode<T> trie)
+    {
+        if (trie.Children is null) yield break;
+
+        foreach (var item in trie.Children)
+        {
+            if (trie.Children != null)
+            {
+                foreach (var item1 in GetAll(item))
+                {
+                    yield return item1;
+                }
+            }
+
+            if (item.Value != null)
+            {
+                yield return item.Value;
+            }
+        }
+    }
 }
 
 internal readonly struct StringSegment
