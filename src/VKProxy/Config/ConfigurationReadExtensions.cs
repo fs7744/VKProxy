@@ -18,4 +18,21 @@ internal static class ConfigurationReadExtensions
                 .Aggregate((i, j) => i | j);
         }
     }
+
+    public static IEnumerable<GatewayProtocols> ToAll(this GatewayProtocols protocols)
+    {
+        var r = protocols;
+        if (protocols.HasFlag(GatewayProtocols.TCP))
+        {
+            r &= ~GatewayProtocols.TCP;
+            yield return GatewayProtocols.TCP;
+        }
+        if (protocols.HasFlag(GatewayProtocols.UDP))
+        {
+            r &= ~GatewayProtocols.TCP;
+            yield return GatewayProtocols.UDP;
+        }
+        if (r.HasFlag(GatewayProtocols.HTTP1) || r.HasFlag(GatewayProtocols.HTTP2) || r.HasFlag(GatewayProtocols.HTTP3))
+            yield return r;
+    }
 }

@@ -3,7 +3,7 @@ using VKProxy.Features;
 
 namespace VKProxy.Middlewares;
 
-internal interface IUdpReverseProxy
+public interface IUdpReverseProxy
 {
     Task Proxy(UdpConnectionContext context, IReverseProxyFeature feature);
 }

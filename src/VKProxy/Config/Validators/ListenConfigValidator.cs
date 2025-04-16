@@ -11,7 +11,7 @@ public class ListenConfigValidator : IValidator<ListenConfig>
         this.endPointConvertors = Enumerable.Reverse(endPointConvertors).ToArray();
     }
 
-    public async Task<bool> ValidateAsync(ListenConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
+    public ValueTask<bool> ValidateAsync(ListenConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
     {
         var r = true;
 
@@ -47,15 +47,19 @@ public class ListenConfigValidator : IValidator<ListenConfig>
             else
             {
                 IEnumerable<EndPoint> all = Enumerable.Empty<EndPoint>();
+                var ps = value.Protocols.ToAll().ToArray();
                 foreach (var address in value.Address.Where(i => !string.IsNullOrWhiteSpace(i)))
                 {
                     IEnumerable<EndPoint> endpoints = Enumerable.Empty<EndPoint>();
-                    foreach (var item in endPointConvertors)
+                    foreach (var p in ps)
                     {
-                        if (item.TryConvert(address, value.Protocols, out var endPoints))
+                        foreach (var item in endPointConvertors)
                         {
-                            endpoints = endpoints.Union(endPoints);
-                            break;
+                            if (item.TryConvert(address, p, out var endPoints))
+                            {
+                                endpoints = endpoints.Union(endPoints);
+                                break;
+                            }
                         }
                     }
                     if (endpoints is EndPoint[] s && s.Length == 0)
@@ -67,19 +71,19 @@ public class ListenConfigValidator : IValidator<ListenConfig>
                     {
                         all = all.Union(endpoints);
                     }
-                }
 
-                value.ListenEndPointOptions = all.Select(i => new ListenEndPointOptions()
-                {
-                    EndPoint = i,
-                    Protocols = value.Protocols,
-                    Key = value.Key,
-                    Parent = value,
-                    UseSni = value.UseSni
-                }).ToList();
+                    value.ListenEndPointOptions = all.Select(i => new ListenEndPointOptions()
+                    {
+                        EndPoint = i,
+                        Protocols = value.Protocols,
+                        Key = value.Key,
+                        Parent = value,
+                        UseSni = value.UseSni
+                    }).ToList();
+                }
             }
         }
 
-        return r;
+        return ValueTask.FromResult(r);
     }
 }

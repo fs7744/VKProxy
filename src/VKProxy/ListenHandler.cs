@@ -10,7 +10,7 @@ using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
 using VKProxy.Middlewares;
-using static System.Net.WebRequestMethods;
+using VKProxy.Middlewares.Http;
 
 namespace VKProxy;
 
@@ -22,10 +22,11 @@ internal class ListenHandler : ListenHandlerBase
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
+    private readonly IHttpReverseProxy http;
     private IProxyConfig current;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IHttpReverseProxy http)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -33,6 +34,7 @@ internal class ListenHandler : ListenHandlerBase
         this.sniSelector = sniSelector;
         this.udp = udp;
         this.tcp = tcp;
+        this.http = http;
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -112,7 +114,7 @@ internal class ListenHandler : ListenHandlerBase
     {
         var proxyFeature = new ReverseProxyFeature() { Route = route };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
-        return Task.CompletedTask;
+        return http.Proxy(context, proxyFeature);
     }
 
     private Task DoTcp(ConnectionContext connection, RouteConfig? route, bool useSni, SniConfig? sni)

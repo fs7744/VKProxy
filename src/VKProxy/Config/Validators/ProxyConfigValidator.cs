@@ -18,7 +18,7 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
         this.clusterConfigValidators = clusterConfigValidators;
     }
 
-    public async Task<bool> ValidateAsync(IProxyConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
+    public async ValueTask<bool> ValidateAsync(IProxyConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
     {
         var r = true;
 

@@ -21,7 +21,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
         this.healthUpdater = healthUpdater;
     }
 
-    public async Task<bool> ValidateAsync(ClusterConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
+    public async ValueTask<bool> ValidateAsync(ClusterConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
     {
         if (value == null) return false;
 

@@ -16,6 +16,7 @@ using VKProxy.Health;
 using VKProxy.Health.ActiveHealthCheckers;
 using VKProxy.LoadBalancing;
 using VKProxy.Middlewares;
+using VKProxy.Middlewares.Http;
 using VKProxy.ServiceDiscovery;
 
 namespace Microsoft.Extensions.Hosting;
@@ -64,6 +65,7 @@ public static class ReverseProxyHostBuilderExtensions
 
             services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();
             services.AddSingleton<ITcpReverseProxy, TcpReverseProxy>();
+            services.AddSingleton<IHttpReverseProxy, HttpReverseProxy>();
         });
 
         return hostBuilder;

@@ -11,7 +11,7 @@ public class SniConfigValidator : IValidator<SniConfig>
         this.certificateLoader = certificateLoader;
     }
 
-    public async Task<bool> ValidateAsync(SniConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
+    public ValueTask<bool> ValidateAsync(SniConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
     {
         var r = true;
 
@@ -45,6 +45,6 @@ public class SniConfigValidator : IValidator<SniConfig>
             }
         }
 
-        return r;
+        return ValueTask.FromResult(r);
     }
 }

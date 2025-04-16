@@ -13,7 +13,7 @@ using VKProxy.LoadBalancing;
 
 namespace VKProxy.Middlewares;
 
-internal interface ITcpReverseProxy
+public interface ITcpReverseProxy
 {
     Task Proxy(ConnectionContext context, IReverseProxyFeature feature);
 }

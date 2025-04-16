@@ -2,5 +2,5 @@
 
 public interface IValidator<T>
 {
-    Task<bool> ValidateAsync(T? value, List<Exception> exceptions, CancellationToken cancellationToken);
+    ValueTask<bool> ValidateAsync(T? value, List<Exception> exceptions, CancellationToken cancellationToken);
 }
