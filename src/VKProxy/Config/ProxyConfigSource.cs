@@ -3,10 +3,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Collections.Frozen;
+using System.Net;
 using System.Security.Authentication;
 using VKProxy.Config.Validators;
 using VKProxy.Core.Config;
 using VKProxy.Core.Loggers;
+using static System.Collections.Specialized.BitVector32;
 
 namespace VKProxy.Config;
 
@@ -148,7 +150,34 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Key = section.Key,
             LoadBalancingPolicy = section[nameof(ClusterConfig.LoadBalancingPolicy)],
             HealthCheck = CreateHealthCheck(section.GetSection(nameof(ClusterConfig.HealthCheck))),
-            Destinations = section.GetSection(nameof(ClusterConfig.Destinations)).GetChildren().Select(CreateDestination).ToList()
+            Destinations = section.GetSection(nameof(ClusterConfig.Destinations)).GetChildren().Select(CreateDestination).ToList(),
+            HttpClientConfig = CreateHttpClientConfig(section.GetSection(nameof(ClusterConfig.HttpClientConfig)))
+        };
+    }
+
+    private HttpClientConfig CreateHttpClientConfig(IConfigurationSection section)
+    {
+        if (!section.Exists()) return null;
+        return new HttpClientConfig
+        {
+            SslProtocols = section.ReadSslProtocols(nameof(HttpClientConfig.SslProtocols)),
+            DangerousAcceptAnyServerCertificate = section.ReadBool(nameof(HttpClientConfig.DangerousAcceptAnyServerCertificate)),
+            MaxConnectionsPerServer = section.ReadInt32(nameof(HttpClientConfig.MaxConnectionsPerServer)),
+            EnableMultipleHttp2Connections = section.ReadBool(nameof(HttpClientConfig.EnableMultipleHttp2Connections)),
+            RequestHeaderEncoding = section[nameof(HttpClientConfig.RequestHeaderEncoding)],
+            ResponseHeaderEncoding = section[nameof(HttpClientConfig.ResponseHeaderEncoding)],
+            WebProxy = CreateWebProxy(section.GetSection(nameof(HttpClientConfig.WebProxy)))
+        };
+    }
+
+    private WebProxyConfig CreateWebProxy(IConfigurationSection section)
+    {
+        if (!section.Exists()) return null;
+        return new WebProxyConfig()
+        {
+            Address = section.ReadUri(nameof(WebProxyConfig.Address)),
+            BypassOnLocal = section.ReadBool(nameof(WebProxyConfig.BypassOnLocal)),
+            UseDefaultCredentials = section.ReadBool(nameof(WebProxyConfig.UseDefaultCredentials))
         };
     }
 

@@ -14,6 +14,8 @@ public class ClusterConfig
 
     public IReadOnlyList<DestinationConfig>? Destinations { get; set; }
 
+    public HttpClientConfig HttpClientConfig { get; set; }
+
     internal IReadOnlyList<DestinationState> DestinationStates { get; set; }
 
     internal ILoadBalancingPolicy LoadBalancingPolicyInstance { get; set; }
@@ -41,7 +43,8 @@ public class ClusterConfig
         return string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.LoadBalancingPolicy, other.LoadBalancingPolicy, StringComparison.OrdinalIgnoreCase)
             && HealthCheckConfig.Equals(t.HealthCheck, other.HealthCheck)
-            && CollectionUtilities.Equals(t.Destinations, other.Destinations, DestinationConfig.Comparer);
+            && CollectionUtilities.Equals(t.Destinations, other.Destinations, DestinationConfig.Comparer)
+            && HttpClientConfig.Equals(t.HttpClientConfig, other.HttpClientConfig);
     }
 
     public override bool Equals(object? obj)
@@ -55,6 +58,7 @@ public class ClusterConfig
             Key?.GetHashCode(StringComparison.OrdinalIgnoreCase),
             LoadBalancingPolicy?.GetHashCode(StringComparison.OrdinalIgnoreCase),
             HealthCheck,
-            CollectionUtilities.GetHashCode(Destinations));
+            CollectionUtilities.GetHashCode(Destinations),
+            HttpClientConfig);
     }
 }
