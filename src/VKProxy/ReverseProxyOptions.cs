@@ -7,8 +7,8 @@ namespace VKProxy;
 
 public class ReverseProxyOptions
 {
-    public int SniRouteCahceSize { get; set; } = 100;
-    public int HttpRouteCahceSize { get; set; } = 10000;
+    public int SniRouteCahceSize { get; set; } = 1024;
+    public int HttpRouteCahceSize { get; set; } = 1024;
     public TimeSpan DefaultProxyTimeout { get; set; } = TimeSpan.FromSeconds(300);
 
     public TimeSpan? DnsRefreshPeriod { get; set; } = TimeSpan.FromMinutes(5);

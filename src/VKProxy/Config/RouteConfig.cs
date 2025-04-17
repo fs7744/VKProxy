@@ -19,21 +19,31 @@ public class RouteConfig
     public int UdpResponses { get; set; }
     public RouteMatch Match { get; set; }
 
-    public bool Equals(RouteConfig? other)
+    public static bool Equals(RouteConfig? t, RouteConfig? other)
     {
         if (other is null)
         {
-            return false;
+            return t is null;
         }
 
-        return Protocols == other.Protocols
-            && Order == other.Order
-            && string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(ClusterId, other.ClusterId, StringComparison.OrdinalIgnoreCase)
-            && Timeout == other.Timeout
-            && RetryCount == other.RetryCount
-            && UdpResponses == other.UdpResponses
-            && Match == other.Match;
+        if (t is null)
+        {
+            return other is null;
+        }
+
+        return t.Protocols == other.Protocols
+            && t.Order == other.Order
+            && string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(t.ClusterId, other.ClusterId, StringComparison.OrdinalIgnoreCase)
+            && t.Timeout == other.Timeout
+            && t.RetryCount == other.RetryCount
+            && t.UdpResponses == other.UdpResponses
+            && RouteMatch.Equals(t.Match, other.Match);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is RouteConfig o && Equals(this, o);
     }
 
     public override int GetHashCode()
@@ -46,7 +56,7 @@ public class RouteConfig
         code.Add(Timeout.GetHashCode());
         code.Add(RetryCount);
         code.Add(UdpResponses.GetHashCode());
-        code.Add(Match.GetHashCode());
+        code.Add(Match?.GetHashCode());
         return code.ToHashCode();
     }
 }

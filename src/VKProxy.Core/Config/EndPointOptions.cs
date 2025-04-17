@@ -16,11 +16,24 @@ public class EndPointOptions
 
     private ListenOptions ListenOptions;
 
-    public virtual bool Equals(EndPointOptions? obj)
+    public static bool Equals(EndPointOptions? t, EndPointOptions? other)
     {
-        if (obj is null) return false;
-        return Key.Equals(obj.Key, StringComparison.OrdinalIgnoreCase)
-            && EndPoint.GetHashCode() == EndPoint.GetHashCode();
+        if (other is null)
+        {
+            return t is null;
+        }
+
+        if (t is null)
+        {
+            return other is null;
+        }
+        return string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
+            && other.EndPoint.GetHashCode() == other.EndPoint.GetHashCode();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is EndPointOptions o && Equals(this, o);
     }
 
     public override int GetHashCode()

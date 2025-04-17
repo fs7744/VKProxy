@@ -32,9 +32,14 @@ public class CollectionUtilities
             return true;
         }
 
-        if (list1 is null || list2 is null)
+        if (list1 is null)
         {
-            return false;
+            return list2 is null;
+        }
+
+        if (list2 is null)
+        {
+            return list1 is null;
         }
 
         if (list1.Count != list2.Count)
@@ -57,9 +62,14 @@ public class CollectionUtilities
 
     public static bool Equals<T>(IReadOnlySet<T>? list1, IReadOnlySet<T>? list2, IEqualityComparer<T> comparer = null)
     {
-        if (list1 is null || list2 is null)
+        if (list1 is null)
         {
-            return false;
+            return list2 is null;
+        }
+
+        if (list2 is null)
+        {
+            return list1 is null;
         }
         return Equals(list1.ToList(), list2.ToList(), comparer);
     }
@@ -71,9 +81,14 @@ public class CollectionUtilities
             return true;
         }
 
-        if (dictionary1 is null || dictionary2 is null)
+        if (dictionary1 is null)
         {
-            return false;
+            return dictionary2 is null;
+        }
+
+        if (dictionary2 is null)
+        {
+            return dictionary1 is null;
         }
 
         if (dictionary1.Count != dictionary2.Count)

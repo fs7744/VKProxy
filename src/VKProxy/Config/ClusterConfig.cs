@@ -26,17 +26,27 @@ public class ClusterConfig
         LoadBalancingPolicyInstance = null;
     }
 
-    public bool Equals(ClusterConfig? other)
+    public static bool Equals(ClusterConfig? t, ClusterConfig? other)
     {
         if (other is null)
         {
-            return false;
+            return t is null;
         }
 
-        return string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(LoadBalancingPolicy, other.LoadBalancingPolicy, StringComparison.OrdinalIgnoreCase)
-            && HealthCheckConfig.Equals(HealthCheck, other.HealthCheck)
-            && CollectionUtilities.Equals(Destinations, other.Destinations, DestinationConfig.Comparer);
+        if (t is null)
+        {
+            return other is null;
+        }
+
+        return string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(t.LoadBalancingPolicy, other.LoadBalancingPolicy, StringComparison.OrdinalIgnoreCase)
+            && HealthCheckConfig.Equals(t.HealthCheck, other.HealthCheck)
+            && CollectionUtilities.Equals(t.Destinations, other.Destinations, DestinationConfig.Comparer);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is ClusterConfig o && Equals(this, o);
     }
 
     public override int GetHashCode()

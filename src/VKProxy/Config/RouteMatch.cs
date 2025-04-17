@@ -15,10 +15,14 @@ public sealed record RouteMatch
 
     public static bool Equals(RouteMatch? t, RouteMatch? other)
     {
-        if (t is null && other is null) return true;
         if (other is null)
         {
-            return false;
+            return t is null;
+        }
+
+        if (t is null)
+        {
+            return other is null;
         }
 
         return CollectionUtilities.EqualsString(t.Hosts, other.Hosts)
@@ -26,9 +30,9 @@ public sealed record RouteMatch
             && CollectionUtilities.EqualsString(t.Methods, other.Methods);
     }
 
-    public bool Equals(RouteMatch? other)
+    public bool Equals(RouteMatch? obj)
     {
-        return Equals(this, other);
+        return obj is RouteMatch o && Equals(this, o);
     }
 
     public static int GetHashCode(RouteMatch t)

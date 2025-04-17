@@ -41,6 +41,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         this.httpSelector = httpSelector;
         this.sniSelector = sniSelector;
         UpdateSnapshot();
+        var section = configuration.GetSection("ReverseProxy");
+        subscription = ChangeToken.OnChange(section.GetReloadToken, UpdateSnapshot);
     }
 
     private void UpdateSnapshot()
@@ -61,8 +63,6 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             cts = new CancellationTokenSource();
             oldToken?.Cancel(throwOnFirstException: false);
         }
-
-        subscription = ChangeToken.OnChange(section.GetReloadToken, UpdateSnapshot);
     }
 
     private SniConfig CreateSni(IConfigurationSection section, int arg2)
@@ -262,7 +262,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         else
         {
             if (old.Sni.Count != current.Sni.Count
-                || old.Sni.Keys.Except(current.Sni.Keys, StringComparer.OrdinalIgnoreCase).Count() != current.Sni.Count)
+                || old.Sni.Keys.Intersect(current.Sni.Keys, StringComparer.OrdinalIgnoreCase).Count() != current.Sni.Count)
             {
                 sniChanged = true;
             }
@@ -283,7 +283,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             var cv = current.Routes.Values.Where(i => i.Match != null && i.Match.Hosts != null && i.Match.Hosts.Count != 0 && i.Match.Paths != null && i.Match.Paths.Count != 0).ToArray();
 
             if (ov.Length != cv.Length
-                || ov.Select(i => i.Key).Except(cv.Select(i => i.Key), StringComparer.OrdinalIgnoreCase).Count() != cv.Length)
+                || ov.Select(i => i.Key).Intersect(cv.Select(i => i.Key), StringComparer.OrdinalIgnoreCase).Count() != cv.Length)
             {
                 httpChanged = true;
             }

@@ -43,20 +43,30 @@ public class ListenConfig : IDisposable
         ListenEndPointOptions = null;
     }
 
-    public bool Equals(ListenConfig? other)
+    public static bool Equals(ListenConfig? t, ListenConfig? other)
     {
         if (other is null)
         {
-            return false;
+            return t is null;
         }
 
-        return string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
-            && Protocols == other.Protocols
-            && CollectionUtilities.EqualsString(Address, other.Address)
-            && UseSni == other.UseSni
-            && SniId == other.SniId
-            && RouteId == other.RouteId
+        if (t is null)
+        {
+            return other is null;
+        }
+
+        return string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
+            && t.Protocols == other.Protocols
+            && CollectionUtilities.EqualsString(t.Address, other.Address)
+            && t.UseSni == other.UseSni
+            && t.SniId == other.SniId
+            && t.RouteId == other.RouteId
             ;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is ListenConfig o && Equals(this, o);
     }
 }
 

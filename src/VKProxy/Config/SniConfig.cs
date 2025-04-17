@@ -3,6 +3,7 @@ using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using VKProxy.Core.Config;
+using VKProxy.Core.Infrastructure;
 
 namespace VKProxy.Config;
 
@@ -80,5 +81,34 @@ public class SniConfig
             }
         }
         return options;
+    }
+
+    public static bool Equals(SniConfig? t, SniConfig? other)
+    {
+        if (other is null)
+        {
+            return t is null;
+        }
+
+        if (t is null)
+        {
+            return other is null;
+        }
+
+        return t.Order == other.Order
+            && string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
+            && CollectionUtilities.EqualsString(t.Host, other.Host)
+            && CertificateConfig.Equals(t.Certificate, other.Certificate)
+            && t.Passthrough == other.Passthrough
+            && t.HandshakeTimeout == other.HandshakeTimeout
+            && t.Protocols == other.Protocols
+            && t.CheckCertificateRevocation == other.CheckCertificateRevocation
+            && t.ClientCertificateMode == other.ClientCertificateMode
+            && string.Equals(t.RouteId, other.RouteId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is SniConfig o && Equals(this, o);
     }
 }

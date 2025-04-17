@@ -22,7 +22,7 @@ public sealed record DestinationConfig
 
     public bool Equals(DestinationConfig? other)
     {
-        return Equals(this, other);
+        return other is DestinationConfig o && Equals(this, o);
     }
 
     public static int GetHashCode(DestinationConfig t)

@@ -22,22 +22,22 @@ internal class QuicTransportOptionsSetup : IConfigureOptions<QuicTransportOption
         section = section.GetSection("Quic");
         if (!section.Exists()) return;
 
-        var i = section.ReadInt32(nameof(QuicTransportOptions.MaxBidirectionalStreamCount));
-        if (i.HasValue) options.MaxBidirectionalStreamCount = i.Value;
-
-        i = section.ReadInt32(nameof(QuicTransportOptions.Backlog));
+        var i = section.ReadInt32(nameof(QuicTransportOptions.Backlog));
         if (i.HasValue) options.Backlog = i.Value;
 
-        i = section.ReadInt32(nameof(QuicTransportOptions.MaxUnidirectionalStreamCount));
-        if (i.HasValue) options.MaxUnidirectionalStreamCount = i.Value;
+        //i = section.ReadInt32(nameof(QuicTransportOptions.MaxBidirectionalStreamCount));
+        //if (i.HasValue) options.MaxBidirectionalStreamCount = i.Value;
 
-        var l = section.ReadInt64(nameof(QuicTransportOptions.MaxReadBufferSize));
-        if (l.HasValue) options.MaxReadBufferSize = l.Value;
+        //i = section.ReadInt32(nameof(QuicTransportOptions.MaxUnidirectionalStreamCount));
+        //if (i.HasValue) options.MaxUnidirectionalStreamCount = i.Value;
 
-        l = section.ReadInt64(nameof(QuicTransportOptions.MaxWriteBufferSize));
-        if (l.HasValue) options.MaxWriteBufferSize = l.Value;
+        //var l = section.ReadInt64(nameof(QuicTransportOptions.MaxReadBufferSize));
+        //if (l.HasValue) options.MaxReadBufferSize = l.Value;
 
-        l = section.ReadInt64(nameof(QuicTransportOptions.DefaultStreamErrorCode));
+        //l = section.ReadInt64(nameof(QuicTransportOptions.MaxWriteBufferSize));
+        //if (l.HasValue) options.MaxWriteBufferSize = l.Value;
+
+        var l = section.ReadInt64(nameof(QuicTransportOptions.DefaultStreamErrorCode));
         if (l.HasValue) options.DefaultStreamErrorCode = l.Value;
 
         l = section.ReadInt64(nameof(QuicTransportOptions.DefaultCloseErrorCode));
