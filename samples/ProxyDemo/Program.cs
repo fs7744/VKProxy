@@ -2,9 +2,11 @@
 using ProxyDemo;
 
 var app = Host.CreateDefaultBuilder(args)
-    .UseReverseProxy().ConfigureServices(i =>
+    .UseReverseProxy()
+    .ConfigureServices(i =>
     {
         i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
+        i.UseHttpMiddleware<EchoHttpMiddleware>();
     })
     .Build();
 

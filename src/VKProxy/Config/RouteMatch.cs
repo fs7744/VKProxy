@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using VKProxy.Core.Infrastructure;
+﻿using VKProxy.Core.Infrastructure;
 
 namespace VKProxy.Config;
 

@@ -34,34 +34,44 @@ public class PathSelector : IRouteData<RouteConfig>
 
     public void Init(int cacheSize)
     {
-        var builder = new RouteTableBuilder<RouteConfig>(StringComparison.OrdinalIgnoreCase, cacheSize);
-        foreach (var route in RouteConfigs.Where(i => i.Match != null && i.Match.Paths != null))
+        if (RouteConfigs != null)
         {
-            foreach (var path in route.Match.Paths)
+            if (RouteConfigs.Count == 0)
             {
-                if (path.EndsWith('*'))
-                {
-                    builder.Add(path[..^1], route, RouteType.Prefix, route.Order);
-                }
-                else
-                {
-                    builder.Add(path, route, RouteType.Exact, route.Order);
-                }
+                route = null;
             }
-        }
+            else
+            {
+                var builder = new RouteTableBuilder<RouteConfig>(StringComparison.OrdinalIgnoreCase, cacheSize);
+                foreach (var route in RouteConfigs.Where(i => i.Match != null && i.Match.Paths != null))
+                {
+                    foreach (var path in route.Match.Paths)
+                    {
+                        if (path.EndsWith('*'))
+                        {
+                            builder.Add(path[..^1], route, RouteType.Prefix, route.Order);
+                        }
+                        else
+                        {
+                            builder.Add(path, route, RouteType.Exact, route.Order);
+                        }
+                    }
+                }
 
-        route = builder.Build(RouteTableType.Complex);
-        RouteConfigs = null;
+                route = builder.Build(RouteTableType.Complex);
+            }
+            RouteConfigs = null;
+        }
     }
 
-    public RouteConfig Match<R2>(string key, R2 data, Func<RouteConfig, R2, bool> match)
+    public RouteConfig? Match<R2>(string key, R2 data, Func<RouteConfig, R2, bool> match)
     {
-        return route.Match(key, data, match);
+        return route == null ? null : route.Match(key, data, match);
     }
 
     public ValueTask<RouteConfig> MatchAsync<R2>(string key, R2 data, Func<RouteConfig, R2, bool> match)
     {
-        return route.MatchAsync(key, data, match);
+        return route == null ? ValueTask.FromResult<RouteConfig>(null) : route.MatchAsync(key, data, match);
     }
 }
 
@@ -69,6 +79,7 @@ public class HttpSelector : IHttpSelector
 {
     private readonly ReverseProxyOptions options;
     private readonly ProxyLogger logger;
+    private readonly RequestDelegate next;
     private RouteTable<RouteConfig, PathSelector> route;
 
     public HttpSelector(IOptions<ReverseProxyOptions> options, ProxyLogger logger)
@@ -104,13 +115,14 @@ public class HttpSelector : IHttpSelector
         var req = context.Request;
         if (match.Methods is not null && !match.Methods.Contains(req.Method))
             return false;
+        // todo add query  header  sqlwhere
         return true;
     }
 
     public Task ReBuildAsync(IReadOnlyDictionary<string, RouteConfig> routes, CancellationToken cancellationToken)
     {
         var hostRouteBuilder = new RouteTableBuilder<RouteConfig, PathSelector>(StringComparison.OrdinalIgnoreCase, options.HttpRouteCahceSize);
-        foreach (var route in routes.Values.Where(i => i.Match != null))
+        foreach (var route in routes.Values.Where(i => i.Match != null && i.Match.Hosts != null && i.Match.Hosts.Count != 0 && i.Match.Paths != null && i.Match.Paths.Count != 0))
         {
             foreach (var host in route.Match.Hosts)
             {

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Security.Authentication;
 using VKProxy.Core.Config;
+using System.Collections.Frozen;
 
 namespace VKProxy.Config;
 
@@ -107,7 +108,9 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         if (!section.Exists()) return null;
         return new RouteMatch()
         {
-            Hosts = section.GetSection(nameof(RouteMatch.Hosts)).ReadStringArray()
+            Hosts = section.GetSection(nameof(RouteMatch.Hosts)).ReadStringArray(),
+            Paths = section.GetSection(nameof(RouteMatch.Paths)).ReadStringArray(),
+            Methods = section.GetSection(nameof(RouteMatch.Methods)).ReadStringArray()?.ToFrozenSet(StringComparer.OrdinalIgnoreCase),
         };
     }
 

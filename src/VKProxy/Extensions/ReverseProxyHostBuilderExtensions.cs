@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.NamedPipes;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Quic;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using System.Net.Quic;
 using VKProxy;
@@ -66,7 +69,18 @@ public static class ReverseProxyHostBuilderExtensions
 
             services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();
             services.AddSingleton<ITcpReverseProxy, TcpReverseProxy>();
-            services.AddSingleton<IHttpReverseProxy, HttpReverseProxy>();
+            services.AddSingleton<HttpReverseProxy>();
+            services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
+            services.AddSingleton<IApplicationBuilder>(i =>
+            {
+                var app = new ApplicationBuilder(i);
+                foreach (var item in i.GetServices<Action<IApplicationBuilder>>())
+                {
+                    item(app);
+                }
+                app.Use(i.GetRequiredService<HttpReverseProxy>().InvokeAsync);
+                return app;
+            });
         });
 
         return hostBuilder;
@@ -81,6 +95,34 @@ public static class ReverseProxyHostBuilderExtensions
     public static IServiceCollection UseTcpMiddleware<T>(this IServiceCollection services) where T : class, ITcpProxyMiddleware
     {
         services.AddTransient<ITcpProxyMiddleware, T>();
+        return services;
+    }
+
+    public static IServiceCollection UseHttpMiddleware<T>(this IServiceCollection services, params object?[] args) where T : class
+    {
+        if (typeof(IMiddleware).IsAssignableFrom(typeof(T)))
+        {
+            services.TryAddSingleton<T>();
+        }
+        services.ConfigeHttp(i => i.UseMiddleware<T>());
+        return services;
+    }
+
+    public static IServiceCollection UseHttpMiddleware(this IServiceCollection services, Func<RequestDelegate, RequestDelegate> middleware)
+    {
+        services.ConfigeHttp(i => i.Use(middleware));
+        return services;
+    }
+
+    public static IServiceCollection UseHttpMiddleware(this IServiceCollection services, Func<HttpContext, RequestDelegate, Task> middleware)
+    {
+        services.ConfigeHttp(i => i.Use(middleware));
+        return services;
+    }
+
+    public static IServiceCollection ConfigeHttp(this IServiceCollection services, Action<IApplicationBuilder> configeHttp)
+    {
+        services.AddSingleton<Action<IApplicationBuilder>>(configeHttp);
         return services;
     }
 }

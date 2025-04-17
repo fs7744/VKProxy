@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Connections;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using VKProxy.Config;
@@ -10,7 +11,6 @@ using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
 using VKProxy.Middlewares;
-using VKProxy.Middlewares.Http;
 
 namespace VKProxy;
 
@@ -22,12 +22,12 @@ internal class ListenHandler : ListenHandlerBase
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
-    private readonly IHttpReverseProxy http;
     private readonly IHttpSelector httpSelector;
+    private readonly RequestDelegate http;
     private IProxyConfig current;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IHttpReverseProxy http, IHttpSelector httpSelector)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IHttpSelector httpSelector, IApplicationBuilder applicationBuilder)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -35,8 +35,8 @@ internal class ListenHandler : ListenHandlerBase
         this.sniSelector = sniSelector;
         this.udp = udp;
         this.tcp = tcp;
-        this.http = http;
         this.httpSelector = httpSelector;
+        this.http = applicationBuilder.Build();
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -116,7 +116,7 @@ internal class ListenHandler : ListenHandlerBase
     {
         var proxyFeature = new ReverseProxyFeature() { Route = route };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
-        return http.Proxy(context, proxyFeature);
+        return http(context);
     }
 
     private Task DoTcp(ConnectionContext connection, RouteConfig? route, bool useSni, SniConfig? sni)
