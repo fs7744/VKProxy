@@ -12,7 +12,7 @@ public class PriorityRouteDataList<T, R> : SortedDictionary<int, R> where R : IR
     }
 }
 
-public interface IRouteData<T>
+public interface IRouteData<T> : IDisposable
 {
     public void Add(T value);
 
@@ -187,6 +187,7 @@ public class RouteTable<T, R> where R : IRouteData<T>, new()
         if (trie != null)
         {
             var r = trie;
+            cache?.Clear();
             trie = null;
             exact = null;
             cache = null;

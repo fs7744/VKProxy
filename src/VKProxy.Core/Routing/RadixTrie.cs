@@ -14,6 +14,10 @@ public class RadixTrieNode<T> : IDisposable
             Children = null;
             c?.ForEach(x => x.Dispose());
             c?.Clear();
+            if (Value is IDisposable s)
+            {
+                s.Dispose();
+            }
         }
     }
 }

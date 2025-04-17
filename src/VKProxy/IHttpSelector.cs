@@ -32,6 +32,13 @@ public class PathSelector : IRouteData<RouteConfig>
         RouteConfigs.AddRange(((PathSelector)value).RouteConfigs);
     }
 
+    public void Dispose()
+    {
+        RouteConfigs = null;
+        route?.Dispose();
+        route = null;
+    }
+
     public void Init(int cacheSize)
     {
         if (RouteConfigs != null)
@@ -134,8 +141,12 @@ public class HttpSelector : IHttpSelector
                 Set(hostRouteBuilder, route, host);
             }
         }
-
+        var old = route;
         route = hostRouteBuilder.Build(RouteTableType.Complex);
+
+        old?.Dispose();
+
+        return Task.CompletedTask;
 
         static void Set(RouteTableBuilder<RouteConfig, PathSelector> builder, RouteConfig? route, string host)
         {
@@ -148,8 +159,6 @@ public class HttpSelector : IHttpSelector
                 builder.Add(host.Reverse(), route, RouteType.Exact, route.Order);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     public RouteConfig Match(HttpContext context)

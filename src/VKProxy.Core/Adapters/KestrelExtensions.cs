@@ -38,10 +38,13 @@ public static class KestrelExtensions
     internal static readonly Type HeartbeatType;
     internal static readonly Type KestrelMetricsType;
     internal static readonly Type DummyMeterFactoryType;
+    internal static readonly object sniConfigDict;
 
     static KestrelExtensions()
     {
         var types = typeof(KestrelServer).Assembly.GetTypes();
+        var sniConfigType = types.First(i => i.Name == "SniConfig");
+        sniConfigDict = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeof(string), sniConfigType));
         var typeEndpointConfig = types.First(i => i.Name == "EndpointConfig");
         EndpointConfigInitMethod = typeEndpointConfig.GetTypeInfo().DeclaredConstructors.First();
         var list = typeof(List<>).MakeGenericType(typeEndpointConfig).GetTypeInfo();
@@ -81,7 +84,7 @@ public static class KestrelExtensions
 
     internal static object InitEndpointConfig(string key, string url, IConfigurationSection section)
     {
-        return EndpointConfigInitMethod.Invoke(new object[] { key, url, null, section });
+        return EndpointConfigInitMethod.Invoke(new object[] { key, url, sniConfigDict, section });
     }
 
     internal static ListenOptions InitListenOptions(EndPoint endPoint, object endpointConfig)

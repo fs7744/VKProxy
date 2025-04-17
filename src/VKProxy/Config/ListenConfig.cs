@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using VKProxy.Core.Config;
+using VKProxy.Core.Infrastructure;
 
 namespace VKProxy.Config;
 
-public class ListenConfig
+public class ListenConfig : IDisposable
 {
     public string Key { get; set; }
 
@@ -36,9 +37,30 @@ public class ListenConfig
         }
         return null;
     }
+
+    public void Dispose()
+    {
+        ListenEndPointOptions = null;
+    }
+
+    public bool Equals(ListenConfig? other)
+    {
+        if (other is null)
+        {
+            return false;
+        }
+
+        return string.Equals(Key, other.Key, StringComparison.OrdinalIgnoreCase)
+            && Protocols == other.Protocols
+            && CollectionUtilities.EqualsString(Address, other.Address)
+            && UseSni == other.UseSni
+            && SniId == other.SniId
+            && RouteId == other.RouteId
+            ;
+    }
 }
 
-public class ListenEndPointOptions : EndPointOptions
+public class ListenEndPointOptions : EndPointOptions, IDisposable
 {
     internal ListenConfig Parent { get; set; }
 
@@ -74,5 +96,10 @@ public class ListenEndPointOptions : EndPointOptions
     public override string ToString()
     {
         return $"[Key: {Key},Protocols: {Protocols},EndPoint: {EndPoint}]";
+    }
+
+    public void Dispose()
+    {
+        Parent = null;
     }
 }

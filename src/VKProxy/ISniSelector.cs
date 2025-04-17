@@ -48,8 +48,12 @@ public class SniSelector : ISniSelector
                 Set(sniRouteBuilder, route, host);
             }
         }
-
+        var old = route;
         route = sniRouteBuilder.Build(RouteTableType.OnlyFirst);
+
+        old?.Dispose();
+
+        return Task.CompletedTask;
 
         static void Set(RouteTableBuilder<SniConfig> builder, SniConfig? route, string host)
         {
@@ -62,8 +66,6 @@ public class SniSelector : ISniSelector
                 builder.Add(host.Reverse(), route, RouteType.Exact, route.Order);
             }
         }
-
-        return Task.CompletedTask;
     }
 
     public X509Certificate2? ServerCertificateSelector(ConnectionContext? context, string? host)

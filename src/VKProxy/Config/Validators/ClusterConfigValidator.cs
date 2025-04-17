@@ -24,6 +24,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
     public async ValueTask<bool> ValidateAsync(ClusterConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
     {
         if (value == null) return false;
+        if (value.DestinationStates != null) return true;
 
         if (policies.TryGetValue(value.LoadBalancingPolicy ?? LoadBalancingPolicy.Random, out var policy))
         {

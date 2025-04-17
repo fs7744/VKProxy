@@ -8,11 +8,11 @@ public class ClusterConfig
 {
     public string Key { get; set; }
 
-    public string? LoadBalancingPolicy { get; init; }
+    public string? LoadBalancingPolicy { get; set; }
 
-    public HealthCheckConfig? HealthCheck { get; init; }
+    public HealthCheckConfig? HealthCheck { get; set; }
 
-    public IReadOnlyList<DestinationConfig>? Destinations { get; init; }
+    public IReadOnlyList<DestinationConfig>? Destinations { get; set; }
 
     internal IReadOnlyList<DestinationState> DestinationStates { get; set; }
 

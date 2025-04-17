@@ -2,9 +2,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using System.Security.Authentication;
-using VKProxy.Core.Config;
 using System.Collections.Frozen;
+using System.Security.Authentication;
+using VKProxy.Config.Validators;
+using VKProxy.Core.Config;
+using VKProxy.Core.Loggers;
 
 namespace VKProxy.Config;
 
@@ -12,10 +14,15 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
 {
     private CancellationTokenSource cts;
     private ProxyConfigSnapshot snapshot;
+    private ProxyConfigSnapshot old;
     private IDisposable subscription;
     private readonly IConfiguration configuration;
+    private readonly ProxyLogger logger;
     private readonly ReverseProxyOptions options;
     private readonly Lock configChangedLock = new Lock();
+    private readonly IValidator<IProxyConfig> validator;
+    private readonly IHttpSelector httpSelector;
+    private readonly ISniSelector sniSelector;
 
     public IProxyConfig CurrentSnapshot => snapshot;
 
@@ -24,10 +31,15 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return cts == null ? null : new CancellationChangeToken(cts.Token);
     }
 
-    public ProxyConfigSource(IConfiguration configuration, IOptions<ReverseProxyOptions> options)
+    public ProxyConfigSource(IConfiguration configuration, IOptions<ReverseProxyOptions> options, ProxyLogger logger,
+        IValidator<IProxyConfig> validator, IHttpSelector httpSelector, ISniSelector sniSelector)
     {
         this.configuration = configuration;
+        this.logger = logger;
         this.options = options.Value;
+        this.validator = validator;
+        this.httpSelector = httpSelector;
+        this.sniSelector = sniSelector;
         UpdateSnapshot();
     }
 
@@ -42,12 +54,14 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
                 , section.GetSection(nameof(ProxyConfigSnapshot.Clusters)).GetChildren().Select(CreateCluster).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase)
                 , section.GetSection(nameof(ProxyConfigSnapshot.Listen)).GetChildren().Select(CreateListen).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase)
                 , section.GetSection(nameof(ProxyConfigSnapshot.Sni)).GetChildren().Select(CreateSni).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase));
+            if (old == null)
+                old = snapshot;
             snapshot = c;
-
             var oldToken = cts;
             cts = new CancellationTokenSource();
             oldToken?.Cancel(throwOnFirstException: false);
         }
+
         subscription = ChangeToken.OnChange(section.GetReloadToken, UpdateSnapshot);
     }
 
@@ -187,5 +201,141 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
     {
         subscription?.Dispose();
         subscription = null;
+    }
+
+    public async Task<(IEnumerable<ListenEndPointOptions> stop, IEnumerable<ListenEndPointOptions> start)> GenerateDiffAsync(CancellationToken cancellationToken)
+    {
+        var current = snapshot;
+        if (current == null && old == null) return (null, null);
+
+        if (old != null)
+        {
+            foreach (var (k, v) in old.Clusters)
+            {
+                if (current.Clusters.TryGetValue(k, out var cluster)
+                    && v.Equals(cluster))
+                {
+                    cluster.HealthReporter = v.HealthReporter;
+                    cluster.DestinationStates = v.DestinationStates;
+                    cluster.LoadBalancingPolicyInstance = v.LoadBalancingPolicyInstance;
+                    cluster.AvailableDestinations = v.AvailableDestinations;
+                    cluster.HealthCheck = v.HealthCheck;
+                    cluster.Destinations = v.Destinations;
+                }
+            }
+
+            foreach (var (k, v) in old.Routes)
+            {
+                if (current.Routes.TryGetValue(k, out var r)
+                    && v.Equals(r))
+                {
+                    current.ReplaceRoute(k, v);
+                }
+            }
+
+            foreach (var (k, v) in old.Listen)
+            {
+                if (current.Listen.TryGetValue(k, out var r)
+                    && v.Equals(r))
+                {
+                    current.ReplaceListen(k, v);
+                }
+            }
+        }
+
+        var errors = new List<Exception>();
+        if (!await validator.ValidateAsync(current, errors, cancellationToken))
+        {
+            foreach (var error in errors)
+            {
+                logger.ErrorConfig(error.Message);
+            }
+        }
+
+        bool sniChanged = false;
+        bool httpChanged = false;
+        if (old == null)
+        {
+            sniChanged = true;
+            httpChanged = true;
+        }
+        else
+        {
+            if (old.Sni.Count != current.Sni.Count
+                || old.Sni.Keys.Except(current.Sni.Keys, StringComparer.OrdinalIgnoreCase).Count() != current.Sni.Count)
+            {
+                sniChanged = true;
+            }
+            else
+            {
+                foreach (var (k, v) in old.Sni)
+                {
+                    if (!current.Sni.TryGetValue(k, out var sni)
+                        || !v.Equals(sni))
+                    {
+                        sniChanged = true;
+                        break;
+                    }
+                }
+            }
+
+            var ov = old.Routes.Values.Where(i => i.Match != null && i.Match.Hosts != null && i.Match.Hosts.Count != 0 && i.Match.Paths != null && i.Match.Paths.Count != 0).ToArray();
+            var cv = current.Routes.Values.Where(i => i.Match != null && i.Match.Hosts != null && i.Match.Hosts.Count != 0 && i.Match.Paths != null && i.Match.Paths.Count != 0).ToArray();
+
+            if (ov.Length != cv.Length
+                || ov.Select(i => i.Key).Except(cv.Select(i => i.Key), StringComparer.OrdinalIgnoreCase).Count() != cv.Length)
+            {
+                httpChanged = true;
+            }
+            else
+            {
+                foreach (var v in ov)
+                {
+                    if (!current.Routes.TryGetValue(v.Key, out var r)
+                        || !v.Equals(r))
+                    {
+                        httpChanged = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (sniChanged)
+            await sniSelector.ReBuildAsync(current.Sni, cancellationToken);
+        if (httpChanged)
+            await httpSelector.ReBuildAsync(current.Routes, cancellationToken);
+
+        if (old == null)
+            return (null, current?.Listen.Values.SelectMany(i => i.ListenEndPointOptions));
+
+        var stop = new List<ListenEndPointOptions>();
+        var start = new List<ListenEndPointOptions>();
+
+        foreach (var (k, v) in old.Listen)
+        {
+            if (current.Listen.TryGetValue(k, out var cv))
+            {
+                if (!cv.Equals(v))
+                {
+                    stop.AddRange(v.ListenEndPointOptions);
+                    start.AddRange(cv.ListenEndPointOptions);
+                }
+            }
+            else
+            {
+                stop.AddRange(v.ListenEndPointOptions);
+            }
+        }
+
+        foreach (var (k, cv) in current.Listen)
+        {
+            if (!old.Listen.TryGetValue(k, out var v))
+            {
+                start.AddRange(cv.ListenEndPointOptions);
+            }
+        }
+        old = null;
+        return (stop, start);
     }
 }

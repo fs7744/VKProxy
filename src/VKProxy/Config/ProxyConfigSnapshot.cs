@@ -42,4 +42,14 @@ public class ProxyConfigSnapshot : IProxyConfig
     {
         sni.Remove(key);
     }
+
+    internal void ReplaceListen(string k, ListenConfig v)
+    {
+        listen[k] = v;
+    }
+
+    internal void ReplaceRoute(string k, RouteConfig v)
+    {
+        routes[k] = v;
+    }
 }

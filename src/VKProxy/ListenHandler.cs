@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using VKProxy.Config;
-using VKProxy.Config.Validators;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
@@ -18,31 +17,25 @@ internal class ListenHandler : ListenHandlerBase
 {
     private readonly IConfigSource<IProxyConfig> configSource;
     private readonly ProxyLogger logger;
-    private readonly IValidator<IProxyConfig> validator;
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
-    private readonly IHttpSelector httpSelector;
     private readonly RequestDelegate http;
-    private IProxyConfig current;
 
-    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IValidator<IProxyConfig> validator,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IHttpSelector httpSelector, IApplicationBuilder applicationBuilder)
+    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger,
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder)
     {
         this.configSource = configSource;
         this.logger = logger;
-        this.validator = validator;
         this.sniSelector = sniSelector;
         this.udp = udp;
         this.tcp = tcp;
-        this.httpSelector = httpSelector;
         this.http = applicationBuilder.Build();
     }
 
     public override Task BindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
     {
-        current = configSource.CurrentSnapshot;
-        return BindAsync(null, current, transportManager, cancellationToken);
+        return BindDiffAsync(transportManager, cancellationToken);
     }
 
     public override IChangeToken? GetReloadToken()
@@ -52,9 +45,7 @@ internal class ListenHandler : ListenHandlerBase
 
     public override Task RebindAsync(ITransportManager transportManager, CancellationToken cancellationToken)
     {
-        var old = current;
-        current = configSource.CurrentSnapshot;
-        return BindAsync(old, current, transportManager, cancellationToken);
+        return BindDiffAsync(transportManager, cancellationToken);
     }
 
     public override Task StopAsync(ITransportManager transportManager, CancellationToken cancellationToken)
@@ -63,9 +54,9 @@ internal class ListenHandler : ListenHandlerBase
         return Task.CompletedTask;
     }
 
-    private async Task BindAsync(IProxyConfig old, IProxyConfig current, ITransportManager transportManager, CancellationToken cancellationToken)
+    private async Task BindDiffAsync(ITransportManager transportManager, CancellationToken cancellationToken)
     {
-        var (stop, start) = await GenerateDiffAsync(old, current, cancellationToken);
+        var (stop, start) = await configSource.GenerateDiffAsync(cancellationToken);
         if (stop != null)
         {
             await transportManager.StopEndpointsAsync(stop.ToList<EndPointOptions>(), cancellationToken);
@@ -135,23 +126,5 @@ internal class ListenHandler : ListenHandlerBase
             return udp.Proxy(context, proxyFeature);
         }
         return Task.CompletedTask;
-    }
-
-    private async Task<(IEnumerable<ListenEndPointOptions> stop, IEnumerable<ListenEndPointOptions> start)> GenerateDiffAsync(IProxyConfig old, IProxyConfig current, CancellationToken cancellationToken)
-    {
-        if (current == null && old == null) return (null, null);
-
-        var errors = new List<Exception>();
-        if (!await validator.ValidateAsync(current, errors, cancellationToken))
-        {
-            foreach (var error in errors)
-            {
-                logger.ErrorConfig(error.Message);
-            }
-        }
-        await sniSelector.ReBuildAsync(current.Sni, cancellationToken);
-        await httpSelector.ReBuildAsync(current.Routes, cancellationToken);
-        //todo diff
-        return (null, current?.Listen.Values.SelectMany(i => i.ListenEndPointOptions));
     }
 }

@@ -10,7 +10,7 @@ public class OnlyFirstRouteTable<T> : IRouteTable<T>
 {
     private RadixTrie<PriorityRouteDataList<T>> trie;
     private readonly StringComparison comparison;
-    private RandomAccessCache<string, T> cache;
+    private static RandomAccessCache<string, T> cache;
     private FrozenDictionary<string, T[]> exact;
 
     public OnlyFirstRouteTable(IDictionary<string, PriorityRouteDataList<T>> exact, RadixTrie<PriorityRouteDataList<T>> trie, int cacheSize, StringComparison comparison)
