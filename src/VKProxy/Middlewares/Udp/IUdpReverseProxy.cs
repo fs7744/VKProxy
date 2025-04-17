@@ -5,5 +5,5 @@ namespace VKProxy.Middlewares;
 
 public interface IUdpReverseProxy
 {
-    Task Proxy(UdpConnectionContext context, IReverseProxyFeature feature);
+    Task Proxy(UdpConnectionContext context, IL4ReverseProxyFeature feature);
 }

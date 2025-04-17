@@ -15,7 +15,7 @@ namespace VKProxy.Middlewares;
 
 public interface ITcpReverseProxy
 {
-    Task Proxy(ConnectionContext context, IReverseProxyFeature feature);
+    Task Proxy(ConnectionContext context, IL4ReverseProxyFeature feature);
 }
 
 internal class TcpReverseProxy : ITcpReverseProxy
@@ -61,7 +61,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         return (init, req, resp);
     }
 
-    public async Task Proxy(ConnectionContext context, IReverseProxyFeature feature)
+    public async Task Proxy(ConnectionContext context, IL4ReverseProxyFeature feature)
     {
         if (feature.IsSni)
         {
@@ -73,7 +73,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         }
     }
 
-    private async Task TcpProxyAsync(ConnectionContext context, IReverseProxyFeature feature)
+    private async Task TcpProxyAsync(ConnectionContext context, IL4ReverseProxyFeature feature)
     {
         var route = feature.Route;
         if (route is null) return;
@@ -82,7 +82,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         logger.ProxyEnd(route.Key);
     }
 
-    private async Task DoTcpProxyAsync(ConnectionContext context, IReverseProxyFeature feature, RouteConfig? route)
+    private async Task DoTcpProxyAsync(ConnectionContext context, IL4ReverseProxyFeature feature, RouteConfig? route)
     {
         ConnectionContext upstream = null;
         try
@@ -123,7 +123,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         }
     }
 
-    private async Task SniProxyAsync(ConnectionContext context, IReverseProxyFeature feature)
+    private async Task SniProxyAsync(ConnectionContext context, IL4ReverseProxyFeature feature)
     {
         using var cts = CancellationTokenSourcePool.Default.Rent(options.ConnectionTimeout);
         var token = cts.Token;
@@ -147,7 +147,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         logger.ProxyEnd(route.Key);
     }
 
-    private async Task DoPassthroughAsync(ConnectionContext context, RouteConfig? route, ReadResult r, IReverseProxyFeature feature)
+    private async Task DoPassthroughAsync(ConnectionContext context, RouteConfig? route, ReadResult r, IL4ReverseProxyFeature feature)
     {
         ConnectionContext upstream = null;
         try
@@ -188,7 +188,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         }
     }
 
-    private async Task DoSslAsync(ConnectionContext context, SniConfig sni, ReadResult r, IReverseProxyFeature feature)
+    private async Task DoSslAsync(ConnectionContext context, SniConfig sni, ReadResult r, IL4ReverseProxyFeature feature)
     {
         var sslDuplexPipe = CreateSslDuplexPipe(r, context.Transport, context is IMemoryPoolFeature s ? s.MemoryPool : MemoryPool<byte>.Shared, SslStreamFactory);
         var sslStream = sslDuplexPipe.Stream;
@@ -220,7 +220,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         return new SslDuplexPipe(readResult, transport, inputPipeOptions, outputPipeOptions, sslStreamFactory);
     }
 
-    private async Task<ConnectionContext> DoConnectionAsync(IReverseProxyFeature feature, RouteConfig route, int retryCount)
+    private async Task<ConnectionContext> DoConnectionAsync(IL4ReverseProxyFeature feature, RouteConfig route, int retryCount)
     {
         DestinationState selectedDestination = null;
         try

@@ -47,7 +47,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
         return (init, req, resp);
     }
 
-    public async Task Proxy(UdpConnectionContext context, IReverseProxyFeature feature)
+    public async Task Proxy(UdpConnectionContext context, IL4ReverseProxyFeature feature)
     {
         var route = feature.Route;
         if (route is null) return;
@@ -92,7 +92,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
         }
     }
 
-    private async Task<Socket> DoUdpSendToAsync(Socket s, IReverseProxyFeature feature, RouteConfig route, int retryCount, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
+    private async Task<Socket> DoUdpSendToAsync(Socket s, IL4ReverseProxyFeature feature, RouteConfig route, int retryCount, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
     {
         Socket socket = s;
         DestinationState selectedDestination = feature.SelectedDestination;

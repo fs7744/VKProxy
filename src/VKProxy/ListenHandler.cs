@@ -114,15 +114,15 @@ internal class ListenHandler : ListenHandlerBase
 
     private Task DoHttp(HttpContext context, RouteConfig? route)
     {
-        var proxyFeature = new ReverseProxyFeature() { Route = route };
+        var proxyFeature = new L7ReverseProxyFeature() { Route = route };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
         return http(context);
     }
 
     private Task DoTcp(ConnectionContext connection, RouteConfig? route, bool useSni, SniConfig? sni)
     {
-        var proxyFeature = new ReverseProxyFeature() { Route = route, IsSni = useSni, SelectedSni = sni };
-        connection.Features.Set<IReverseProxyFeature>(proxyFeature);
+        var proxyFeature = new L4ReverseProxyFeature() { Route = route, IsSni = useSni, SelectedSni = sni };
+        connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
         return tcp.Proxy(connection, proxyFeature);
     }
 
@@ -130,8 +130,8 @@ internal class ListenHandler : ListenHandlerBase
     {
         if (connection is UdpConnectionContext context)
         {
-            var proxyFeature = new ReverseProxyFeature() { Route = route };
-            context.Features.Set<IReverseProxyFeature>(proxyFeature);
+            var proxyFeature = new L4ReverseProxyFeature() { Route = route };
+            context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
             return udp.Proxy(context, proxyFeature);
         }
         return Task.CompletedTask;
