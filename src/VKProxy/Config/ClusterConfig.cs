@@ -1,6 +1,7 @@
 ﻿using VKProxy.Core.Infrastructure;
 using VKProxy.Health;
 using VKProxy.LoadBalancing;
+using VKProxy.Middlewares.Http;
 
 namespace VKProxy.Config;
 
@@ -21,6 +22,7 @@ public class ClusterConfig
     internal ILoadBalancingPolicy LoadBalancingPolicyInstance { get; set; }
     internal List<DestinationState> AvailableDestinations { get; set; }
     internal IHealthReporter HealthReporter { get; set; }
+    internal HttpMessageInvoker HttpMessageHandler { get; set; }
 
     public void Dispose()
     {
@@ -60,5 +62,13 @@ public class ClusterConfig
             HealthCheck,
             CollectionUtilities.GetHashCode(Destinations),
             HttpClientConfig);
+    }
+
+    internal void InitHttp(IForwarderHttpClientFactory httpClientFactory)
+    {
+        if (HttpMessageHandler == null)
+        {
+            HttpMessageHandler = httpClientFactory.CreateHttpClient(HttpClientConfig);
+        }
     }
 }

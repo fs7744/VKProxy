@@ -3,12 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Collections.Frozen;
-using System.Net;
 using System.Security.Authentication;
 using VKProxy.Config.Validators;
 using VKProxy.Core.Config;
 using VKProxy.Core.Loggers;
-using static System.Collections.Specialized.BitVector32;
 
 namespace VKProxy.Config;
 
@@ -250,6 +248,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
                     cluster.AvailableDestinations = v.AvailableDestinations;
                     cluster.HealthCheck = v.HealthCheck;
                     cluster.Destinations = v.Destinations;
+                    cluster.HttpMessageHandler = v.HttpMessageHandler;
                 }
             }
 

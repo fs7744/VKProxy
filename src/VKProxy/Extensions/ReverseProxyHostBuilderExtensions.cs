@@ -70,6 +70,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();
             services.AddSingleton<ITcpReverseProxy, TcpReverseProxy>();
             services.AddSingleton<HttpReverseProxy>();
+            services.AddSingleton<IForwarderHttpClientFactory, ForwarderHttpClientFactory>();
             services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
             services.AddSingleton<IApplicationBuilder>(i =>
             {

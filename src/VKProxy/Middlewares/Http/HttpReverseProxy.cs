@@ -31,7 +31,7 @@ public class HttpReverseProxy : IMiddleware
                 return;
             }
         }
-        //if (resp.HasStarted) return;
+        if (resp.HasStarted) return;
         resp.StatusCode = 404;
         await resp.CompleteAsync();
         return;

@@ -1,4 +1,6 @@
-﻿namespace VKProxy.Config.Validators;
+﻿using VKProxy.Middlewares.Http;
+
+namespace VKProxy.Config.Validators;
 
 public class ProxyConfigValidator : IValidator<IProxyConfig>
 {
@@ -6,16 +8,19 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
     private readonly IEnumerable<IValidator<SniConfig>> sniConfigValidators;
     private readonly IEnumerable<IValidator<RouteConfig>> routeConfigValidators;
     private readonly IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators;
+    private readonly IForwarderHttpClientFactory httpClientFactory;
 
     public ProxyConfigValidator(IEnumerable<IValidator<ListenConfig>> listenConfigValidators,
         IEnumerable<IValidator<SniConfig>> sniConfigValidators,
         IEnumerable<IValidator<RouteConfig>> routeConfigValidators,
-        IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators)
+        IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators,
+        IForwarderHttpClientFactory httpClientFactory)
     {
         this.listenConfigValidators = listenConfigValidators;
         this.sniConfigValidators = sniConfigValidators;
         this.routeConfigValidators = routeConfigValidators;
         this.clusterConfigValidators = clusterConfigValidators;
+        this.httpClientFactory = httpClientFactory;
     }
 
     public async ValueTask<bool> ValidateAsync(IProxyConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -58,6 +63,10 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                             r = false;
                             break;
                         }
+                    }
+                    if (value.Routes.ContainsKey(l.Key))
+                    {
+                        l.Value.ClusterConfig?.InitHttp(httpClientFactory);
                     }
                 }
             }

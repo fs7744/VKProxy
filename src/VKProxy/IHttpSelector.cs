@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Routing;
+using VKProxy.Middlewares.Http;
 
 namespace VKProxy;
 
