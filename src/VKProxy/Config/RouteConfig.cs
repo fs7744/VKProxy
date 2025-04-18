@@ -1,4 +1,7 @@
-﻿namespace VKProxy.Config;
+﻿using VKProxy.Core.Infrastructure;
+using VKProxy.Middlewares.Http.Transforms;
+
+namespace VKProxy.Config;
 
 public class RouteConfig
 {
@@ -15,9 +18,11 @@ public class RouteConfig
     /// </summary>
     public TimeSpan Timeout { get; set; }
 
-    public int RetryCount { get; set; }
     public int UdpResponses { get; set; }
     public RouteMatch Match { get; set; }
+
+    public IReadOnlyList<IReadOnlyDictionary<string, string>>? Transforms { get; set; }
+    internal IHttpTransformer Transformer { get; set; }
 
     public static bool Equals(RouteConfig? t, RouteConfig? other)
     {
@@ -36,9 +41,9 @@ public class RouteConfig
             && string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.ClusterId, other.ClusterId, StringComparison.OrdinalIgnoreCase)
             && t.Timeout == other.Timeout
-            && t.RetryCount == other.RetryCount
             && t.UdpResponses == other.UdpResponses
-            && RouteMatch.Equals(t.Match, other.Match);
+            && RouteMatch.Equals(t.Match, other.Match)
+            && CollectionUtilities.Equals(t.Transforms, other.Transforms);
     }
 
     public override bool Equals(object? obj)
@@ -54,9 +59,9 @@ public class RouteConfig
         code.Add(Key?.GetHashCode(StringComparison.OrdinalIgnoreCase));
         code.Add(ClusterId?.GetHashCode(StringComparison.OrdinalIgnoreCase));
         code.Add(Timeout.GetHashCode());
-        code.Add(RetryCount);
         code.Add(UdpResponses.GetHashCode());
         code.Add(Match?.GetHashCode());
+        code.Add(CollectionUtilities.GetHashCode(Transforms));
         return code.ToHashCode();
     }
 }

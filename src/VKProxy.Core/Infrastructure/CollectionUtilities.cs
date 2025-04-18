@@ -60,6 +60,41 @@ public class CollectionUtilities
         return true;
     }
 
+    public static bool EqualsList<T>(IList<T>? list1, IList<T>? list2, IEqualityComparer<T>? valueComparer = null)
+    {
+        if (ReferenceEquals(list1, list2))
+        {
+            return true;
+        }
+
+        if (list1 is null)
+        {
+            return list2 is null;
+        }
+
+        if (list2 is null)
+        {
+            return list1 is null;
+        }
+
+        if (list1.Count != list2.Count)
+        {
+            return false;
+        }
+
+        valueComparer ??= EqualityComparer<T>.Default;
+
+        for (var i = 0; i < list1.Count; i++)
+        {
+            if (!valueComparer.Equals(list1[i], list2[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public static bool Equals<T>(IReadOnlySet<T>? list1, IReadOnlySet<T>? list2, IEqualityComparer<T> comparer = null)
     {
         if (list1 is null)

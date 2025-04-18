@@ -91,7 +91,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
             var token = cts.Token;
             await init(context, token);
             if (feature.IsDone) return;
-            upstream = await DoConnectionAsync(feature, route, route.RetryCount);
+            upstream = await DoConnectionAsync(feature, route);
             if (upstream is null)
             {
                 logger.NotFoundAvailableUpstream(route.ClusterId);
@@ -152,7 +152,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         ConnectionContext upstream = null;
         try
         {
-            upstream = await DoConnectionAsync(feature, route, route.RetryCount);
+            upstream = await DoConnectionAsync(feature, route);
             if (upstream is null)
             {
                 logger.NotFoundAvailableUpstream(route.ClusterId);
@@ -220,7 +220,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         return new SslDuplexPipe(readResult, transport, inputPipeOptions, outputPipeOptions, sslStreamFactory);
     }
 
-    private async Task<ConnectionContext> DoConnectionAsync(IL4ReverseProxyFeature feature, RouteConfig route, int retryCount)
+    private async Task<ConnectionContext> DoConnectionAsync(IL4ReverseProxyFeature feature, RouteConfig route)
     {
         DestinationState selectedDestination = null;
         try
@@ -238,12 +238,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         catch
         {
             selectedDestination?.ReportFailed();
-            retryCount--;
-            if (retryCount < 0)
-            {
-                throw;
-            }
-            return await DoConnectionAsync(feature, route, retryCount);
+            throw;
         }
     }
 }

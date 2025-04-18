@@ -6,12 +6,13 @@ using Microsoft.AspNetCore.Server.Kestrel.Transport.Quic;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.IO;
 using System.Net.Quic;
 using VKProxy;
 using VKProxy.Config;
 using VKProxy.Config.Validators;
-using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
@@ -20,6 +21,7 @@ using VKProxy.Health.ActiveHealthCheckers;
 using VKProxy.LoadBalancing;
 using VKProxy.Middlewares;
 using VKProxy.Middlewares.Http;
+using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.ServiceDiscovery;
 
 namespace Microsoft.Extensions.Hosting;
@@ -70,11 +72,34 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();
             services.AddSingleton<ITcpReverseProxy, TcpReverseProxy>();
             services.AddSingleton<HttpReverseProxy>();
+            services.AddSingleton<IHttpForwarder, HttpForwarder>();
             services.AddSingleton<IForwarderHttpClientFactory, ForwarderHttpClientFactory>();
+
+            services.AddSingleton<ITransformBuilder, TransformBuilder>();
+            services.AddSingleton<ITransformFactory, ForwardedTransformFactory>();
+
             services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
             services.AddSingleton<IApplicationBuilder>(i =>
             {
                 var app = new ApplicationBuilder(i);
+#if DEBUG
+                app.Use(async (c, next) =>
+                {
+                    var req = c.Request;
+                    var path = req.Path.ToString();
+                    var host = req.Host.ToString();
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    try
+                    {
+                        await next(c);
+                    }
+                    finally
+                    {
+                        sw.Stop();
+                        c.RequestServices.GetRequiredService<ILogger<HttpReverseProxy>>().LogInformation($"{req.Protocol} {host} {path} match used: {sw.Elapsed}");
+                    }
+                });
+#endif
                 foreach (var item in i.GetServices<Action<IApplicationBuilder>>())
                 {
                     item(app);

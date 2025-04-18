@@ -59,7 +59,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
             await init(context, token);
             if (!feature.IsDone)
             {
-                var socket = await DoUdpSendToAsync(null, feature, route, route.RetryCount, await req(context, context.ReceivedBytes, token), token);
+                var socket = await DoUdpSendToAsync(null, feature, route, await req(context, context.ReceivedBytes, token), token);
                 if (socket != null)
                 {
                     var c = route.UdpResponses;
@@ -92,7 +92,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
         }
     }
 
-    private async Task<Socket> DoUdpSendToAsync(Socket s, IL4ReverseProxyFeature feature, RouteConfig route, int retryCount, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
+    private async Task<Socket> DoUdpSendToAsync(Socket s, IL4ReverseProxyFeature feature, RouteConfig route, ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken)
     {
         Socket socket = s;
         DestinationState selectedDestination = feature.SelectedDestination;
@@ -121,12 +121,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
         catch (Exception ex)
         {
             selectedDestination?.ReportFailed();
-            retryCount--;
-            if (retryCount < 0)
-            {
-                throw;
-            }
-            return await DoUdpSendToAsync(socket, feature, route, retryCount, bytes, cancellationToken);
+            throw;
         }
     }
 }

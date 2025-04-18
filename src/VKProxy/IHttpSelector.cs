@@ -1,7 +1,9 @@
 ﻿using DotNext;
+using DotNext.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Collections.ObjectModel;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Routing;
@@ -89,6 +91,7 @@ public class HttpSelector : IHttpSelector
     private readonly ProxyLogger logger;
     private readonly RequestDelegate next;
     private RouteTable<RouteConfig, PathSelector> route;
+    private readonly Dictionary<string, string> hosts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     public HttpSelector(IOptions<ReverseProxyOptions> options, ProxyLogger logger)
     {
@@ -104,7 +107,7 @@ public class HttpSelector : IHttpSelector
 #if DEBUG
         var sw = System.Diagnostics.Stopwatch.StartNew();
 #endif
-        var r = await route.MatchAsync(host.Reverse(), path, context, MatchHttp);
+        var r = await route.MatchAsync(hosts.GetOrAdd(host, static host => host.Reverse()), path, context, MatchHttp);
 #if DEBUG
         sw.Stop();
         logger.LogInformation($"{host} {path} match used: {sw.Elapsed}");

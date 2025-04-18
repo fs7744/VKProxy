@@ -1,11 +1,19 @@
 ﻿using VKProxy.Config;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Features;
 
 namespace VKProxy.LoadBalancing;
 
 public sealed class PowerOfTwoChoicesLoadBalancingPolicy : ILoadBalancingPolicy
 {
+    private readonly IRandomFactory randomFactory;
+
     public string Name => LoadBalancingPolicy.PowerOfTwoChoices;
+
+    public PowerOfTwoChoicesLoadBalancingPolicy(IRandomFactory randomFactory)
+    {
+        this.randomFactory = randomFactory;
+    }
 
     public DestinationState? PickDestination(IReverseProxyFeature feature, IReadOnlyList<DestinationState> availableDestinations)
     {
@@ -13,7 +21,7 @@ public sealed class PowerOfTwoChoicesLoadBalancingPolicy : ILoadBalancingPolicy
 
         // Pick two, and then return the least busy. This avoids the effort of searching the whole list, but
         // still avoids overloading a single destination.
-        var random = Random.Shared;
+        var random = randomFactory.CreateRandomInstance();
         var firstIndex = random.Next(destinationCount);
         int secondIndex;
         do

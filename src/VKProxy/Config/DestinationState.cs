@@ -18,6 +18,7 @@ public class DestinationState : IDisposable
     internal ClusterConfig ClusterConfig { get; set; }
 
     public DestinationHealth Health { get; set; }
+    public string? Host { get; set; }
 
     public void Dispose()
     {

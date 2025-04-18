@@ -1,5 +1,7 @@
 ﻿using DotNext;
+using DotNext.Collections.Generic;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.IO.Pipelines;
 using System.Security.Authentication;
@@ -26,6 +28,7 @@ public class SniSelector : ISniSelector
     private readonly ReverseProxyOptions options;
     private readonly ProxyLogger logger;
     private IRouteTable<SniConfig> route;
+    private Dictionary<string, string> hosts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     public SniSelector(IOptions<ReverseProxyOptions> options, ProxyLogger logger)
     {
@@ -71,7 +74,7 @@ public class SniSelector : ISniSelector
     public X509Certificate2? ServerCertificateSelector(ConnectionContext? context, string? host)
     {
         if (string.IsNullOrWhiteSpace(host)) return null;
-        var s = route.Match<SniConfig>(host.Reverse(), null, static (c, r) => true);
+        var s = route.Match<SniConfig>(hosts.GetOrAdd(host, static host => host.Reverse()), null, static (c, r) => true);
         return s?.X509Certificate2;
     }
 
@@ -81,7 +84,7 @@ public class SniSelector : ISniSelector
         if (hello.HasValue)
         {
             var h = hello.Value;
-            var r = await route.MatchAsync<SniConfig>(h.TargetName.Reverse(), null, static (i, j) => true);
+            var r = await route.MatchAsync<SniConfig>(hosts.GetOrAdd(h.TargetName, static host => host.Reverse()), null, static (i, j) => true);
             if (r is null || !MatchSNI(r, h))
             {
                 logger.NotFoundRouteSni(h.TargetName);

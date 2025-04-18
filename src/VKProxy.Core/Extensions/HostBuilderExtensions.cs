@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Core.Sockets.Udp.Client;
@@ -23,6 +24,7 @@ public static class HostBuilderExtensions
             services.AddSingleton<IHostedService, VKHostedService>();
             services.TryAddSingleton<IServer, VKServer>();
             services.AddSingleton<ICertificateLoader, CertificateLoader>();
+            services.AddSingleton<IRandomFactory, RandomFactory>();
         });
 
         return hostBuilder;

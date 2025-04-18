@@ -53,14 +53,14 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
             var address = d.Address;
             if (IPEndPoint.TryParse(address, out var ip))
             {
-                destinationStates.Add(new DestinationState() { EndPoint = ip, ClusterConfig = value });
+                destinationStates.Add(new DestinationState() { EndPoint = ip, ClusterConfig = value, Host = d.Host });
             }
             else if (address.StartsWith("localhost:", StringComparison.OrdinalIgnoreCase)
                 && int.TryParse(address.AsSpan(10), out var port)
                 && port >= IPEndPoint.MinPort && port <= IPEndPoint.MaxPort)
             {
-                destinationStates.Add(new DestinationState() { EndPoint = new IPEndPoint(IPAddress.Loopback, port), ClusterConfig = value });
-                destinationStates.Add(new DestinationState() { EndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port), ClusterConfig = value });
+                destinationStates.Add(new DestinationState() { EndPoint = new IPEndPoint(IPAddress.Loopback, port), ClusterConfig = value, Host = d.Host });
+                destinationStates.Add(new DestinationState() { EndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port), ClusterConfig = value, Host = d.Host });
             }
             else
             {

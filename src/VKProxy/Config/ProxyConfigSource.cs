@@ -65,7 +65,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         }
     }
 
-    private SniConfig CreateSni(IConfigurationSection section, int arg2)
+    private static SniConfig CreateSni(IConfigurationSection section, int arg2)
     {
         var s = new SniConfig()
         {
@@ -85,7 +85,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return s;
     }
 
-    private CertificateConfig CreateSslConfig(IConfigurationSection section)
+    private static CertificateConfig CreateSslConfig(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
         var s = new CertificateConfig()
@@ -109,15 +109,27 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Key = section.Key,
             Order = section.ReadInt32(nameof(RouteConfig.Order)).GetValueOrDefault(),
             ClusterId = section[nameof(RouteConfig.ClusterId)],
-            RetryCount = section.ReadInt32(nameof(RouteConfig.RetryCount)).GetValueOrDefault(),
             UdpResponses = section.ReadInt32(nameof(RouteConfig.UdpResponses)).GetValueOrDefault(),
             Timeout = section.ReadTimeSpan(nameof(RouteConfig.Timeout)).GetValueOrDefault(options.DefaultProxyTimeout),
             Protocols = section.ReadGatewayProtocols(nameof(RouteConfig.Protocols)).GetValueOrDefault(GatewayProtocols.HTTP1),
             Match = CreateRouteMatch(section.GetSection(nameof(RouteConfig.Match))),
+            Transforms = CreateTransforms(section.GetSection(nameof(RouteConfig.Transforms)))
         };
     }
 
-    private RouteMatch CreateRouteMatch(IConfigurationSection section)
+    private static IReadOnlyList<IReadOnlyDictionary<string, string>> CreateTransforms(IConfigurationSection section)
+    {
+        if (section.GetChildren() is var children && !children.Any())
+        {
+            return null;
+        }
+
+        return children
+            .Select(subSection => subSection.GetChildren().ToDictionary(d => d.Key, d => d.Value!, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private static RouteMatch CreateRouteMatch(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
         return new RouteMatch()
@@ -128,7 +140,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private ListenConfig CreateListen(IConfigurationSection section)
+    private static ListenConfig CreateListen(IConfigurationSection section)
     {
         return new ListenConfig()
         {
@@ -141,7 +153,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private ClusterConfig CreateCluster(IConfigurationSection section)
+    private static ClusterConfig CreateCluster(IConfigurationSection section)
     {
         return new ClusterConfig()
         {
@@ -153,7 +165,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private HttpClientConfig CreateHttpClientConfig(IConfigurationSection section)
+    private static HttpClientConfig CreateHttpClientConfig(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
         return new HttpClientConfig
@@ -168,7 +180,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private WebProxyConfig CreateWebProxy(IConfigurationSection section)
+    private static WebProxyConfig CreateWebProxy(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
         return new WebProxyConfig()
@@ -179,7 +191,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private DestinationConfig CreateDestination(IConfigurationSection section)
+    private static DestinationConfig CreateDestination(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
         return new DestinationConfig()
@@ -189,7 +201,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private HealthCheckConfig CreateHealthCheck(IConfigurationSection section)
+    private static HealthCheckConfig CreateHealthCheck(IConfigurationSection section)
     {
         if (!section.Exists()) return null;
         return new HealthCheckConfig()
@@ -199,7 +211,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         };
     }
 
-    private PassiveHealthCheckConfig CreatePassiveHealthCheckConfig(IConfigurationSection section)
+    private static PassiveHealthCheckConfig CreatePassiveHealthCheckConfig(IConfigurationSection section)
     {
         if (!section.Exists() || !section.ReadBool("Enable").GetValueOrDefault()) return null;
         var s = new PassiveHealthCheckConfig();
@@ -210,7 +222,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         return s;
     }
 
-    private ActiveHealthCheckConfig CreateActiveHealthCheckConfig(IConfigurationSection section)
+    private static ActiveHealthCheckConfig CreateActiveHealthCheckConfig(IConfigurationSection section)
     {
         if (!section.Exists() || !section.ReadBool("Enable").GetValueOrDefault()) return null;
         var s = new ActiveHealthCheckConfig();

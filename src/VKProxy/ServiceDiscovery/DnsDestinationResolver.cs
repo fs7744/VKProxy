@@ -33,6 +33,7 @@ public class DnsDestinationResolver : DestinationResolverBase
             cancellationToken.ThrowIfCancellationRequested();
 
             var (hostName, port) = AddressParser.Parse(item.Address);
+            var h = string.IsNullOrWhiteSpace(item.Host) ? hostName : item.Host;
             try
             {
                 var addresses = options.DnsAddressFamily switch
@@ -40,7 +41,7 @@ public class DnsDestinationResolver : DestinationResolverBase
                     { } addressFamily => await Dns.GetHostAddressesAsync(hostName, addressFamily, cancellationToken).ConfigureAwait(false),
                     null => await Dns.GetHostAddressesAsync(hostName, cancellationToken).ConfigureAwait(false)
                 };
-                destinations.AddRange(addresses.Select(i => new DestinationState() { EndPoint = new IPEndPoint(i, port), ClusterConfig = state.Cluster }));
+                destinations.AddRange(addresses.Select(i => new DestinationState() { EndPoint = new IPEndPoint(i, port), ClusterConfig = state.Cluster, Host = h }));
             }
             catch (Exception exception)
             {

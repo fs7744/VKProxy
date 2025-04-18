@@ -1,4 +1,5 @@
 ﻿using VKProxy.Middlewares.Http;
+using VKProxy.Middlewares.Http.Transforms;
 
 namespace VKProxy.Config.Validators;
 
@@ -9,18 +10,21 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
     private readonly IEnumerable<IValidator<RouteConfig>> routeConfigValidators;
     private readonly IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators;
     private readonly IForwarderHttpClientFactory httpClientFactory;
+    private readonly ITransformBuilder transformBuilder;
 
     public ProxyConfigValidator(IEnumerable<IValidator<ListenConfig>> listenConfigValidators,
         IEnumerable<IValidator<SniConfig>> sniConfigValidators,
         IEnumerable<IValidator<RouteConfig>> routeConfigValidators,
         IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators,
-        IForwarderHttpClientFactory httpClientFactory)
+        IForwarderHttpClientFactory httpClientFactory,
+        ITransformBuilder transformBuilder)
     {
         this.listenConfigValidators = listenConfigValidators;
         this.sniConfigValidators = sniConfigValidators;
         this.routeConfigValidators = routeConfigValidators;
         this.clusterConfigValidators = clusterConfigValidators;
         this.httpClientFactory = httpClientFactory;
+        this.transformBuilder = transformBuilder;
     }
 
     public async ValueTask<bool> ValidateAsync(IProxyConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -51,9 +55,9 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                 foreach (var l in value.Routes)
                 {
                     var ll = l.Value;
-                    if (!string.IsNullOrWhiteSpace(l.Value.ClusterId) && value.Clusters.TryGetValue(l.Value.ClusterId, out var cluster))
+                    if (!string.IsNullOrWhiteSpace(ll.ClusterId) && value.Clusters.TryGetValue(ll.ClusterId, out var cluster))
                     {
-                        l.Value.ClusterConfig = cluster;
+                        ll.ClusterConfig = cluster;
                     }
                     foreach (var v in routeConfigValidators)
                     {
@@ -64,9 +68,10 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                             break;
                         }
                     }
-                    if (value.Routes.ContainsKey(l.Key))
+                    if (value.Routes.ContainsKey(l.Key) && ll.ClusterConfig != null && ll.Match != null && ll.Match.Paths != null)
                     {
-                        l.Value.ClusterConfig?.InitHttp(httpClientFactory);
+                        ll.ClusterConfig.InitHttp(httpClientFactory);
+                        ll.Transformer = transformBuilder.Build(ll, exceptions);
                     }
                 }
             }
