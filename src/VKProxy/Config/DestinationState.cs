@@ -20,6 +20,8 @@ public class DestinationState : IDisposable
     public DestinationHealth Health { get; set; }
     public string? Host { get; set; }
 
+    public string? Address { get; set; }
+
     public void Dispose()
     {
         ClusterConfig = null;
