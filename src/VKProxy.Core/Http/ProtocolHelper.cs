@@ -39,7 +39,7 @@ public static class ProtocolHelper
     /// <summary>
     /// Creates a security key for sending in the Sec-WebSocket-Key header.
     /// </summary>
-    internal static string CreateSecWebSocketKey()
+    public static string CreateSecWebSocketKey()
     {
         // The value of this header field MUST be a nonce consisting of a randomly selected 16-byte
         // value that has been base64-encoded
@@ -51,7 +51,7 @@ public static class ProtocolHelper
         return secKey;
     }
 
-    internal static bool CheckSecWebSocketKey(string? key)
+    public static bool CheckSecWebSocketKey(string? key)
     {
         // The value of this header field MUST be a nonce consisting of a randomly selected 16-byte
         // value that has been base64-encoded
@@ -61,7 +61,7 @@ public static class ProtocolHelper
     /// <summary>
     /// Creates the Accept response to a given security key for sending in or verifying the Sec-WebSocket-Accept header value.
     /// </summary>
-    internal static string CreateSecWebSocketAccept(string? key)
+    public static string CreateSecWebSocketAccept(string? key)
     {
         Debug.Assert(CheckSecWebSocketKey(key)); // This should have already been validated elsewhere.
         // GUID appended by the server as part of the security key response.  Defined in the RFC.

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Frozen;
-using System.Net;
 using VKProxy.Health;
 using VKProxy.LoadBalancing;
 using VKProxy.ServiceDiscovery;

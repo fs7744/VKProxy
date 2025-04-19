@@ -1,7 +1,6 @@
 ﻿using DotNext;
 using DotNext.Collections.Generic;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.IO.Pipelines;
 using System.Security.Authentication;

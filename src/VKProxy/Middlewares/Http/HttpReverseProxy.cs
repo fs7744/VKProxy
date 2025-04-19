@@ -50,12 +50,53 @@ public class HttpReverseProxy : IMiddleware
                     resp.StatusCode = StatusCodes.Status503ServiceUnavailable;
                     return;
                 }
-                var result = await forwarder.SendAsync(context, selectedDestination, cluster, route.Transformer);
+                selectedDestination.ConcurrencyCounter.Increment();
+                try
+                {
+                    await forwarder.SendAsync(context, proxyFeature, selectedDestination, cluster, route.Transformer);
+                    if (DestinationFailed(context))
+                    {
+                        selectedDestination.ReportFailed();
+                    }
+                    else
+                    {
+                        selectedDestination.ReportSuccessed();
+                    }
+                }
+                finally
+                {
+                    selectedDestination.ConcurrencyCounter.Decrement();
+                }
+
                 return;
             }
         }
 
         resp.StatusCode = StatusCodes.Status404NotFound;
         return;
+    }
+
+    private static bool DestinationFailed(HttpContext context)
+    {
+        var errorFeature = context.Features.Get<IForwarderErrorFeature>();
+        if (errorFeature is null)
+        {
+            return false;
+        }
+
+        if (context.RequestAborted.IsCancellationRequested)
+        {
+            // The client disconnected/canceled the request - the failure may not be the destination's fault
+            return false;
+        }
+
+        var error = errorFeature.Error;
+
+        return error == ForwarderError.Request
+            || error == ForwarderError.RequestTimedOut
+            || error == ForwarderError.RequestBodyDestination
+            || error == ForwarderError.ResponseBodyDestination
+            || error == ForwarderError.UpgradeRequestDestination
+            || error == ForwarderError.UpgradeResponseDestination;
     }
 }

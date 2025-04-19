@@ -31,17 +31,16 @@ public class RequestTransformContext
     /// </remarks>
     public PathString Path { get; set; }
 
-    //todo
-    //internal QueryTransformContext? MaybeQuery { get; private set; }
+    internal QueryTransformContext? MaybeQuery { get; private set; }
 
-    ///// <summary>
-    ///// The query used for the proxy request.
-    ///// </summary>
-    //public QueryTransformContext Query
-    //{
-    //    get => MaybeQuery ??= new QueryTransformContext(HttpContext.Request);
-    //    set => MaybeQuery = value;
-    //}
+    /// <summary>
+    /// The query used for the proxy request.
+    /// </summary>
+    public QueryTransformContext Query
+    {
+        get => MaybeQuery ??= new QueryTransformContext(HttpContext.Request);
+        set => MaybeQuery = value;
+    }
 
     /// <summary>
     /// The URI prefix for the proxy request. This includes the scheme and host and can optionally include a

@@ -161,7 +161,24 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             LoadBalancingPolicy = section[nameof(ClusterConfig.LoadBalancingPolicy)],
             HealthCheck = CreateHealthCheck(section.GetSection(nameof(ClusterConfig.HealthCheck))),
             Destinations = section.GetSection(nameof(ClusterConfig.Destinations)).GetChildren().Select(CreateDestination).ToList(),
-            HttpClientConfig = CreateHttpClientConfig(section.GetSection(nameof(ClusterConfig.HttpClientConfig)))
+            HttpClientConfig = CreateHttpClientConfig(section.GetSection(nameof(ClusterConfig.HttpClientConfig))),
+            HttpRequest = CreateProxyRequestConfig(section.GetSection(nameof(ClusterConfig.HttpRequest))),
+        };
+    }
+
+    private static ForwarderRequestConfig? CreateProxyRequestConfig(IConfigurationSection section)
+    {
+        if (!section.Exists())
+        {
+            return null;
+        }
+
+        return new ForwarderRequestConfig
+        {
+            ActivityTimeout = section.ReadTimeSpan(nameof(ForwarderRequestConfig.ActivityTimeout)),
+            Version = section.ReadVersion(nameof(ForwarderRequestConfig.Version)),
+            VersionPolicy = section.ReadEnum<HttpVersionPolicy>(nameof(ForwarderRequestConfig.VersionPolicy)),
+            AllowResponseBuffering = section.ReadBool(nameof(ForwarderRequestConfig.AllowResponseBuffering))
         };
     }
 

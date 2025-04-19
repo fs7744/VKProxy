@@ -16,6 +16,7 @@ public class ClusterConfig
     public IReadOnlyList<DestinationConfig>? Destinations { get; set; }
 
     public HttpClientConfig HttpClientConfig { get; set; }
+    public ForwarderRequestConfig HttpRequest { get; set; }
 
     internal IReadOnlyList<DestinationState> DestinationStates { get; set; }
 
@@ -46,7 +47,8 @@ public class ClusterConfig
             && string.Equals(t.LoadBalancingPolicy, other.LoadBalancingPolicy, StringComparison.OrdinalIgnoreCase)
             && HealthCheckConfig.Equals(t.HealthCheck, other.HealthCheck)
             && CollectionUtilities.Equals(t.Destinations, other.Destinations, DestinationConfig.Comparer)
-            && HttpClientConfig.Equals(t.HttpClientConfig, other.HttpClientConfig);
+            && HttpClientConfig.Equals(t.HttpClientConfig, other.HttpClientConfig)
+            && t.HttpRequest == other.HttpRequest;
     }
 
     public override bool Equals(object? obj)
