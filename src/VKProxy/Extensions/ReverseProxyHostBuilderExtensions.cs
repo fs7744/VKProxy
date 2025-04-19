@@ -56,6 +56,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<ISniSelector, SniSelector>();
             services.AddSingleton<IHttpSelector, HttpSelector>();
             services.AddSingleton<IDestinationResolver, DnsDestinationResolver>();
+            services.AddSingleton<IDestinationConfigParser, DestinationConfigParser>();
 
             services.AddSingleton<ILoadBalancingPolicy, RandomLoadBalancingPolicy>();
             services.AddSingleton<ILoadBalancingPolicy, RoundRobinLoadBalancingPolicy>();
@@ -96,7 +97,7 @@ public static class ReverseProxyHostBuilderExtensions
                     finally
                     {
                         sw.Stop();
-                        c.RequestServices.GetRequiredService<ILogger<HttpReverseProxy>>().LogInformation($"{req.Protocol} {host} {path} match used: {sw.Elapsed}");
+                        c.RequestServices.GetRequiredService<ILogger<HttpReverseProxy>>().LogInformation($"{req.Protocol} {host} {path} end used: {sw.Elapsed}");
                     }
                 });
 #endif

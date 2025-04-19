@@ -6,7 +6,7 @@ var app = Host.CreateDefaultBuilder(args)
     .ConfigureServices(i =>
     {
         i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
-        i.UseHttpMiddleware<EchoHttpMiddleware>();
+        //i.UseHttpMiddleware<EchoHttpMiddleware>();
     })
     .Build();
 

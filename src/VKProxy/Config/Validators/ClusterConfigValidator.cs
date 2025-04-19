@@ -12,13 +12,16 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
     private readonly FrozenDictionary<string, ILoadBalancingPolicy> policies;
     private readonly IHealthReporter healthReporter;
     private readonly IHealthUpdater healthUpdater;
+    private readonly IEnumerable<IDestinationConfigParser> destinationConfigParsers;
 
-    public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, IEnumerable<ILoadBalancingPolicy> policies, IHealthReporter healthReporter, IHealthUpdater healthUpdater)
+    public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, IEnumerable<ILoadBalancingPolicy> policies, IHealthReporter healthReporter,
+        IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers)
     {
         this.resolvers = resolvers.OrderByDescending(i => i.Order).ToArray();
         this.policies = policies.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
         this.healthReporter = healthReporter;
         this.healthUpdater = healthUpdater;
+        this.destinationConfigParsers = destinationConfigParsers;
     }
 
     public async ValueTask<bool> ValidateAsync(ClusterConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -46,31 +49,36 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
             }
         }
 
+        List<IDestinationResolverState> states = new List<IDestinationResolverState>();
+
         var destinationStates = new List<DestinationState>();
         List<DestinationConfig> destinationConfigs = new List<DestinationConfig>();
-        foreach (var d in value.Destinations)
+        foreach (var d in value.Destinations.Where(i => !string.IsNullOrWhiteSpace(i.Address)))
         {
-            var address = d.Address;
-            if (IPEndPoint.TryParse(address, out var ip))
+            var handled = false;
+            foreach (var parser in this.destinationConfigParsers)
             {
-                destinationStates.Add(new DestinationState() { EndPoint = ip, ClusterConfig = value, Host = d.Host });
+                if (parser.TryParse(d, out var state))
+                {
+                    handled = true;
+                    destinationStates.Add(state);
+                    break;
+                }
             }
-            else if (address.StartsWith("localhost:", StringComparison.OrdinalIgnoreCase)
-                && int.TryParse(address.AsSpan(10), out var port)
-                && port >= IPEndPoint.MinPort && port <= IPEndPoint.MaxPort)
-            {
-                destinationStates.Add(new DestinationState() { EndPoint = new IPEndPoint(IPAddress.Loopback, port), ClusterConfig = value, Host = d.Host });
-                destinationStates.Add(new DestinationState() { EndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port), ClusterConfig = value, Host = d.Host });
-            }
-            else
+
+            if (!handled)
             {
                 destinationConfigs.Add(d);
             }
         }
 
+        if (destinationStates.Count > 0)
+        {
+            states.Add(new StaticDestinationResolverState(destinationStates));
+        }
+
         if (destinationConfigs.Count > 0)
         {
-            List<IDestinationResolverState> states = new List<IDestinationResolverState>();
             if (resolvers.Any())
             {
                 foreach (var resolver in resolvers)
@@ -93,20 +101,15 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
             {
                 exceptions.Add(new InvalidOperationException($"No DestinationResolver for cluster {value.Key}"));
             }
+        }
 
-            if (destinationStates.Count > 0)
-            {
-                states.Insert(0, new StaticDestinationResolverState(destinationStates));
-            }
-
-            value.DestinationStates = new UnionDestinationResolverState(states);
+        if (states.Count == 1)
+        {
+            value.DestinationStates = states[0];
         }
         else
         {
-            if (destinationStates.Count > 0)
-            {
-                value.DestinationStates = destinationStates;
-            }
+            value.DestinationStates = new UnionDestinationResolverState(states);
         }
         healthUpdater.UpdateAvailableDestinations(value);
 

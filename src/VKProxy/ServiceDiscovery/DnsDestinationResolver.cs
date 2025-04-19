@@ -32,8 +32,9 @@ public class DnsDestinationResolver : DestinationResolverBase
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var (hostName, port) = AddressParser.Parse(item.Address);
-            var h = string.IsNullOrWhiteSpace(item.Host) ? hostName : item.Host;
+            var originalUri = new Uri(item.Address);
+            var originalHost = item.Host is { Length: > 0 } host ? host : originalUri.Authority;
+            var hostName = originalUri.DnsSafeHost;
             try
             {
                 var addresses = options.DnsAddressFamily switch
@@ -41,7 +42,19 @@ public class DnsDestinationResolver : DestinationResolverBase
                     { } addressFamily => await Dns.GetHostAddressesAsync(hostName, addressFamily, cancellationToken).ConfigureAwait(false),
                     null => await Dns.GetHostAddressesAsync(hostName, cancellationToken).ConfigureAwait(false)
                 };
-                destinations.AddRange(addresses.Select(i => new DestinationState() { EndPoint = new IPEndPoint(i, port), ClusterConfig = state.Cluster, Host = h }));
+                var uriBuilder = new UriBuilder(originalUri);
+                destinations.AddRange(addresses.Select(i =>
+                {
+                    var addressString = i.ToString();
+                    uriBuilder.Host = addressString;
+                    return new DestinationState()
+                    {
+                        EndPoint = new IPEndPoint(i, originalUri.Port),
+                        ClusterConfig = state.Cluster,
+                        Host = originalHost,
+                        Address = uriBuilder.Uri.ToString()
+                    };
+                }));
             }
             catch (Exception exception)
             {

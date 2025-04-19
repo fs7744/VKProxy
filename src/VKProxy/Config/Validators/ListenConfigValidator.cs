@@ -50,19 +50,19 @@ public class ListenConfigValidator : IValidator<ListenConfig>
                 var ps = value.Protocols.ToAll().ToArray();
                 foreach (var address in value.Address.Where(i => !string.IsNullOrWhiteSpace(i)))
                 {
-                    IEnumerable<EndPoint> endpoints = Enumerable.Empty<EndPoint>();
+                    List<EndPoint> endpoints = new();
                     foreach (var p in ps)
                     {
                         foreach (var item in endPointConvertors)
                         {
                             if (item.TryConvert(address, p, out var endPoints))
                             {
-                                endpoints = endpoints.Union(endPoints);
+                                endpoints.Add(endPoints);
                                 break;
                             }
                         }
                     }
-                    if (endpoints is EndPoint[] s && s.Length == 0)
+                    if (endpoints.Count == 0)
                     {
                         exceptions.Add(new ArgumentException($"Listen ({value.Key}) Address '{address}' can not convert to EndPoint."));
                         r = false;
