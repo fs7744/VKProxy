@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace VKProxy.Core.Infrastructure;
 
 // Adapted from https://github.com/dotnet/runtime/blob/82fee2692b3954ba8903fa4764f1f4e36a26341a/src/libraries/Common/src/System/Text/ValueStringBuilder.cs
-public partial struct ValueStringBuilder
+public ref partial struct ValueStringBuilder
 {
     public const int StackallocThreshold = 512;
 

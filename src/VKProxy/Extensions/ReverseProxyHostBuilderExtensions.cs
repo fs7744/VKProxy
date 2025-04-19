@@ -77,6 +77,11 @@ public static class ReverseProxyHostBuilderExtensions
 
             services.AddSingleton<ITransformBuilder, TransformBuilder>();
             services.AddSingleton<ITransformFactory, ForwardedTransformFactory>();
+            services.AddSingleton<ITransformFactory, HttpMethodTransformFactory>();
+            services.AddSingleton<ITransformFactory, PathTransformFactory>();
+            services.AddSingleton<ITransformFactory, QueryTransformFactory>();
+            services.AddSingleton<ITransformFactory, RequestHeadersTransformFactory>();
+            services.AddSingleton<ITransformFactory, ResponseTransformFactory>();
 
             services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
             services.AddSingleton<IApplicationBuilder>(i =>
