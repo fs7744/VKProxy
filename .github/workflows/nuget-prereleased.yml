@@ -1,0 +1,35 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  release:
+    types: 
+      - prereleased
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.x.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: BuildTest
+      run: dotnet build
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+    - name: Clean
+      run: dotnet clean
+    - name: Build
+      run: dotnet build --configuration Release --no-restore --version-suffix "-beta"
+    - name: push
+      env: 
+        nugetkey: ${{ secrets.nugetkey }}
+      run: for x in  $(find . -name "*.nupkg" -print); do dotnet nuget push -k $nugetkey -s https://api.nuget.org/v3/index.json $x; done
