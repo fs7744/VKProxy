@@ -55,7 +55,8 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IEndPointConvertor, CommonEndPointConvertor>();
             services.AddSingleton<ISniSelector, SniSelector>();
             services.AddSingleton<IHttpSelector, HttpSelector>();
-            services.AddSingleton<IDestinationResolver, DnsDestinationResolver>();
+            services.AddSingleton<IHostResolver, DnsDestinationResolver>();
+            services.AddSingleton<IDestinationResolver>(i => i.GetRequiredService<IHostResolver>() as IDestinationResolver);
             services.AddSingleton<IDestinationConfigParser, DestinationConfigParser>();
 
             services.AddSingleton<ILoadBalancingPolicy, RandomLoadBalancingPolicy>();
@@ -132,7 +133,8 @@ public static class ReverseProxyHostBuilderExtensions
 
     public static IServiceCollection UseSocks5(this IServiceCollection services)
     {
-        services.AddTransient<ITcpProxyMiddleware, Socks5TcpMiddleware>();
+        services.AddSingleton<ISocks5Auth, Socks5NoAuth>();
+        services.AddTransient<ITcpProxyMiddleware, Socks5Middleware>();
         return services;
     }
 

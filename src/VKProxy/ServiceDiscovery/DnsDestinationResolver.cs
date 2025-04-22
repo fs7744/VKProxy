@@ -9,7 +9,12 @@ using VKProxy.Health;
 
 namespace VKProxy.ServiceDiscovery;
 
-public class DnsDestinationResolver : DestinationResolverBase
+public interface IHostResolver
+{
+    Task<IPAddress[]> HostResolveAsync(string host, CancellationToken cancellationToken);
+}
+
+public class DnsDestinationResolver : DestinationResolverBase, IHostResolver
 {
     private readonly ReverseProxyOptions options;
     private readonly ProxyLogger logger;
@@ -24,6 +29,15 @@ public class DnsDestinationResolver : DestinationResolverBase
     }
 
     public override int Order => 0;
+
+    public Task<IPAddress[]> HostResolveAsync(string host, CancellationToken cancellationToken)
+    {
+        return options.DnsAddressFamily switch
+        {
+            { } addressFamily => Dns.GetHostAddressesAsync(host, addressFamily, cancellationToken),
+            null => Dns.GetHostAddressesAsync(host, cancellationToken)
+        };
+    }
 
     public override async Task ResolveAsync(FuncDestinationResolverState state, CancellationToken cancellationToken)
     {
