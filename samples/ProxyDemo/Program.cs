@@ -7,6 +7,7 @@ var app = Host.CreateDefaultBuilder(args)
     {
         i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
         //i.UseHttpMiddleware<EchoHttpMiddleware>();
+        i.UseSocks5();
     })
     .Build();
 

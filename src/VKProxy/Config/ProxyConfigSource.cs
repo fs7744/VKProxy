@@ -111,8 +111,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             ClusterId = section[nameof(RouteConfig.ClusterId)],
             UdpResponses = section.ReadInt32(nameof(RouteConfig.UdpResponses)).GetValueOrDefault(),
             Timeout = section.ReadTimeSpan(nameof(RouteConfig.Timeout)).GetValueOrDefault(options.DefaultProxyTimeout),
-            Protocols = section.ReadGatewayProtocols(nameof(RouteConfig.Protocols)).GetValueOrDefault(GatewayProtocols.HTTP1),
             Match = CreateRouteMatch(section.GetSection(nameof(RouteConfig.Match))),
+            Metadata = section.GetSection(nameof(RouteConfig.Metadata)).ReadStringDictionary(),
             Transforms = CreateTransforms(section.GetSection(nameof(RouteConfig.Transforms)))
         };
     }

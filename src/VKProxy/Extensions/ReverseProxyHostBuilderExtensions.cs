@@ -21,6 +21,7 @@ using VKProxy.LoadBalancing;
 using VKProxy.Middlewares;
 using VKProxy.Middlewares.Http;
 using VKProxy.Middlewares.Http.Transforms;
+using VKProxy.Middlewares.Socks5;
 using VKProxy.ServiceDiscovery;
 
 namespace Microsoft.Extensions.Hosting;
@@ -126,6 +127,12 @@ public static class ReverseProxyHostBuilderExtensions
     public static IServiceCollection UseTcpMiddleware<T>(this IServiceCollection services) where T : class, ITcpProxyMiddleware
     {
         services.AddTransient<ITcpProxyMiddleware, T>();
+        return services;
+    }
+
+    public static IServiceCollection UseSocks5(this IServiceCollection services)
+    {
+        services.AddTransient<ITcpProxyMiddleware, Socks5TcpMiddleware>();
         return services;
     }
 
