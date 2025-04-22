@@ -48,22 +48,41 @@ internal class Socks5Middleware : ITcpProxyMiddleware
     private async Task Proxy(ConnectionContext context, IL4ReverseProxyFeature feature, CancellationToken token)
     {
         var input = context.Transport.Input;
+        var output = context.Transport.Output;
         if (!await Socks5Parser.AuthAsync(input, auths, context, token))
         {
             context.Abort();
         }
         var cmd = await Socks5Parser.GetCmdRequestAsync(input, token);
-        //todo udp
-
         IPEndPoint ip = await ResolveIpAsync(context, cmd, token);
-        var upstream = await tcp.ConnectAsync(ip, token);
-        await Socks5Parser.ResponeAsync(context.Transport.Output, Socks5CmdResponseType.Success, token);
-        var task = await Task.WhenAny(
-                       context.Transport.Input.CopyToAsync(upstream.Transport.Output, token)
-                       , upstream.Transport.Input.CopyToAsync(context.Transport.Output, token));
-        if (task.IsCanceled)
+        switch (cmd.Cmd)
         {
-            context.Abort();
+            case Socks5Cmd.Connect:
+            case Socks5Cmd.Bind:
+                ConnectionContext upstream;
+                try
+                {
+                    upstream = await tcp.ConnectAsync(ip, token);
+                }
+                catch
+                {
+                    await Socks5Parser.ResponeAsync(output, Socks5CmdResponseType.ConnectFail, token);
+                    throw;
+                }
+                await Socks5Parser.ResponeAsync(output, Socks5CmdResponseType.Success, token);
+                var task = await Task.WhenAny(
+                               context.Transport.Input.CopyToAsync(upstream.Transport.Output, token)
+                               , upstream.Transport.Input.CopyToAsync(context.Transport.Output, token));
+                if (task.IsCanceled)
+                {
+                    context.Abort();
+                }
+                break;
+
+            case Socks5Cmd.UdpAssociate:
+                //todo udp
+                //context.ConnectionClosed.Register(state => {}, udpEndPoint);
+                break;
         }
     }
 
