@@ -55,14 +55,16 @@ async Task TestHttp3(string[] args)
             SslOptions = new System.Net.Security.SslClientAuthenticationOptions()
             {
                 RemoteCertificateValidationCallback = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) => true
-            }
+            },
+            Proxy = new WebProxy("socks5://127.0.0.1:5003")
         }
         )
     {
-        DefaultRequestVersion = HttpVersion.Version30,
-        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact,
+        DefaultRequestVersion = HttpVersion.Version20,
+        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
     };
-    HttpResponseMessage resp = await client.GetAsync("https://127.0.0.1:5001/");
+
+    HttpResponseMessage resp = await client.GetAsync("https://127.0.0.1:4001/");
     string body = await resp.Content.ReadAsStringAsync();
     Console.WriteLine(body);
 }

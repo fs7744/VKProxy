@@ -1,6 +1,11 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using System.Collections.Frozen;
 using System.Net;
+using VKProxy.Core.Adapters;
+using VKProxy.Core.Config;
+using VKProxy.Core.Infrastructure;
+using VKProxy.Core.Sockets.Udp;
+using VKProxy.Core.Sockets.Udp.Client;
 using VKProxy.Features;
 using VKProxy.ServiceDiscovery;
 
@@ -11,12 +16,16 @@ internal class Socks5Middleware : ITcpProxyMiddleware
     private readonly IDictionary<byte, ISocks5Auth> auths;
     private readonly IConnectionFactory tcp;
     private readonly IHostResolver hostResolver;
+    private readonly ITransportManager transport;
+    private readonly IUdpConnectionFactory udp;
 
-    public Socks5Middleware(IEnumerable<ISocks5Auth> socks5Auths, IConnectionFactory tcp, IHostResolver hostResolver)
+    public Socks5Middleware(IEnumerable<ISocks5Auth> socks5Auths, IConnectionFactory tcp, IHostResolver hostResolver, ITransportManager transport, IUdpConnectionFactory udp)
     {
         this.auths = socks5Auths.ToFrozenDictionary(i => i.AuthType);
         this.tcp = tcp;
         this.hostResolver = hostResolver;
+        this.transport = transport;
+        this.udp = udp;
     }
 
     public Task InitAsync(ConnectionContext context, CancellationToken token, TcpDelegate next)
@@ -80,13 +89,58 @@ internal class Socks5Middleware : ITcpProxyMiddleware
                 break;
 
             case Socks5Cmd.UdpAssociate:
-                //todo udp
-                //context.ConnectionClosed.Register(state => {}, udpEndPoint);
+                var local = context.LocalEndPoint as IPEndPoint;
+                var op = new EndPointOptions()
+                {
+                    EndPoint = new UdpEndPoint(local.Address, 0),
+                    Key = Guid.NewGuid().ToString(),
+                };
+                try
+                {
+                    var remote = context.RemoteEndPoint;
+                    var timeout = feature.Route.Timeout;
+                    op.EndPoint = await transport.BindAsync(op, c => ProxyUdp(c as UdpConnectionContext, remote, timeout), token);
+                    context.ConnectionClosed.Register(state => transport.StopEndpointsAsync(new List<EndPointOptions>() { state as EndPointOptions }, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult(), op);
+                }
+                catch
+                {
+                    await Socks5Parser.ResponeAsync(output, Socks5CmdResponseType.ConnectFail, token);
+                    throw;
+                }
+                await Socks5Parser.ResponeAsync(output, op.EndPoint as IPEndPoint, Socks5CmdResponseType.Success, token);
                 break;
         }
     }
 
-    private async Task<IPEndPoint> ResolveIpAsync(ConnectionContext context, Socks5CmdRequest cmd, CancellationToken token)
+    private async Task ProxyUdp(UdpConnectionContext context, EndPoint remote, TimeSpan timeout)
+    {
+        using var cts = CancellationTokenSourcePool.Default.Rent(timeout);
+        var token = cts.Token;
+        if (context.RemoteEndPoint.GetHashCode() == remote.GetHashCode())
+        {
+            var req = Socks5Parser.GetUdpRequest(context.ReceivedBytes);
+            IPEndPoint ip = await ResolveIpAsync(req, token);
+            await udp.SendToAsync(context.Socket, ip, req.Data, token);
+        }
+        else
+        {
+            await Socks5Parser.UdpResponeAsync(udp, context, remote as IPEndPoint, token);
+        }
+    }
+
+    private async Task<IPEndPoint> ResolveIpAsync(ConnectionContext context, Socks5Common cmd, CancellationToken token)
+    {
+        IPEndPoint ip = await ResolveIpAsync(cmd, token);
+        if (ip is null)
+        {
+            await Socks5Parser.ResponeAsync(context.Transport.Output, Socks5CmdResponseType.AddressNotAllow, token);
+            context.Abort();
+        }
+
+        return ip;
+    }
+
+    private async Task<IPEndPoint> ResolveIpAsync(Socks5Common cmd, CancellationToken token)
     {
         IPEndPoint ip;
         if (cmd.Domain is not null)
@@ -106,11 +160,6 @@ internal class Socks5Middleware : ITcpProxyMiddleware
         else
         {
             ip = null;
-        }
-        if (ip is null)
-        {
-            await Socks5Parser.ResponeAsync(context.Transport.Output, Socks5CmdResponseType.AddressNotAllow, token);
-            context.Abort();
         }
 
         return ip;

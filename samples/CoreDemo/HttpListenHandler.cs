@@ -23,7 +23,55 @@ public class HttpListenHandler : ListenHandlerBase
     private async Task Proxy(HttpContext context)
     {
         var resp = context.Response;
-        resp.StatusCode = 404;
+        if (string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase))
+        {
+            resp.Headers.Origin = "*";
+            resp.Headers.AccessControlAllowOrigin = "*";
+            return;
+        }
+
+        if (string.Equals(context.Request.Path, "/testhttp", StringComparison.OrdinalIgnoreCase))
+        {
+            resp.Headers.ContentType = "text/html";
+            await resp.WriteAsync("""
+                <!DOCTYPE html>
+                <html>
+                <body>
+                <p id="demo">Fetch a file to change this text.</p>
+                <script>
+
+                fetch('https://127.0.0.1:4001/api', {
+                  method: 'POST',
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://127.0.0.1:4001'
+                  },
+                  protocol: 'http3',
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                document.getElementById("demo").innerHTML =data.protocol;
+                  console.log(data);
+                })
+                .catch(error => {
+                  console.error('There was a problem with the fetch operation:', error);
+                });
+
+                </script>
+                </body>
+                </html>
+
+                """);
+            return;
+        }
+
+        //resp.StatusCode = 404;
         await resp.WriteAsJsonAsync(new { context.Request.Protocol });
         await resp.CompleteAsync().ConfigureAwait(false);
     }
@@ -34,14 +82,14 @@ public class HttpListenHandler : ListenHandlerBase
         {
             var ip = new EndPointOptions()
             {
-                EndPoint = IPEndPoint.Parse("127.0.0.1:5000"),
+                EndPoint = IPEndPoint.Parse("127.0.0.1:4000"),
                 Key = "http"
             };
             await transportManager.BindHttpAsync(ip, Proxy, cancellationToken);
             logger.LogInformation($"listen {ip.EndPoint}");
             ip = new EndPointOptions()
             {
-                EndPoint = IPEndPoint.Parse("127.0.0.1:5001"),
+                EndPoint = IPEndPoint.Parse("127.0.0.1:4001"),
                 Key = "https"
             };
 
