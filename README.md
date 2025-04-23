@@ -17,6 +17,6 @@ show how to do l4/l7 proxy on Kestrel
 - [X] Configuration 
 - [X] reload config and rebind
 - [X] socks5 TCP
-- [ ] socks5 UDP
+- [X] socks5 UDP
 
 
