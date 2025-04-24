@@ -18,7 +18,7 @@ public class RouteConfigValidator : IValidator<RouteConfig>
             {
                 try
                 {
-                    match.StatementFunc = HttpRoutingStatementParser.ConvertFunc(match.Statement);
+                    match.StatementFunc = HttpRoutingStatementParser.ConvertToFunc(match.Statement);
                 }
                 catch (Exception ex)
                 {
