@@ -8,14 +8,12 @@ namespace VKProxy.Middlewares.Http;
 
 public class HttpReverseProxy : IMiddleware
 {
-    private readonly IHttpSelector selector;
     private readonly ILoadBalancingPolicyFactory loadBalancing;
     private readonly ProxyLogger logger;
     private readonly IHttpForwarder forwarder;
 
-    public HttpReverseProxy(IHttpSelector selector, ILoadBalancingPolicyFactory loadBalancing, ProxyLogger logger, IHttpForwarder forwarder)
+    public HttpReverseProxy(ILoadBalancingPolicyFactory loadBalancing, ProxyLogger logger, IHttpForwarder forwarder)
     {
-        this.selector = selector;
         this.loadBalancing = loadBalancing;
         this.logger = logger;
         this.forwarder = forwarder;
@@ -29,7 +27,7 @@ public class HttpReverseProxy : IMiddleware
         if (proxyFeature is not null)
         {
             var route = proxyFeature.Route;
-            route ??= proxyFeature.Route = await selector.MatchAsync(context);
+
             if (route is not null)
             {
                 var cluster = route.ClusterConfig;

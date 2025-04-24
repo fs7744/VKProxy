@@ -140,6 +140,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Hosts = section.GetSection(nameof(RouteMatch.Hosts)).ReadStringArray(),
             Paths = section.GetSection(nameof(RouteMatch.Paths)).ReadStringArray(),
             Methods = section.GetSection(nameof(RouteMatch.Methods)).ReadStringArray()?.ToFrozenSet(StringComparer.OrdinalIgnoreCase),
+            Statement = section[nameof(RouteMatch.Statement)]
         };
     }
 

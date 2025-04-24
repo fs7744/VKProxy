@@ -17,16 +17,18 @@ internal class ListenHandler : ListenHandlerBase
 {
     private readonly IConfigSource<IProxyConfig> configSource;
     private readonly ProxyLogger logger;
+    private readonly IHttpSelector httpSelector;
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
     private readonly RequestDelegate http;
 
-    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger,
+    public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IHttpSelector httpSelector,
         ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder)
     {
         this.configSource = configSource;
         this.logger = logger;
+        this.httpSelector = httpSelector;
         this.sniSelector = sniSelector;
         this.udp = udp;
         this.tcp = tcp;
@@ -103,11 +105,11 @@ internal class ListenHandler : ListenHandlerBase
         }
     }
 
-    private Task DoHttp(HttpContext context, RouteConfig? route)
+    private async Task DoHttp(HttpContext context, RouteConfig? route)
     {
-        var proxyFeature = new L7ReverseProxyFeature() { Route = route };
+        var proxyFeature = new L7ReverseProxyFeature() { Route = route ?? await httpSelector.MatchAsync(context) };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
-        return http(context);
+        await http(context);
     }
 
     private Task DoTcp(ConnectionContext connection, RouteConfig? route, bool useSni, SniConfig? sni)

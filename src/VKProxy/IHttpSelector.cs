@@ -126,7 +126,8 @@ public class HttpSelector : IHttpSelector
         var req = context.Request;
         if (match.Methods is not null && !match.Methods.Contains(req.Method))
             return false;
-        // todo add query  header  sqlwhere
+        if (match.StatementFunc is not null)
+            return match.StatementFunc(context);
         return true;
     }
 
