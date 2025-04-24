@@ -69,6 +69,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IHealthUpdater, HealthyAndUnknownDestinationsUpdater>();
             services.AddSingleton<IActiveHealthCheckMonitor, ActiveHealthCheckMonitor>();
             services.AddSingleton<IActiveHealthChecker, ConnectionActiveHealthChecker>();
+            services.AddSingleton<IActiveHealthChecker, HttpActiveHealthChecker>();
             services.AddSingleton(TimeProvider.System);
 
             services.AddSingleton<IUdpReverseProxy, UdpReverseProxy>();

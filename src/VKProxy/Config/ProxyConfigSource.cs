@@ -7,6 +7,7 @@ using System.Security.Authentication;
 using VKProxy.Config.Validators;
 using VKProxy.Core.Config;
 using VKProxy.Core.Loggers;
+using VKProxy.Health;
 
 namespace VKProxy.Config;
 
@@ -23,6 +24,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
     private readonly IValidator<IProxyConfig> validator;
     private readonly IHttpSelector httpSelector;
     private readonly ISniSelector sniSelector;
+    private readonly IActiveHealthCheckMonitor healthCheckMonitor;
 
     public IProxyConfig CurrentSnapshot => snapshot;
 
@@ -32,7 +34,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
     }
 
     public ProxyConfigSource(IConfiguration configuration, IOptions<ReverseProxyOptions> options, ProxyLogger logger,
-        IValidator<IProxyConfig> validator, IHttpSelector httpSelector, ISniSelector sniSelector)
+        IValidator<IProxyConfig> validator, IHttpSelector httpSelector, ISniSelector sniSelector, IActiveHealthCheckMonitor healthCheckMonitor)
     {
         this.configuration = configuration;
         this.logger = logger;
@@ -40,6 +42,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         this.validator = validator;
         this.httpSelector = httpSelector;
         this.sniSelector = sniSelector;
+        this.healthCheckMonitor = healthCheckMonitor;
         UpdateSnapshot();
         var section = configuration.GetSection("ReverseProxy");
         subscription = ChangeToken.OnChange(section.GetReloadToken, UpdateSnapshot);
@@ -248,6 +251,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         s.Policy = section[nameof(ActiveHealthCheckConfig.Policy)] ?? s.Policy;
         s.Path = section[nameof(ActiveHealthCheckConfig.Path)];
         s.Query = section[nameof(ActiveHealthCheckConfig.Query)];
+        s.Method = section[nameof(ActiveHealthCheckConfig.Method)];
         s.Passes = section.ReadInt32(nameof(ActiveHealthCheckConfig.Passes)).GetValueOrDefault(s.Passes);
         s.Fails = section.ReadInt32(nameof(ActiveHealthCheckConfig.Fails)).GetValueOrDefault(s.Fails);
         return s;
@@ -308,6 +312,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
                 logger.ErrorConfig(error.Message);
             }
         }
+
+        healthCheckMonitor.CheckHealthAsync(current.Clusters.Values);
 
         bool sniChanged = false;
         bool httpChanged = false;

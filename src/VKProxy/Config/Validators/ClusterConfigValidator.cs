@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using VKProxy.Health;
 using VKProxy.LoadBalancing;
+using VKProxy.Middlewares.Http;
 using VKProxy.ServiceDiscovery;
 
 namespace VKProxy.Config.Validators;
@@ -12,15 +13,17 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
     private readonly IHealthReporter healthReporter;
     private readonly IHealthUpdater healthUpdater;
     private readonly IEnumerable<IDestinationConfigParser> destinationConfigParsers;
+    private readonly IForwarderHttpClientFactory httpClientFactory;
 
     public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, IEnumerable<ILoadBalancingPolicy> policies, IHealthReporter healthReporter,
-        IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers)
+        IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers, IForwarderHttpClientFactory httpClientFactory)
     {
         this.resolvers = resolvers.OrderByDescending(i => i.Order).ToArray();
         this.policies = policies.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
         this.healthReporter = healthReporter;
         this.healthUpdater = healthUpdater;
         this.destinationConfigParsers = destinationConfigParsers;
+        this.httpClientFactory = httpClientFactory;
     }
 
     public async ValueTask<bool> ValidateAsync(ClusterConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -46,6 +49,10 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
                 passive.ReactivationPeriod = passive.ReactivationPeriod >= passive.DetectionWindowSize ? passive.ReactivationPeriod : passive.DetectionWindowSize;
                 value.HealthReporter = healthReporter;
             }
+            if (value.HealthCheck.Active != null && string.Equals(value.HealthCheck.Active.Policy, "http", StringComparison.OrdinalIgnoreCase))
+            {
+                value.InitHttp(httpClientFactory);
+            }
         }
 
         List<IDestinationResolverState> states = new List<IDestinationResolverState>();
@@ -60,6 +67,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
                 if (parser.TryParse(d, out var state))
                 {
                     handled = true;
+                    state.ClusterConfig = value;
                     destinationStates.Add(state);
                     break;
                 }

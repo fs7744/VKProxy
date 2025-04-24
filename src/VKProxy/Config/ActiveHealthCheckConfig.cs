@@ -22,6 +22,8 @@ public sealed record ActiveHealthCheckConfig
     /// </summary>
     public string? Query { get; set; }
 
+    public string? Method { get; set; }
+
     public static bool Equals(ActiveHealthCheckConfig? t, ActiveHealthCheckConfig? other)
     {
         if (t is null && other is null) return true;
@@ -36,7 +38,8 @@ public sealed record ActiveHealthCheckConfig
             && t.Fails == other.Fails
             && string.Equals(t.Policy, other.Policy, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.Path, other.Path, StringComparison.Ordinal)
-            && string.Equals(t.Query, other.Query, StringComparison.Ordinal);
+            && string.Equals(t.Query, other.Query, StringComparison.Ordinal)
+            && string.Equals(t.Method, other.Method, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool Equals(ActiveHealthCheckConfig? other)
@@ -52,7 +55,8 @@ public sealed record ActiveHealthCheckConfig
             t.Fails,
             t.Policy?.GetHashCode(StringComparison.OrdinalIgnoreCase),
             t.Path?.GetHashCode(StringComparison.Ordinal),
-            t.Query?.GetHashCode(StringComparison.Ordinal));
+            t.Query?.GetHashCode(StringComparison.Ordinal),
+            t.Method?.GetHashCode(StringComparison.OrdinalIgnoreCase));
     }
 
     public override int GetHashCode()

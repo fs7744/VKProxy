@@ -18,5 +18,6 @@ show how to do l4/l7 proxy on Kestrel
 - [X] reload config and rebind
 - [X] socks5 TCP
 - [X] socks5 UDP
+- [X] Http Active HealthCheck
 
 
