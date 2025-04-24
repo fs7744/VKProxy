@@ -8,20 +8,19 @@ public class VKServer : IServer
 {
     private readonly ITransportManager transportManager;
     private readonly IHeartbeat heartbeat;
-    private readonly IListenHandler listenHandler;
+    private readonly IEnumerable<IListenHandler> listenHandlers;
     private readonly GeneralLogger logger;
     private bool _hasStarted;
     private int _stopping;
     private readonly SemaphoreSlim _bindSemaphore = new SemaphoreSlim(initialCount: 1);
     private readonly CancellationTokenSource _stopCts = new CancellationTokenSource();
     private readonly TaskCompletionSource _stoppedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-    private IDisposable? _configChangedRegistration;
 
-    public VKServer(ITransportManager transportManager, IHeartbeat heartbeat, IListenHandler listenHandler, GeneralLogger logger)
+    public VKServer(ITransportManager transportManager, IHeartbeat heartbeat, IEnumerable<IListenHandler> listenHandlers, GeneralLogger logger)
     {
         this.transportManager = transportManager;
         this.heartbeat = heartbeat;
-        this.listenHandler = listenHandler;
+        this.listenHandlers = listenHandlers;
         this.logger = logger;
     }
 
@@ -34,7 +33,10 @@ public class VKServer : IServer
                 throw new InvalidOperationException("Server already started");
             }
             _hasStarted = true;
-            await listenHandler.InitAsync(cancellationToken);
+            foreach (var listenHandler in listenHandlers)
+            {
+                await listenHandler.InitAsync(cancellationToken);
+            }
             heartbeat.StartHeartbeat();
             await BindAsync(cancellationToken).ConfigureAwait(false);
         }
@@ -55,10 +57,12 @@ public class VKServer : IServer
             {
                 throw new InvalidOperationException("Server has already been stopped.");
             }
-
-            IChangeToken? reloadToken = listenHandler.GetReloadToken();
-            await listenHandler.BindAsync(transportManager, _stopCts.Token).ConfigureAwait(false);
-            _configChangedRegistration = reloadToken?.RegisterChangeCallback(TriggerRebind, this);
+            foreach (var listenHandler in listenHandlers)
+            {
+                IChangeToken? reloadToken = listenHandler.GetReloadToken();
+                await listenHandler.BindAsync(transportManager, _stopCts.Token).ConfigureAwait(false);
+                reloadToken?.RegisterChangeCallback(TriggerRebind, listenHandler);
+            }
         }
         finally
         {
@@ -68,13 +72,13 @@ public class VKServer : IServer
 
     private void TriggerRebind(object? state)
     {
-        if (state is VKServer server)
+        if (state is IListenHandler listenHandler)
         {
-            _ = server.RebindAsync();
+            _ = RebindAsync(listenHandler);
         }
     }
 
-    private async Task RebindAsync()
+    private async Task RebindAsync(IListenHandler listenHandler)
     {
         await _bindSemaphore.WaitAsync();
 
@@ -91,11 +95,11 @@ public class VKServer : IServer
         }
         catch (Exception ex)
         {
-            logger.UnexpectedException("Unable to reload configuration", ex);
+            logger.UnexpectedException("Unable to reload config", ex);
         }
         finally
         {
-            _configChangedRegistration = reloadToken?.RegisterChangeCallback(TriggerRebind, this);
+            reloadToken?.RegisterChangeCallback(TriggerRebind, listenHandler);
             _bindSemaphore.Release();
         }
     }
@@ -116,7 +120,10 @@ public class VKServer : IServer
 
         try
         {
-            await listenHandler.StopAsync(transportManager, cancellationToken).ConfigureAwait(false);
+            foreach (var listenHandler in listenHandlers)
+            {
+                await listenHandler.StopAsync(transportManager, cancellationToken).ConfigureAwait(false);
+            }
             await transportManager.StopAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -126,7 +133,6 @@ public class VKServer : IServer
         }
         finally
         {
-            _configChangedRegistration?.Dispose();
             _stopCts.Dispose();
             _bindSemaphore.Release();
         }
