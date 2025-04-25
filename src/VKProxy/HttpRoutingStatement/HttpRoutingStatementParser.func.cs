@@ -140,11 +140,13 @@ public static partial class HttpRoutingStatementParser
                 var k = d.Key;
                 return c => func(c, k);
             }
+            throw new ParserExecption($"Not support field {d.Field}('{d.Key}')");
         }
         else if (v is FieldStatement f)
         {
             if (fields.TryGetValue(f.Field, out var func))
                 return func;
+            throw new ParserExecption($"Not support field {f.Field}");
         }
         else if (v is StringValueStatement s)
         {
