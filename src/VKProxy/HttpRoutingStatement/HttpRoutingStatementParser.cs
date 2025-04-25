@@ -20,7 +20,12 @@ public static partial class HttpRoutingStatementParser
         {
             throw new ParserExecption($"statements must be only one");
         }
-        return ConvertToFunc(statements.Pop());
+        var f = ConvertToFunc(statements.Pop());
+        if (f == null)
+        {
+            throw new ParserExecption($"Can't parse {statement}");
+        }
+        return f;
     }
 
     public static Stack<Statement> ParseStatements(string statement)

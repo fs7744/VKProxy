@@ -115,7 +115,16 @@ public static partial class HttpRoutingStatementParser
 
     private static void DoConvertToString(StringBuilder sb, ValueStatement v)
     {
-        if (v is FieldStatement f)
+        if (v is DynamicFieldStatement d)
+        {
+            sb.Append(d.Field);
+            sb.Append("(");
+            sb.Append("'");
+            sb.Append(d.Key.Replace("'", "\\'"));
+            sb.Append("'");
+            sb.Append(")");
+        }
+        else if (v is FieldStatement f)
         {
             sb.Append(f.Field);
         }
@@ -132,15 +141,6 @@ public static partial class HttpRoutingStatementParser
         else if (v is NumberValueStatement n)
         {
             sb.Append(n.Value.ToString());
-        }
-        else if (v is DynamicFieldStatement d)
-        {
-            sb.Append(d.Field);
-            sb.Append("(");
-            sb.Append("'");
-            sb.Append(d.Key.Replace("'", "\\'"));
-            sb.Append("'");
-            sb.Append(")");
         }
     }
 }

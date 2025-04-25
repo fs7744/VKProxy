@@ -69,6 +69,7 @@ public class TokenParserTest
     [InlineData("-1 => 3", "-1,=,>,3")]
     [InlineData("(-1 = 3) and (5 = 4)", "(,-1,=,3,),and,(,5,=,4,)")]
     [InlineData(" '\r\t's\\'  gdfdg'     ", "\r\t,s\\,  gdfdg")]
+    [InlineData("'[/]test77.*'", "[/]test77.*")]
     public void ShouldParseSign(string test, string expected)
     {
         TestToken(test, tokens =>

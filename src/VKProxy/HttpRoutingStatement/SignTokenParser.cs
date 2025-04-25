@@ -26,6 +26,7 @@ public class SignTokenParser : ITokenParser
             case Symbols.LessThan:
             case Symbols.GreaterThan:
             case Symbols.ExclamationMark:
+            case Symbols.Tilde:
                 if (context.TryNext(out var c) && c == Symbols.Equal)
                 {
                     context.TryNext(out var _);

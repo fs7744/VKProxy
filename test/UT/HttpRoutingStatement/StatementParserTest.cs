@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using Microsoft.AspNetCore.Http;
+using Moq;
+using System.Text;
 using VKProxy.HttpRoutingStatement;
 using VKProxy.HttpRoutingStatement.Statements;
 
@@ -91,5 +93,53 @@ public class StatementParserTest
                 Assert.Fail("Not Found Statement");
             }
         });
+    }
+
+    [Theory]
+    [InlineData("Path = '/testp'", true)]
+    [InlineData("Path = '/testp3'", false)]
+    [InlineData("IsHttps = false", true)]
+    [InlineData("IsHttps = true", false)]
+    [InlineData("ContentLength = 3", false)]
+    [InlineData("3 = ContentLength", false)]
+    [InlineData("3 > ContentLength", false)]
+    [InlineData("3 >= ContentLength", false)]
+    [InlineData("13 < ContentLength", false)]
+    [InlineData("13 <= ContentLength", false)]
+    [InlineData("header('x-c') = 'test'", false)]
+    [InlineData("Cookie('x-c') = 'test'", false)]
+    [InlineData("Query('x-c') = 'test'", false)]
+    [InlineData("header('x-c') = 'a'", true)]
+    [InlineData("Cookie('x-c') = 'ddd'", true)]
+    [InlineData("Query('x-c') = 'xxx'", true)]
+    [InlineData("header('x-c') != 'test'", true)]
+    [InlineData("Cookie('x-c') != 'test'", true)]
+    [InlineData("Query('x-c') != 'test'", true)]
+    [InlineData("header('x-c') != 'a'", false)]
+    [InlineData("Cookie('x-c') != 'ddd'", false)]
+    [InlineData("Query('x-c') != 'xxx'", false)]
+    [InlineData("header('x-c1') = 'a'", false)]
+    [InlineData("Cookie('x-c1') = 'ddd'", false)]
+    [InlineData("Query('x-c1') = 'xxx'", false)]
+    [InlineData("Path ~= '[/]test.*'", true)]
+    [InlineData("Path ~= '[/]test.*' and 12 > ContentLength", true)]
+    [InlineData("Path ~= '[/]atest.*' and 12 > ContentLength", false)]
+    [InlineData("Path ~= '[/]atest.*' or 12 > ContentLength", true)]
+    [InlineData("(Path ~= '[/]atest.*' and 12 > ContentLength) or (Path ~= '[/]atest.*' or 12 > ContentLength)", true)]
+    [InlineData("(Path ~= '[/]atest.*' and 12 > ContentLength) and (Path ~= '[/]atest.*' or 12 > ContentLength)", false)]
+    [InlineData("Path ~= '[/]test77.*'", false)]
+    public void Equal(string test, bool expected)
+    {
+        var func = HttpRoutingStatementParser.ConvertToFunc(test);
+        Assert.NotNull(func);
+
+        var context = new Mock<HttpContext>();
+        context.Setup(r => r.Request.Path).Returns("/testp");
+        context.Setup(r => r.Request.ContentLength).Returns(9);
+        context.Setup(r => r.Request.Headers["x-c"]).Returns("a");
+        context.Setup(r => r.Request.Cookies["x-c"]).Returns("ddd");
+        context.Setup(r => r.Request.Query["x-c"]).Returns("xxx");
+
+        Assert.Equal(expected, func(context.Object));
     }
 }

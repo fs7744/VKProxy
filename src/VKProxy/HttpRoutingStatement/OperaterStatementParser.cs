@@ -138,7 +138,12 @@ public class OperaterStatementParser : IStatementParser
 
     private bool TryConvertDynmaicField(ReadOnlySpan<char> v, StatementParserContext context)
     {
-        if (v.Equals("Query", StringComparison.OrdinalIgnoreCase) || v.Equals("Header", StringComparison.OrdinalIgnoreCase) || v.Equals("Cookie", StringComparison.OrdinalIgnoreCase))
+        if (v.Equals("Query", StringComparison.OrdinalIgnoreCase)
+            || v.Equals("Header", StringComparison.OrdinalIgnoreCase)
+            || v.Equals("Cookie", StringComparison.OrdinalIgnoreCase)
+            || v.Equals("Form", StringComparison.OrdinalIgnoreCase)
+            //|| v.Equals("Route", StringComparison.OrdinalIgnoreCase)
+            )
         {
             var index = context.Index;
             if (context.MoveNext())

@@ -52,6 +52,7 @@ public static class ReverseProxyHostBuilderExtensions
             services.AddSingleton<IValidator<ListenConfig>, ListenConfigValidator>();
             services.AddSingleton<IValidator<SniConfig>, SniConfigValidator>();
             services.AddSingleton<IValidator<ClusterConfig>, ClusterConfigValidator>();
+            services.AddSingleton<IValidator<RouteConfig>, RouteConfigValidator>();
             services.AddSingleton<IEndPointConvertor, CommonEndPointConvertor>();
             services.AddSingleton<ISniSelector, SniSelector>();
             services.AddSingleton<IHttpSelector, HttpSelector>();
