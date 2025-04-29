@@ -99,8 +99,8 @@ public static class KestrelExtensions
 
     internal static IServiceCollection UseInternalKestrel(this IServiceCollection services, Action<KestrelServerOptions> options = null)
     {
+        services.UseInternalKestrelCore();
         services.AddTransient<IHttpContextFactory, DefaultHttpContextFactory>();
-        services.TryAddSingleton(typeof(IConnectionFactory), typeof(SocketTransportFactory).Assembly.DefinedTypes.First(i => i.Name == "SocketConnectionFactory"));
         if (QuicListener.IsSupported)
             services.TryAddSingleton(typeof(IMultiplexedConnectionListenerFactory), typeof(QuicTransportOptions).Assembly.DefinedTypes.First(i => i.Name == "QuicTransportFactory"));
         if (OperatingSystem.IsWindows())
@@ -114,6 +114,12 @@ public static class KestrelExtensions
             options?.Invoke(o);
             o.AddServerHeader = false;
         });
+        return services;
+    }
+
+    public static IServiceCollection UseInternalKestrelCore(this IServiceCollection services)
+    {
+        services.TryAddSingleton(typeof(IConnectionFactory), typeof(SocketTransportFactory).Assembly.DefinedTypes.First(i => i.Name == "SocketConnectionFactory"));
         services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelServerOptionsSetup>();
         services.AddTransient<KestrelServer>();
         services.AddSingleton<TransportManagerAdapter>();

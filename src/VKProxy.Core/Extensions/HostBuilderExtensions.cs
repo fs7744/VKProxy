@@ -18,15 +18,32 @@ public static class HostBuilderExtensions
         hostBuilder.ConfigureServices(services =>
         {
             services.UseInternalKestrel();
-            services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();
-            services.AddSingleton<IConnectionListenerFactory, UdpTransportFactory>();
-            services.AddSingleton<GeneralLogger>();
-            services.AddSingleton<IHostedService, VKHostedService>();
-            services.TryAddSingleton<IServer, VKServer>();
-            services.AddSingleton<ICertificateLoader, CertificateLoader>();
-            services.AddSingleton<IRandomFactory, RandomFactory>();
+            services.UseVKProxyCore();
         });
 
         return hostBuilder;
+    }
+
+    public static IHostApplicationBuilder UseVKProxyCore(this IHostApplicationBuilder hostBuilder)
+    {
+        var services = hostBuilder.Services;
+
+        services.UseInternalKestrelCore();
+        services.UseVKProxyCore();
+
+        return hostBuilder;
+    }
+
+    public static IServiceCollection UseVKProxyCore(this IServiceCollection services)
+    {
+        services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();
+        services.AddSingleton<IConnectionListenerFactory, UdpTransportFactory>();
+        services.AddSingleton<GeneralLogger>();
+        services.AddSingleton<IHostedService, VKHostedService>();
+        services.TryAddSingleton<IServer, VKServer>();
+        services.AddSingleton<ICertificateLoader, CertificateLoader>();
+        services.AddSingleton<IRandomFactory, RandomFactory>();
+
+        return services;
     }
 }
