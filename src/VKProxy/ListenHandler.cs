@@ -83,16 +83,13 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task OnBindAsync(ITransportManager transportManager, ListenEndPointOptions options, CancellationToken cancellationToken)
     {
-        var route = options.RouteConfig;
         if (options.Protocols == GatewayProtocols.UDP)
         {
-            await transportManager.BindAsync(options, c => DoUdp(c, route), cancellationToken);
+            await transportManager.BindAsync(options, c => DoUdp(c, options), cancellationToken);
         }
         else if (options.Protocols == GatewayProtocols.TCP)
         {
-            var sni = options.SniConfig;
-            var useSni = options.UseSni;
-            await transportManager.BindAsync(options, c => DoTcp(c, route, useSni, sni), cancellationToken);
+            await transportManager.BindAsync(options, c => DoTcp(c, options), cancellationToken);
         }
         else
         {
@@ -101,29 +98,29 @@ internal class ListenHandler : ListenHandlerBase
             {
                 https.ServerCertificateSelector = sniSelector.ServerCertificateSelector;
             }
-            await transportManager.BindHttpAsync(options, c => DoHttp(c, route), cancellationToken, options.GetHttpProtocols(), true, null, null, https);
+            await transportManager.BindHttpAsync(options, c => DoHttp(c, options), cancellationToken, options.GetHttpProtocols(), true, null, null, https);
         }
     }
 
-    private async Task DoHttp(HttpContext context, RouteConfig? route)
+    private async Task DoHttp(HttpContext context, ListenEndPointOptions? options)
     {
-        var proxyFeature = new L7ReverseProxyFeature() { Route = route ?? await httpSelector.MatchAsync(context) };
+        var proxyFeature = new L7ReverseProxyFeature() { Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context) };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
         await http(context);
     }
 
-    private Task DoTcp(ConnectionContext connection, RouteConfig? route, bool useSni, SniConfig? sni)
+    private Task DoTcp(ConnectionContext connection, ListenEndPointOptions? options)
     {
-        var proxyFeature = new L4ReverseProxyFeature() { Route = route, IsSni = useSni, SelectedSni = sni };
+        var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig };
         connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
         return tcp.Proxy(connection, proxyFeature);
     }
 
-    private Task DoUdp(ConnectionContext connection, RouteConfig? route)
+    private Task DoUdp(ConnectionContext connection, ListenEndPointOptions? options)
     {
         if (connection is UdpConnectionContext context)
         {
-            var proxyFeature = new L4ReverseProxyFeature() { Route = route };
+            var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig };
             context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
             return udp.Proxy(context, proxyFeature);
         }

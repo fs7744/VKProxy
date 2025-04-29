@@ -75,12 +75,13 @@ public class Socks5Parser
     public static async ValueTask<Socks5CmdRequest> GetCmdRequestAsync(PipeReader input, CancellationToken token)
     {
         var r = await input.ReadAtLeastAsync(8, token).ConfigureAwait(false);
-        var addressType = (Socks5Address)r.Buffer.FirstSpan[3];
+        var f = r.Buffer.FirstSpan.Length >= 4 ? r.Buffer.FirstSpan : r.Buffer.ToSpan();
+        var addressType = (Socks5Address)f[3];
         var len = addressType switch
         {
             Socks5Address.Ipv4 => 10,
             Socks5Address.Ipv6 => 22,
-            Socks5Address.Domain => r.Buffer.FirstSpan[4] + 7
+            Socks5Address.Domain => f[4] + 7
         };
         if (r.Buffer.Length < len)
         {

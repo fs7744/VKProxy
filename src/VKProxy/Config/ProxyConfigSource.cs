@@ -301,6 +301,14 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
                     && v.Equals(r))
                 {
                     current.ReplaceListen(k, v);
+                    if (!string.IsNullOrWhiteSpace(v.RouteId))
+                    {
+                        v.RouteConfig = current.Routes.TryGetValue(v.RouteId, out var rr) ? rr : null;
+                    }
+                    if (!string.IsNullOrWhiteSpace(v.SniId))
+                    {
+                        v.SniConfig = current.Sni.TryGetValue(v.SniId, out var rr) ? rr : null;
+                    }
                 }
             }
         }

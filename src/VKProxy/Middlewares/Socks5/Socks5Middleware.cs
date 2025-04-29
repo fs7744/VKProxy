@@ -60,7 +60,8 @@ internal class Socks5Middleware : ITcpProxyMiddleware
         var output = context.Transport.Output;
         if (!await Socks5Parser.AuthAsync(input, auths, context, token))
         {
-            context.Abort();
+            Abort(context);
+            return;
         }
         var cmd = await Socks5Parser.GetCmdRequestAsync(input, token);
         IPEndPoint ip = await ResolveIpAsync(context, cmd, token);
@@ -84,7 +85,12 @@ internal class Socks5Middleware : ITcpProxyMiddleware
                                , upstream.Transport.Input.CopyToAsync(context.Transport.Output, token));
                 if (task.IsCanceled)
                 {
-                    context.Abort();
+                    Abort(upstream);
+                    Abort(context);
+                    if (task.Exception is not null)
+                    {
+                        throw task.Exception;
+                    }
                 }
                 break;
 
@@ -112,6 +118,13 @@ internal class Socks5Middleware : ITcpProxyMiddleware
         }
     }
 
+    private static void Abort(ConnectionContext upstream)
+    {
+        upstream.Transport.Input.CancelPendingRead();
+        upstream.Transport.Output.CancelPendingFlush();
+        upstream.Abort();
+    }
+
     private async Task ProxyUdp(UdpConnectionContext context, EndPoint remote, TimeSpan timeout)
     {
         using var cts = CancellationTokenSourcePool.Default.Rent(timeout);
@@ -134,7 +147,8 @@ internal class Socks5Middleware : ITcpProxyMiddleware
         if (ip is null)
         {
             await Socks5Parser.ResponeAsync(context.Transport.Output, Socks5CmdResponseType.AddressNotAllow, token);
-            context.Abort();
+            Abort(context);
+            throw new EntryPointNotFoundException("Address not found");
         }
 
         return ip;
