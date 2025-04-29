@@ -56,7 +56,7 @@ async Task TestHttp3(string[] args)
             {
                 RemoteCertificateValidationCallback = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) => true
             },
-            Proxy = new WebProxy("socks5://127.0.0.1:5003")
+            Proxy = new WebProxy("socks5://127.0.0.1:5003") { Credentials = new NetworkCredential("test", "passtest") }
         }
         )
     {

@@ -35,29 +35,24 @@ public class Socks5Parser
             r = await input.ReadAtLeastAsync(len, token).ConfigureAwait(false);
         }
         var rr = r.Buffer.Slice(2, end);
-        ISocks5Auth auth = FindAuth(auths, rr);
+        ISocks5Auth auth = FindAuth(auths, rr, context);
         input.AdvanceTo(rr.End);
         if (auth == null) return false;
         return await auth.AuthAsync(context, token);
 
-        static ISocks5Auth FindAuth(IDictionary<byte, ISocks5Auth> auths, ReadOnlySequence<byte> rr)
+        static ISocks5Auth FindAuth(IDictionary<byte, ISocks5Auth> auths, ReadOnlySequence<byte> rr, ConnectionContext context)
         {
-            ISocks5Auth auth = null;
             foreach (var c in rr)
             {
                 foreach (var b in c.Span)
                 {
-                    if (auths.TryGetValue(b, out var a))
+                    if (auths.TryGetValue(b, out var a) && a.CanAuth(context))
                     {
-                        if (auth == null || auth.Order < a.Order)
-                        {
-                            auth = a;
-                        }
+                        return a;
                     }
                 }
             }
-
-            return auth;
+            return null;
         }
     }
 

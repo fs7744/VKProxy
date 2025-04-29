@@ -136,6 +136,7 @@ public static class ReverseProxyHostBuilderExtensions
     public static IServiceCollection UseSocks5(this IServiceCollection services)
     {
         services.AddSingleton<ISocks5Auth, Socks5NoAuth>();
+        services.AddSingleton<ISocks5Auth, Socks5PasswordAuth>();
         services.AddTransient<ITcpProxyMiddleware, Socks5Middleware>();
         return services;
     }
