@@ -44,13 +44,13 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         this.sniSelector = sniSelector;
         this.healthCheckMonitor = healthCheckMonitor;
         UpdateSnapshot();
-        var section = configuration.GetSection("ReverseProxy");
+        var section = configuration.GetSection(this.options.Section);
         subscription = ChangeToken.OnChange(section.GetReloadToken, UpdateSnapshot);
     }
 
     private void UpdateSnapshot()
     {
-        var section = configuration.GetSection("ReverseProxy");
+        var section = configuration.GetSection(options.Section);
         if (!section.Exists()) return;
         lock (configChangedLock)
         {
