@@ -54,7 +54,7 @@ internal class Socks5Middleware : ITcpProxyMiddleware
         return next(context, source, token);
     }
 
-    private async Task Proxy(ConnectionContext context, IL4ReverseProxyFeature feature, CancellationToken token)
+    internal async Task Proxy(ConnectionContext context, IL4ReverseProxyFeature feature, CancellationToken token)
     {
         var input = context.Transport.Input;
         var output = context.Transport.Output;
@@ -68,7 +68,6 @@ internal class Socks5Middleware : ITcpProxyMiddleware
         switch (cmd.Cmd)
         {
             case Socks5Cmd.Connect:
-            case Socks5Cmd.Bind:
                 ConnectionContext upstream;
                 try
                 {

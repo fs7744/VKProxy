@@ -20,11 +20,11 @@ public interface IHttpForwarder
 
 public class HttpForwarder : IHttpForwarder
 {
-    private const string WebSocketName = "websocket";
-    private static readonly Version DefaultVersion = HttpVersion.Version20;
+    internal const string WebSocketName = "websocket";
+    internal static readonly Version DefaultVersion = HttpVersion.Version20;
     private readonly ProxyLogger logger;
     private readonly TimeProvider timeProvider;
-    private const HttpVersionPolicy DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+    internal const HttpVersionPolicy DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
 
     public HttpForwarder(ProxyLogger logger, TimeProvider timeProvider)
     {
@@ -362,7 +362,7 @@ public class HttpForwarder : IHttpForwarder
 
         if (!ReferenceEquals(requestContent, destinationRequest.Content) && destinationRequest.Content is not EmptyHttpContent)
         {
-            throw new InvalidOperationException("Replacing the YARP outgoing request HttpContent is not supported. You should configure the HttpContext.Request instead.");
+            throw new InvalidOperationException("Replacing the outgoing request HttpContent is not supported. You should configure the HttpContext.Request instead.");
         }
 
         // The transformer generated a response, do not forward.

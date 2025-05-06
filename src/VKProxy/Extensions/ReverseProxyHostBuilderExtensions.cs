@@ -156,8 +156,15 @@ public static class ReverseProxyHostBuilderExtensions
     {
         services.AddSingleton<ISocks5Auth, Socks5NoAuth>();
         services.AddSingleton<ISocks5Auth, Socks5PasswordAuth>();
-        services.AddTransient<ITcpProxyMiddleware, Socks5Middleware>();
+        services.AddSingleton<Socks5Middleware>();
+        services.AddTransient<ITcpProxyMiddleware>(i => i.GetRequiredService<Socks5Middleware>());
+        services.AddTransient<ITcpProxyMiddleware, Socks5ToWSMiddleware>();
         return services;
+    }
+
+    public static IServiceCollection UseWSToSocks5(this IServiceCollection services)
+    {
+        return services.UseHttpMiddleware<WSToSocks5HttpMiddleware>();
     }
 
     public static IServiceCollection UseHttpMiddleware<T>(this IServiceCollection services, params object?[] args) where T : class
