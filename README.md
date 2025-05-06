@@ -21,5 +21,6 @@ show how to do l4/l7 proxy on Kestrel
 	- [X] simple user/password auth
 - [X] socks5 UDP
 - [X] Http Active HealthCheck
+- [X] socks5(tcp) to websocket to socks5
 
 
