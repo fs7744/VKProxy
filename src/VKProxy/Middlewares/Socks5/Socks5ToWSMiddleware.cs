@@ -106,12 +106,16 @@ internal class Socks5ToWSMiddleware : ITcpProxyMiddleware
         destinationRequest.Headers.TryAddWithoutValidation(HeaderNames.SecWebSocketVersion, "13");
         destinationRequest.Headers.TryAddWithoutValidation(HeaderNames.SecWebSocketKey, ProtocolHelper.CreateSecWebSocketKey());
         destinationRequest.Content = new EmptyHttpContent();
+        if (!string.IsNullOrWhiteSpace(selectedDestination.Host))
+        {
+            destinationRequest.Headers.TryAddWithoutValidation(HeaderNames.Host, selectedDestination.Host);
+        }
 
         var destinationResponse = await httpClient.SendAsync(destinationRequest, token);
         if (destinationResponse.StatusCode == HttpStatusCode.SwitchingProtocols)
         {
             using var destinationStream = await destinationResponse.Content.ReadAsStreamAsync(token);
-            using var clientStream = new DuplexPipeStreamAdapter<Stream>(null, context.Transport, static i => i);
+            var clientStream = new DuplexPipeStreamAdapter<Stream>(null, context.Transport, static i => i);
             var activityCancellationSource = ActivityCancellationTokenSource.Rent(route.Timeout);
             var requestTask = StreamCopier.CopyAsync(isRequest: true, clientStream, destinationStream, StreamCopier.UnknownLength, timeProvider, activityCancellationSource,
                 // HTTP/2 HttpClient request streams buffer by default.
@@ -119,6 +123,7 @@ internal class Socks5ToWSMiddleware : ITcpProxyMiddleware
             var responseTask = StreamCopier.CopyAsync(isRequest: false, destinationStream, clientStream, StreamCopier.UnknownLength, timeProvider, activityCancellationSource, token).AsTask();
 
             var task = await Task.WhenAny(requestTask, responseTask);
+            await clientStream.DisposeAsync();
             if (task.IsCanceled)
             {
                 Abort(context);

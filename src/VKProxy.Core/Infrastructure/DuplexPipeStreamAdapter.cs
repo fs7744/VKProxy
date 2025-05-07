@@ -48,6 +48,6 @@ public class DuplexPipeStreamAdapter<TStream> : DuplexPipeStream, IDuplexPipe wh
 
     protected override void Dispose(bool disposing)
     {
-        throw new NotSupportedException();
+        DisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
