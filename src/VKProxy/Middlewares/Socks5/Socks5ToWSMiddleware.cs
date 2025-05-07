@@ -15,15 +15,13 @@ namespace VKProxy.Middlewares.Socks5;
 
 internal class Socks5ToWSMiddleware : ITcpProxyMiddleware
 {
-    private readonly FrozenDictionary<byte, ISocks5Auth> auths;
     private readonly IForwarderHttpClientFactory httpClientFactory;
     private readonly ILoadBalancingPolicyFactory loadBalancing;
     private readonly ProxyLogger logger;
     private readonly TimeProvider timeProvider;
 
-    public Socks5ToWSMiddleware(IEnumerable<ISocks5Auth> socks5Auths, IForwarderHttpClientFactory httpClientFactory, ILoadBalancingPolicyFactory loadBalancing, ProxyLogger logger, TimeProvider timeProvider)
+    public Socks5ToWSMiddleware(IForwarderHttpClientFactory httpClientFactory, ILoadBalancingPolicyFactory loadBalancing, ProxyLogger logger, TimeProvider timeProvider)
     {
-        this.auths = socks5Auths.ToFrozenDictionary(i => i.AuthType);
         this.httpClientFactory = httpClientFactory;
         this.loadBalancing = loadBalancing;
         this.logger = logger;
