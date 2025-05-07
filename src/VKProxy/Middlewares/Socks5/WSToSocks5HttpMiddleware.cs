@@ -33,9 +33,6 @@ internal class WSToSocks5HttpMiddleware : IMiddleware
     private async Task Scoks5(HttpContext context)
     {
         var upgradeFeature = context.Features.Get<IHttpUpgradeFeature>();
-        if (upgradeFeature?.IsUpgradableRequest == true)
-        {
-        }
         var f = context.Features.Get<IHttpWebSocketFeature>();
         if (f.IsWebSocketRequest)
         {
