@@ -22,6 +22,7 @@ public class ListenConfig : IDisposable
 
     internal RouteConfig? RouteConfig { get; set; }
 
+    public List<ListenEndPointOptions> Options => ListenEndPointOptions;
     internal List<ListenEndPointOptions> ListenEndPointOptions { get; set; }
     private HttpsConnectionAdapterOptions httpsConnectionAdapterOptions;
 

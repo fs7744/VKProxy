@@ -1,6 +1,12 @@
-﻿namespace VKProxy.Storages.Etcd;
+﻿using dotnet_etcd.DependencyInjection;
 
-internal class EtcdProxyConfigSourceOptions
+namespace VKProxy.Storages.Etcd;
+
+public class EtcdProxyConfigSourceOptions
 {
     public string? Prefix { get; set; }
+
+    public string? ConnectionString { get; set; }
+
+    public bool UseInsecureChannel { get; set; }
 }
