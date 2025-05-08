@@ -1,4 +1,7 @@
-﻿namespace VKProxy.Config;
+﻿using DotNext.Collections.Generic;
+using System.Collections.Generic;
+
+namespace VKProxy.Config;
 
 public class ProxyConfigSnapshot : IProxyConfig
 {
@@ -23,33 +26,51 @@ public class ProxyConfigSnapshot : IProxyConfig
 
     public IReadOnlyDictionary<string, SniConfig> Sni => sni;
 
-    public void RemoveCluster(string key)
+    public ClusterConfig RemoveCluster(string key)
     {
-        clusters.Remove(key);
+        if (clusters.TryGetValue(key, out var r))
+            clusters.Remove(key);
+        return r;
     }
 
-    public void RemoveListen(string key)
+    public ListenConfig RemoveListen(string key)
     {
-        listen.Remove(key);
+        if (listen.TryGetValue(key, out var r))
+            listen.Remove(key);
+        return r;
     }
 
-    public void RemoveRoute(string key)
+    public RouteConfig RemoveRoute(string key)
     {
-        routes.Remove(key);
+        if (routes.TryGetValue(key, out var r))
+            routes.Remove(key);
+        return r;
     }
 
-    public void RemoveSni(string key)
+    public SniConfig RemoveSni(string key)
     {
-        sni.Remove(key);
+        if (sni.TryGetValue(key, out var r))
+            sni.Remove(key);
+        return r;
     }
 
-    internal void ReplaceListen(string k, ListenConfig v)
+    public void ReplaceListen(string k, ListenConfig v)
     {
         listen[k] = v;
     }
 
-    internal void ReplaceRoute(string k, RouteConfig v)
+    public void ReplaceRoute(string k, RouteConfig v)
     {
         routes[k] = v;
+    }
+
+    public void ReplaceSni(string k, SniConfig? v)
+    {
+        sni[k] = v;
+    }
+
+    public void ReplaceCluster(string k, ClusterConfig? v)
+    {
+        clusters[k] = v;
     }
 }

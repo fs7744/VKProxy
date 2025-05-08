@@ -59,6 +59,10 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                     {
                         ll.ClusterConfig = cluster;
                     }
+                    else
+                    {
+                        ll.ClusterConfig = null;
+                    }
                     foreach (var v in routeConfigValidators)
                     {
                         if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
@@ -85,6 +89,10 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                     {
                         l.Value.RouteConfig = route;
                     }
+                    else
+                    {
+                        l.Value.RouteConfig = null;
+                    }
                     foreach (var v in sniConfigValidators)
                     {
                         if (!(await v.ValidateAsync(ll, exceptions, cancellationToken)))
@@ -106,9 +114,17 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                     {
                         l.Value.SniConfig = sni;
                     }
+                    else
+                    {
+                        l.Value.SniConfig = null;
+                    }
                     if (!string.IsNullOrWhiteSpace(l.Value.RouteId) && value.Routes.TryGetValue(l.Value.RouteId, out var route))
                     {
                         l.Value.RouteConfig = route;
+                    }
+                    else
+                    {
+                        l.Value.RouteConfig = null;
                     }
                     foreach (var v in listenConfigValidators)
                     {

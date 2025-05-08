@@ -13,11 +13,11 @@ public interface IReadOnlyProxyConfig
 
 public interface IProxyConfig : IReadOnlyProxyConfig
 {
-    public void RemoveRoute(string key);
+    public RouteConfig RemoveRoute(string key);
 
-    public void RemoveCluster(string key);
+    public ClusterConfig RemoveCluster(string key);
 
-    public void RemoveListen(string key);
+    public ListenConfig RemoveListen(string key);
 
-    public void RemoveSni(string key);
+    public SniConfig RemoveSni(string key);
 }
