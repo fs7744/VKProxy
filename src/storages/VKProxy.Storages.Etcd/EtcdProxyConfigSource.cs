@@ -1,8 +1,9 @@
-﻿using dotnet_etcd;
-using dotnet_etcd.interfaces;
-using Etcdserverpb;
+﻿using Etcd;
 using Google.Protobuf;
+using Google.Protobuf.Collections;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
+using Mvccpb;
 using System.Text;
 using System.Text.Json;
 using VKProxy.Config;
@@ -21,6 +22,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
     private readonly ISniSelector sniSelector;
     private readonly IActiveHealthCheckMonitor healthCheckMonitor;
     private readonly string prefix;
+    private readonly TimeSpan delay;
     private CancellationTokenSource cts;
     private ProxyConfigSnapshot currentSnapshot;
     private readonly Lock configChangedLock = new Lock();
@@ -29,7 +31,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
 
     public IProxyConfig CurrentSnapshot => currentSnapshot;
 
-    public EtcdProxyConfigSource(IEtcdClient client, EtcdProxyConfigSourceOptions options, ProxyLogger logger,
+    public EtcdProxyConfigSource([FromKeyedServices(nameof(EtcdProxyConfigSource))] IEtcdClient client, EtcdProxyConfigSourceOptions options, ProxyLogger logger,
         IValidator<IProxyConfig> validator, IHttpSelector httpSelector, ISniSelector sniSelector, IActiveHealthCheckMonitor healthCheckMonitor)
     {
         this.client = client;
@@ -39,6 +41,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
         this.sniSelector = sniSelector;
         this.healthCheckMonitor = healthCheckMonitor;
         this.prefix = options.Prefix;
+        this.delay = options.Delay.GetValueOrDefault(EtcdHostBuilderExtensions.defaultDelay);
         cts = new CancellationTokenSource();
     }
 
@@ -51,7 +54,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
     {
         if (currentSnapshot is null)
         {
-            currentSnapshot = await LoadAllAsync(cancellationToken);
+            await LoadAllAsync(cancellationToken);
         }
         var r = (stop.SelectMany(i =>
         {
@@ -123,36 +126,40 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
         {
             await httpSelector.ReBuildAsync(config.Routes, cancellationToken);
         }
-
-        //Task.Factory.StartNew(async () =>
-        //{
-        //    while (true)
-        //    {
-        //        try
-        //        {
-        //            var id = await client.WatchRangeAsync(prefix, Change);
-        //            await Task.Delay(TimeSpan.FromSeconds(50));
-        //            (client as EtcdClient).CancelWatch(id);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            logger.UnexpectedException(ex.Message, ex);
-        //        }
-        //    }
-        //}, TaskCreationOptions.LongRunning);
-        // not working
-        await client.WatchRangeAsync(prefix, Change);
+        currentSnapshot = config;
+        await Task.Factory.StartNew(async () =>
+        {
+            long startRevision = 0;
+            while (true)
+            {
+                try
+                {
+                    using var watcher = await client.WatchRangeAsync(prefix, startRevision: startRevision);
+                    await watcher.ForAllAsync(i =>
+                    {
+                        startRevision = i.FindRevision(startRevision);
+                        if (!i.Events.Any()) return Task.CompletedTask;
+                        return ChangeAsync(i.Events);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    logger.UnexpectedException(ex.Message, ex);
+                }
+                await Task.Delay(delay);
+            }
+        }, TaskCreationOptions.LongRunning);
         return config;
     }
 
-    private void Change(WatchResponse response)
+    private async Task ChangeAsync(RepeatedField<Event> events)
     {
         lock (configChangedLock)
         {
             var hasListenChange = false;
             var hasHttpChange = false;
             var hasSniChange = false;
-            foreach (var evt in response.Events)
+            foreach (var evt in events)
             {
                 string key = GetUtf8String(evt.Kv.Key, prefix.Length);
                 if (key.StartsWith("route/", StringComparison.OrdinalIgnoreCase))
@@ -162,6 +169,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                     {
                         case Mvccpb.Event.Types.EventType.Put:
                             var vv = JsonSerializer.Deserialize<RouteConfig>(evt.Kv.Value.Span);
+                            vv.Key = k;
                             if (currentSnapshot.Routes.TryGetValue(k, out var v))
                             {
                                 if (!RouteConfig.Equals(v, vv))
@@ -199,6 +207,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                     {
                         case Mvccpb.Event.Types.EventType.Put:
                             var vv = JsonSerializer.Deserialize<ClusterConfig>(evt.Kv.Value.Span);
+                            vv.Key = k;
                             if (currentSnapshot.Clusters.TryGetValue(k, out var v))
                             {
                                 if (!ClusterConfig.Equals(v, vv))
@@ -224,6 +233,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                     {
                         case Mvccpb.Event.Types.EventType.Put:
                             var vv = JsonSerializer.Deserialize<ListenConfig>(evt.Kv.Value.Span);
+                            vv.Key = k;
                             if (currentSnapshot.Listen.TryGetValue(k, out var v))
                             {
                                 if (!ListenConfig.Equals(v, vv))
@@ -259,6 +269,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                     {
                         case Mvccpb.Event.Types.EventType.Put:
                             var vv = JsonSerializer.Deserialize<SniConfig>(evt.Kv.Value.Span);
+                            vv.Key = k;
                             if (currentSnapshot.Sni.TryGetValue(k, out var v))
                             {
                                 if (!SniConfig.Equals(v, vv))

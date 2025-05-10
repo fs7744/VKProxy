@@ -3,7 +3,10 @@ using VKProxy.Storages.Etcd;
 
 var app = Host.CreateDefaultBuilder(args)
     .UseReverseProxy()
-    .UseEtcdConfig()
+    .ConfigureServices(i =>
+    {
+        i.UseEtcdConfigFromEnv();
+    })
     .Build();
 
 await app.RunAsync();

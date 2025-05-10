@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "EtcdStorageDemo": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ETCD_CONNECTION_STRING": "http://172.16.171.56:8068",
+        "ETCD_PREFIX": "/ReverseProxy/"
+      }
+    }
+  }
+}

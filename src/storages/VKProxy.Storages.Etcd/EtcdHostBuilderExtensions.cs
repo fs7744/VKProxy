@@ -1,10 +1,6 @@
-﻿using dotnet_etcd;
-using dotnet_etcd.DependencyInjection;
-using dotnet_etcd.interfaces;
-using Grpc.Core;
+﻿using Etcd;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using VKProxy.Config;
 using VKProxy.Core.Config;
@@ -13,15 +9,17 @@ namespace VKProxy.Storages.Etcd;
 
 public static class EtcdHostBuilderExtensions
 {
+    internal static readonly TimeSpan defaultDelay = TimeSpan.FromSeconds(1);
+
     public static IServiceCollection UseEtcdConfig(this IServiceCollection services, EtcdProxyConfigSourceOptions options, Action<EtcdClientOptions> config = null)
     {
         var o = new EtcdClientOptions()
         {
-            ConnectionString = options.ConnectionString,
-            UseInsecureChannel = options.UseInsecureChannel,
+            Address = options.Address,
         };
         config?.Invoke(o);
-        services.AddEtcdClient(o);
+        services.UseEtcdClient();
+        services.AddEtcdClient(nameof(EtcdProxyConfigSource), o);
         if (string.IsNullOrWhiteSpace(options.Prefix))
         {
             options.Prefix = "/ReverseProxy/";
@@ -35,9 +33,9 @@ public static class EtcdHostBuilderExtensions
     {
         return UseEtcdConfig(services, new EtcdProxyConfigSourceOptions()
         {
-            ConnectionString = Environment.GetEnvironmentVariable("ETCD_CONNECTION_STRING"),
-            UseInsecureChannel = bool.TryParse(Environment.GetEnvironmentVariable("ETCD_USE_INSECURE_CHANNEL"), out var useInsecure) && useInsecure,
+            Address = Environment.GetEnvironmentVariable("ETCD_CONNECTION_STRING").Split(",", StringSplitOptions.RemoveEmptyEntries),
             Prefix = Environment.GetEnvironmentVariable("ETCD_PREFIX"),
+            Delay = TimeSpan.TryParse(Environment.GetEnvironmentVariable("ETCD_DELAY"), out var delay) ? delay : defaultDelay,
         }, config);
     }
 
@@ -59,9 +57,9 @@ public static class EtcdHostBuilderExtensions
         {
             throw new ArgumentException($"Section {sectionKey} not found in configuration");
         }
-        options.ConnectionString = section[nameof(EtcdProxyConfigSourceOptions.ConnectionString)];
+        options.Address = section.GetSection(nameof(EtcdProxyConfigSourceOptions.Address)).ReadStringArray();
         options.Prefix = section[nameof(EtcdProxyConfigSourceOptions.Prefix)];
-        options.UseInsecureChannel = section.ReadBool(nameof(EtcdProxyConfigSourceOptions.UseInsecureChannel)).GetValueOrDefault();
+        options.Delay = section.ReadTimeSpan(nameof(EtcdProxyConfigSourceOptions.Delay)).GetValueOrDefault(defaultDelay);
         if (string.IsNullOrWhiteSpace(options.Prefix))
         {
             options.Prefix = "/ReverseProxy/";
@@ -72,34 +70,6 @@ public static class EtcdHostBuilderExtensions
     public static IHostApplicationBuilder UseEtcdConfig(this IHostApplicationBuilder hostBuilder, string sectionKey = null, Action<EtcdClientOptions> config = null)
     {
         hostBuilder.Services.UseEtcdConfig(hostBuilder.Configuration, sectionKey, config);
-        return hostBuilder;
-    }
-
-    public static IHostBuilder UseEtcdConfig(this IHostBuilder hostBuilder, string sectionKey = null, Action<EtcdClientOptions> config = null)
-    {
-        hostBuilder.ConfigureServices(services =>
-        {
-            services.AddSingleton(i => ConvertOptions(i.GetRequiredService<IConfiguration>(), sectionKey));
-            services.AddSingleton<IConfigSource<IProxyConfig>, EtcdProxyConfigSource>();
-            services.TryAddSingleton((Func<IServiceProvider, IEtcdClient>)((IServiceProvider i) =>
-            {
-                var o = i.GetRequiredService<EtcdProxyConfigSourceOptions>();
-                EtcdClientOptions options = new EtcdClientOptions
-                {
-                    ConnectionString = o.ConnectionString,
-                    UseInsecureChannel = o.UseInsecureChannel,
-                };
-                config?.Invoke(options);
-                return new EtcdClient(options.ConnectionString, options.Port, options.ServerName, oo =>
-                {
-                    if (options.UseInsecureChannel)
-                    {
-                        oo.Credentials = ChannelCredentials.Insecure;
-                    }
-                }, options.Interceptors);
-            }));
-            services.TryAddTransient((IServiceProvider serviceProvider) => (serviceProvider.GetRequiredService<IEtcdClient>() as EtcdClient)?.GetWatchManager());
-        });
         return hostBuilder;
     }
 }
