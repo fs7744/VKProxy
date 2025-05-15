@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\storages\VKProxy.Storages.Etcd\VKProxy.Storages.Etcd.csproj" />
+    <ProjectReference Include="..\..\src\VKProxy.Storages.Etcd\VKProxy.Storages.Etcd.csproj" />
   </ItemGroup>
 
   <ItemGroup>

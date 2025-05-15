@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
+	<Import Project="../../ProjectCommon.targets" />
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <Description>etcd storages lib for VKProxy</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\VKProxy\VKProxy.csproj" />
+    <ProjectReference Include="..\VKProxy\VKProxy.csproj" />
   </ItemGroup>
 
 </Project>

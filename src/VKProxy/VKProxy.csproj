@@ -4,6 +4,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <Description>l4 / l7 proxy lib</Description>
   </PropertyGroup>
 
   <ItemGroup>
