@@ -2,7 +2,7 @@
 
 namespace VKProxy.Core.Hosting;
 
-internal class VKHostedService : IHostedService, IAsyncDisposable
+public class VKHostedService : IHostedService, IAsyncDisposable
 {
     private readonly IServer server;
 

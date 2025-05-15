@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Json;
 using VKProxy.Config;
 using VKProxy.Config.Validators;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
 using VKProxy.Health;
 
@@ -134,14 +135,18 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
             {
                 try
                 {
-                    using var watcher = await client.WatchRangeAsync(prefix, startRevision: startRevision);
+                    var cts = CancellationTokenSourcePool.Default.Rent();
+                    cts.CancelAfter(delay);
+                    using var watcher = await client.WatchRangeAsync(prefix, startRevision: startRevision, cancellationToken: cts.Token);
                     await watcher.ForAllAsync(i =>
                     {
                         startRevision = i.FindRevision(startRevision);
                         if (!i.Events.Any()) return Task.CompletedTask;
                         return ChangeAsync(i.Events);
-                    });
+                    }, cancellationToken: cts.Token);
                 }
+                catch (OperationCanceledException)
+                { }
                 catch (Exception ex)
                 {
                     logger.UnexpectedException(ex.Message, ex);
