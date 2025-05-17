@@ -15,8 +15,8 @@ public class ClusterConfig
 
     public IReadOnlyList<DestinationConfig>? Destinations { get; set; }
 
-    public HttpClientConfig HttpClientConfig { get; set; }
-    public ForwarderRequestConfig HttpRequest { get; set; }
+    public HttpClientConfig? HttpClientConfig { get; set; }
+    public ForwarderRequestConfig? HttpRequest { get; set; }
 
     internal IReadOnlyList<DestinationState> DestinationStates { get; set; }
 
