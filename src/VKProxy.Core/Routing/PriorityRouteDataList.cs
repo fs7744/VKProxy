@@ -14,6 +14,6 @@ public class OrderComparer : IComparer<int>
 
     public int Compare(int x, int y)
     {
-        return y.CompareTo(x);
+        return x.CompareTo(y);
     }
 }
