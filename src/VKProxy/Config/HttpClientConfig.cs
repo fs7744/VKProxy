@@ -56,6 +56,9 @@ public sealed class HttpClientConfig
     /// </remarks>
     public string? ResponseHeaderEncoding { get; init; }
 
+    public bool? EnableMultipleHttp3Connections { get; set; }
+    public bool? AllowAutoRedirect { get; set; }
+
     public static bool Equals(HttpClientConfig? t, HttpClientConfig? other)
     {
         if (other is null)
@@ -72,6 +75,8 @@ public sealed class HttpClientConfig
                && t.DangerousAcceptAnyServerCertificate == other.DangerousAcceptAnyServerCertificate
                && t.MaxConnectionsPerServer == other.MaxConnectionsPerServer
                && t.EnableMultipleHttp2Connections == other.EnableMultipleHttp2Connections
+               && t.EnableMultipleHttp3Connections == other.EnableMultipleHttp3Connections
+               && t.AllowAutoRedirect == other.AllowAutoRedirect
                && t.RequestHeaderEncoding == other.RequestHeaderEncoding
                && t.ResponseHeaderEncoding == other.ResponseHeaderEncoding
                && WebProxyConfig.Equals(t.WebProxy, other.WebProxy);
@@ -84,12 +89,16 @@ public sealed class HttpClientConfig
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(SslProtocols,
-            DangerousAcceptAnyServerCertificate,
-            MaxConnectionsPerServer,
-            EnableMultipleHttp2Connections,
-            RequestHeaderEncoding,
-            ResponseHeaderEncoding,
-            WebProxy);
+        var hashCode = new HashCode();
+        hashCode.Add(SslProtocols);
+        hashCode.Add(DangerousAcceptAnyServerCertificate);
+        hashCode.Add(MaxConnectionsPerServer);
+        hashCode.Add(EnableMultipleHttp2Connections);
+        hashCode.Add(EnableMultipleHttp3Connections);
+        hashCode.Add(AllowAutoRedirect);
+        hashCode.Add(RequestHeaderEncoding);
+        hashCode.Add(ResponseHeaderEncoding);
+        hashCode.Add(WebProxy);
+        return hashCode.ToHashCode();
     }
 }

@@ -195,6 +195,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             DangerousAcceptAnyServerCertificate = section.ReadBool(nameof(HttpClientConfig.DangerousAcceptAnyServerCertificate)),
             MaxConnectionsPerServer = section.ReadInt32(nameof(HttpClientConfig.MaxConnectionsPerServer)),
             EnableMultipleHttp2Connections = section.ReadBool(nameof(HttpClientConfig.EnableMultipleHttp2Connections)),
+            EnableMultipleHttp3Connections = section.ReadBool(nameof(HttpClientConfig.EnableMultipleHttp3Connections)),
+            AllowAutoRedirect = section.ReadBool(nameof(HttpClientConfig.AllowAutoRedirect)),
             RequestHeaderEncoding = section[nameof(HttpClientConfig.RequestHeaderEncoding)],
             ResponseHeaderEncoding = section[nameof(HttpClientConfig.ResponseHeaderEncoding)],
             WebProxy = CreateWebProxy(section.GetSection(nameof(HttpClientConfig.WebProxy)))

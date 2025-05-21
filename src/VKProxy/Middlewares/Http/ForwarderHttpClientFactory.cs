@@ -45,6 +45,8 @@ public class ForwarderHttpClientFactory : IForwarderHttpClientFactory
         }
 
         handler.EnableMultipleHttp2Connections = newConfig.EnableMultipleHttp2Connections.GetValueOrDefault(true);
+        handler.EnableMultipleHttp3Connections = newConfig.EnableMultipleHttp3Connections.GetValueOrDefault(true);
+        handler.AllowAutoRedirect = newConfig.AllowAutoRedirect.GetValueOrDefault(false);
 
         if (newConfig.RequestHeaderEncoding is not null)
         {
