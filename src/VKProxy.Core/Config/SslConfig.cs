@@ -38,7 +38,9 @@ public class CertificateConfig
             return other is null;
         }
 
-        return string.Equals(t.Path, other.Path, StringComparison.OrdinalIgnoreCase)
+        return string.Equals(t.PEM, other.PEM, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(t.PEMKey, other.PEMKey, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(t.Path, other.Path, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.KeyPath, other.KeyPath, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.Password, other.Password, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.Subject, other.Subject, StringComparison.OrdinalIgnoreCase)
