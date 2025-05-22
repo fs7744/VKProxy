@@ -4,6 +4,9 @@ namespace VKProxy.Core.Config;
 
 public class CertificateConfig
 {
+    public bool IsPEM => !string.IsNullOrEmpty(PEM);
+    public string? PEM { get; init; }
+    public string? PEMKey { get; init; }
     public bool IsFileCert => !string.IsNullOrEmpty(Path);
 
     public string? Path { get; init; }

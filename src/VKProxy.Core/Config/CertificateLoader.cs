@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace VKProxy.Core.Config;
 
@@ -18,6 +19,23 @@ public class CertificateLoader : ICertificateLoader
         if (certInfo is null)
         {
             return (null, null);
+        }
+        else if (certInfo.IsPEM)
+        {
+            X509Certificate2 certificate;
+            var fullChain = new X509Certificate2Collection();
+            fullChain.ImportFromPem(certInfo.PEM);
+            if (certInfo.PEMKey != null)
+            {
+                certificate = certInfo.Password == null
+                    ? X509Certificate2.CreateFromPem(certInfo.PEM, certInfo.PEMKey)
+                    : X509Certificate2.CreateFromEncryptedPem(certInfo.PEM, certInfo.PEMKey, certInfo.Password);
+            }
+            else
+            {
+                certificate = X509Certificate2.CreateFromPem(certInfo.PEM);
+            }
+            return (certificate, fullChain);
         }
         else if (certInfo.IsFileCert)
         {

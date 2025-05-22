@@ -93,6 +93,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
         if (!section.Exists()) return null;
         var s = new CertificateConfig()
         {
+            PEM = section[nameof(CertificateConfig.PEM)],
+            PEMKey = section[nameof(CertificateConfig.PEMKey)],
             Path = section[nameof(CertificateConfig.Path)],
             KeyPath = section[nameof(CertificateConfig.KeyPath)],
             Password = section[nameof(CertificateConfig.Password)],

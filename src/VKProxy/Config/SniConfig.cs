@@ -14,7 +14,7 @@ public class SniConfig
     public string Key { get; set; }
     public int Order { get; set; }
     public string[]? Host { get; set; }
-    public CertificateConfig Certificate { get; set; }
+    public CertificateConfig? Certificate { get; set; }
     internal X509Certificate2? X509Certificate2 { get; set; }
     public bool Passthrough { get; set; }
 

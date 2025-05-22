@@ -1,0 +1,1 @@
+openssl pkcs12 -in testCert.pfx -legacy -password pass:testPassword -out testCert.pem
