@@ -135,6 +135,23 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
             {
                 try
                 {
+                    try
+                    {
+                        using var watcher1 = await client.WatchRangeAsync(prefix, startRevision: startRevision);
+                        await watcher1.ForAllAsync(i =>
+                        {
+                            if (i.Events.Any())
+                            {
+                                throw new InvalidOperationException();
+                            }
+                            return Task.CompletedTask;
+                        });
+                    }
+                    catch
+                    {
+                    }
+                    await Task.Delay(delay);
+
                     var cts = CancellationTokenSourcePool.Default.Rent();
                     cts.CancelAfter(delay);
                     using var watcher = await client.WatchRangeAsync(prefix, startRevision: startRevision, cancellationToken: cts.Token);
