@@ -1,9 +1,11 @@
 # VKProxy
-show how to do l4/l7 proxy on Kestrel
+l4/l7 proxy base on Kestrel (c#)
 
+# Doc
 
-# support
+Please see  [Doc](https://fs7744.github.io/VKProxy.Doc/docs/introduction.html)
 
+# Features
 
 - [X] TCP proxy
 - [X] UDP proxy
@@ -22,5 +24,6 @@ show how to do l4/l7 proxy on Kestrel
 - [X] socks5 UDP
 - [X] Http Active HealthCheck
 - [X] socks5(tcp) to websocket to socks5
-
+- [X] etcd storage
+- [ ] simple config web ui
 
