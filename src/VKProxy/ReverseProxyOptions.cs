@@ -8,13 +8,13 @@ namespace VKProxy;
 public class ReverseProxyOptions
 {
     public string Section { get; set; } = "ReverseProxy";
-    public int SniRouteCahceSize { get; set; } = 1024;
-    public int HttpRouteCahceSize { get; set; } = 1024;
+    public int RouteCahceSize { get; set; } = 1024;
     public TimeSpan DefaultProxyTimeout { get; set; } = TimeSpan.FromSeconds(300);
 
     public TimeSpan? DnsRefreshPeriod { get; set; } = TimeSpan.FromMinutes(5);
     public AddressFamily? DnsAddressFamily { get; set; }
     public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
+    public StringComparison RouteComparison { get; set; } = StringComparison.OrdinalIgnoreCase;
 }
 
 internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
@@ -31,11 +31,8 @@ internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
         var section = configuration.GetSection(options.Section);
         if (!section.Exists()) return;
 
-        var i = section.ReadInt32(nameof(ReverseProxyOptions.SniRouteCahceSize));
-        if (i.HasValue) options.SniRouteCahceSize = i.Value;
-
-        i = section.ReadInt32(nameof(ReverseProxyOptions.HttpRouteCahceSize));
-        if (i.HasValue) options.HttpRouteCahceSize = i.Value;
+        var i = section.ReadInt32(nameof(ReverseProxyOptions.RouteCahceSize));
+        if (i.HasValue) options.RouteCahceSize = i.Value;
 
         var t = section.ReadTimeSpan(nameof(ReverseProxyOptions.DefaultProxyTimeout));
         if (t.HasValue) options.DefaultProxyTimeout = t.Value;
@@ -48,5 +45,8 @@ internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
 
         var tt = section.ReadEnum<AddressFamily>(nameof(ReverseProxyOptions.DnsAddressFamily));
         if (tt.HasValue) options.DnsAddressFamily = tt.Value;
+
+        var r = section.ReadEnum<StringComparison>(nameof(ReverseProxyOptions.RouteComparison));
+        if (r.HasValue) options.RouteComparison = r.Value;
     }
 }

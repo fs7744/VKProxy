@@ -2,11 +2,13 @@
 using DotNext.Collections.Generic;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Options;
+using System;
 using System.IO.Pipelines;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using VKProxy.Config;
 using VKProxy.Core.Buffers;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Routing;
 using VKProxy.Core.Tls;
@@ -27,17 +29,18 @@ public class SniSelector : ISniSelector
     private readonly ReverseProxyOptions options;
     private readonly ProxyLogger logger;
     private IRouteTable<SniConfig> route;
-    private Dictionary<string, string> hosts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private Dictionary<string, string> hosts;
 
     public SniSelector(IOptions<ReverseProxyOptions> options, ProxyLogger logger)
     {
         this.options = options.Value;
         this.logger = logger;
+        hosts = new Dictionary<string, string>(CollectionUtilities.MatchComparison(this.options.RouteComparison));
     }
 
     public Task ReBuildAsync(IReadOnlyDictionary<string, SniConfig> sni, CancellationToken cancellationToken)
     {
-        var sniRouteBuilder = new RouteTableBuilder<SniConfig>(StringComparison.OrdinalIgnoreCase, options.SniRouteCahceSize);
+        var sniRouteBuilder = new RouteTableBuilder<SniConfig>(options.RouteComparison, options.RouteCahceSize);
         foreach (var route in sni.Values.Where(i => i.Passthrough || i.Certificate != null))
         {
             foreach (var host in route.Host)

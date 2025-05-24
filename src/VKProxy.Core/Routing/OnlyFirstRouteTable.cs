@@ -15,10 +15,11 @@ public class OnlyFirstRouteTable<T> : IRouteTable<T>
 
     public OnlyFirstRouteTable(IDictionary<string, PriorityRouteDataList<T>> exact, RadixTrie<PriorityRouteDataList<T>> trie, int cacheSize, StringComparison comparison)
     {
-        cache = new RandomAccessCache<string, T>(cacheSize) { KeyComparer = StringComparer.OrdinalIgnoreCase };
+        var comparer = CollectionUtilities.MatchComparison(comparison);
+        cache = new RandomAccessCache<string, T>(cacheSize) { KeyComparer = comparer };
         this.trie = trie;
         this.comparison = comparison;
-        this.exact = exact.ToFrozenDictionary(i => i.Key, i => i.Value.SelectMany(j => j.Value).ToArray(), CollectionUtilities.MatchComparison(comparison));
+        this.exact = exact.ToFrozenDictionary(i => i.Key, i => i.Value.SelectMany(j => j.Value).ToArray(), comparer);
     }
 
     public async ValueTask<T> MatchAsync<R>(string key, R data, Func<T, R, bool> match)

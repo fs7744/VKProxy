@@ -3,11 +3,10 @@ using DotNext.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections.ObjectModel;
 using VKProxy.Config;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Routing;
-using VKProxy.Middlewares.Http;
 
 namespace VKProxy;
 
@@ -42,7 +41,7 @@ public class PathSelector : IRouteData<RouteConfig>
         route = null;
     }
 
-    public void Init(int cacheSize)
+    public void Init(StringComparison comparison, int cacheSize)
     {
         if (RouteConfigs != null)
         {
@@ -52,7 +51,7 @@ public class PathSelector : IRouteData<RouteConfig>
             }
             else
             {
-                var builder = new RouteTableBuilder<RouteConfig>(StringComparison.OrdinalIgnoreCase, cacheSize);
+                var builder = new RouteTableBuilder<RouteConfig>(comparison, cacheSize);
                 foreach (var route in RouteConfigs.Where(i => i.Match != null && i.Match.Paths != null))
                 {
                     foreach (var path in route.Match.Paths)
@@ -91,12 +90,13 @@ public class HttpSelector : IHttpSelector
     private readonly ProxyLogger logger;
     private readonly RequestDelegate next;
     private RouteTable<RouteConfig, PathSelector> route;
-    private readonly Dictionary<string, string> hosts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> hosts;
 
     public HttpSelector(IOptions<ReverseProxyOptions> options, ProxyLogger logger)
     {
         this.options = options.Value;
         this.logger = logger;
+        hosts = new Dictionary<string, string>(CollectionUtilities.MatchComparison(this.options.RouteComparison));
     }
 
     public async ValueTask<RouteConfig> MatchAsync(HttpContext context)
@@ -133,7 +133,7 @@ public class HttpSelector : IHttpSelector
 
     public Task ReBuildAsync(IReadOnlyDictionary<string, RouteConfig> routes, CancellationToken cancellationToken)
     {
-        var hostRouteBuilder = new RouteTableBuilder<RouteConfig, PathSelector>(StringComparison.OrdinalIgnoreCase, options.HttpRouteCahceSize);
+        var hostRouteBuilder = new RouteTableBuilder<RouteConfig, PathSelector>(options.RouteComparison, options.RouteCahceSize);
         foreach (var route in routes.Values.Where(i => i.Match != null && i.Match.Hosts != null && i.Match.Hosts.Count != 0 && i.Match.Paths != null && i.Match.Paths.Count != 0))
         {
             foreach (var host in route.Match.Hosts)

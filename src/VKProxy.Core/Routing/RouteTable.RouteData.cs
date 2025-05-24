@@ -22,7 +22,7 @@ public interface IRouteData<T> : IDisposable
 
     T Match<R2>(string key, R2 data, Func<T, R2, bool> match);
 
-    void Init(int cacheSize);
+    void Init(StringComparison comparison, int cacheSize);
 }
 
 public class RouteTableBuilder<T, R> where R : IRouteData<T>, new()
@@ -107,7 +107,7 @@ public class RouteTableBuilder<T, R> where R : IRouteData<T>, new()
 
     public RouteTable<T, R> Build(RouteTableType type)
     {
-        exact.Values.SelectMany(static i => i.Values).Union(trie.GetAll().SelectMany(static i => i.Values)).ForEach(i => i.Init(cacheSize));
+        exact.Values.SelectMany(static i => i.Values).Union(trie.GetAll().SelectMany(static i => i.Values)).ForEach(i => i.Init(comparison, cacheSize));
         return new RouteTable<T, R>(exact.ToFrozenDictionary(MatchComparison(comparison)), trie, comparison);
     }
 }
