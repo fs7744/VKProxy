@@ -70,6 +70,12 @@ internal class KestrelServerOptionsSetup : IConfigureOptions<KestrelServerOption
         i = section.ReadInt32(nameof(KestrelServerLimits.MaxRequestHeaderCount));
         if (i.HasValue) limits.MaxRequestHeaderCount = i.Value;
 
+        var t = section.ReadTimeSpan(nameof(KestrelServerLimits.KeepAliveTimeout));
+        if (t.HasValue) limits.KeepAliveTimeout = t.Value;
+
+        t = section.ReadTimeSpan(nameof(KestrelServerLimits.RequestHeadersTimeout));
+        if (t.HasValue) limits.RequestHeadersTimeout = t.Value;
+
         var s = CreateMinDataRate(section.GetSection(nameof(KestrelServerLimits.MinRequestBodyDataRate)));
         if (s != null)
         {
@@ -88,17 +94,9 @@ internal class KestrelServerOptionsSetup : IConfigureOptions<KestrelServerOption
     private void ConfigureHttp2Limits(Http2Limits limits, IConfigurationSection section)
     {
         if (!section.Exists()) return;
-        var i = section.ReadInt32(nameof(Http2Limits.MaxStreamsPerConnection));
-        if (i.HasValue) limits.MaxStreamsPerConnection = i.Value;
 
-        i = section.ReadInt32(nameof(Http2Limits.HeaderTableSize));
+        var i = section.ReadInt32(nameof(Http2Limits.HeaderTableSize));
         if (i.HasValue) limits.HeaderTableSize = i.Value;
-
-        i = section.ReadInt32(nameof(Http2Limits.MaxFrameSize));
-        if (i.HasValue) limits.MaxFrameSize = i.Value;
-
-        i = section.ReadInt32(nameof(Http2Limits.MaxRequestHeaderFieldSize));
-        if (i.HasValue) limits.MaxRequestHeaderFieldSize = i.Value;
 
         i = section.ReadInt32(nameof(Http2Limits.InitialConnectionWindowSize));
         if (i.HasValue) limits.InitialConnectionWindowSize = i.Value;
@@ -111,6 +109,15 @@ internal class KestrelServerOptionsSetup : IConfigureOptions<KestrelServerOption
 
         t = section.ReadTimeSpan(nameof(Http2Limits.KeepAlivePingTimeout));
         if (t.HasValue) limits.KeepAlivePingTimeout = t.Value;
+
+        i = section.ReadInt32(nameof(Http2Limits.MaxFrameSize));
+        if (i.HasValue) limits.MaxFrameSize = i.Value;
+
+        i = section.ReadInt32(nameof(Http2Limits.MaxRequestHeaderFieldSize));
+        if (i.HasValue) limits.MaxRequestHeaderFieldSize = i.Value;
+
+        i = section.ReadInt32(nameof(Http2Limits.MaxStreamsPerConnection));
+        if (i.HasValue) limits.MaxStreamsPerConnection = i.Value;
     }
 
     private void ConfigureHttp3Limits(Http3Limits limits, IConfigurationSection section)

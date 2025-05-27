@@ -39,5 +39,8 @@ internal class SocketTransportOptionsSetup : IConfigureOptions<SocketTransportOp
 
         b = section.ReadBool(nameof(SocketTransportOptions.UnsafePreferInlineScheduling));
         if (b.HasValue) options.UnsafePreferInlineScheduling = b.Value;
+
+        b = section.ReadBool(nameof(SocketTransportOptions.NoDelay));
+        if (b.HasValue) options.NoDelay = b.Value;
     }
 }
