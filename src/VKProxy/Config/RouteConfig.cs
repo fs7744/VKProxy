@@ -18,7 +18,7 @@ public class RouteConfig
     public TimeSpan Timeout { get; set; }
 
     public int UdpResponses { get; set; }
-    public RouteMatch Match { get; set; }
+    public RouteMatch? Match { get; set; }
 
     public IReadOnlyList<IReadOnlyDictionary<string, string>>? Transforms { get; set; }
     internal IHttpTransformer Transformer { get; set; }
