@@ -135,6 +135,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
             {
                 try
                 {
+                    bool hasChange = false;
                     try
                     {
                         using var watcher1 = await client.WatchRangeAsync(prefix, startRevision: startRevision);
@@ -142,6 +143,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                         {
                             if (i.Events.Any())
                             {
+                                hasChange = true;
                                 throw new InvalidOperationException();
                             }
                             return Task.CompletedTask;
@@ -151,16 +153,23 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                     {
                     }
                     await Task.Delay(delay);
-
-                    var cts = CancellationTokenSourcePool.Default.Rent();
-                    cts.CancelAfter(delay);
-                    using var watcher = await client.WatchRangeAsync(prefix, startRevision: startRevision, cancellationToken: cts.Token);
-                    await watcher.ForAllAsync(i =>
+                    if (hasChange)
                     {
-                        startRevision = i.FindRevision(startRevision);
-                        if (!i.Events.Any()) return Task.CompletedTask;
-                        return ChangeAsync(i.Events);
-                    }, cancellationToken: cts.Token);
+                        try
+                        {
+                            using var watcher = await client.WatchRangeAsync(prefix, startRevision: startRevision);
+                            await watcher.ForAllAsync(async i =>
+                            {
+                                startRevision = i.FindRevision(startRevision);
+                                if (!i.Events.Any()) return;
+                                await ChangeAsync(i.Events);
+                                throw new InvalidOperationException();
+                            });
+                        }
+                        catch (InvalidOperationException)
+                        {
+                        }
+                    }
                 }
                 catch (OperationCanceledException)
                 { }
@@ -206,7 +215,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                             else
                             {
                                 currentSnapshot.ReplaceRoute(k, vv);
-                                if (v.Match != null && v.Match.Hosts != null && v.Match.Hosts.Count != 0 && v.Match.Paths != null && v.Match.Paths.Count != 0)
+                                if (vv.Match != null && vv.Match.Hosts != null && vv.Match.Hosts.Count != 0 && vv.Match.Paths != null && vv.Match.Paths.Count != 0)
                                 {
                                     hasHttpChange = true;
                                 }
