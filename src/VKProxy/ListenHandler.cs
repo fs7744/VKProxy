@@ -61,7 +61,9 @@ internal class ListenHandler : ListenHandlerBase
         var (stop, start) = await configSource.GenerateDiffAsync(cancellationToken);
         if (stop != null)
         {
-            await transportManager.StopEndpointsAsync(stop.ToList<EndPointOptions>(), cancellationToken);
+            var c = new CancellationTokenSource();
+            c.CancelAfter(1000);
+            await transportManager.StopEndpointsAsync(stop.ToList<EndPointOptions>(), c.Token);
         }
 
         if (start != null)

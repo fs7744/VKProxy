@@ -105,7 +105,9 @@ internal class Socks5Middleware : ITcpProxyMiddleware
                     var remote = context.RemoteEndPoint;
                     var timeout = feature.Route.Timeout;
                     op.EndPoint = await transport.BindAsync(op, c => ProxyUdp(c as UdpConnectionContext, remote, timeout), token);
-                    context.ConnectionClosed.Register(state => transport.StopEndpointsAsync(new List<EndPointOptions>() { state as EndPointOptions }, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult(), op);
+                    var c = new CancellationTokenSource();
+                    c.CancelAfter(1000);
+                    context.ConnectionClosed.Register(state => transport.StopEndpointsAsync(new List<EndPointOptions>() { state as EndPointOptions }, c.Token).ConfigureAwait(false).GetAwaiter().GetResult(), op);
                 }
                 catch
                 {
