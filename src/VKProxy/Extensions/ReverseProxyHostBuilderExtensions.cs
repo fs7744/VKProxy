@@ -173,7 +173,7 @@ public static class ReverseProxyHostBuilderExtensions
         {
             services.TryAddSingleton<T>();
         }
-        services.ConfigeHttp(i => i.UseMiddleware<T>());
+        services.ConfigeHttp(i => i.UseMiddleware<T>(args));
         return services;
     }
 
