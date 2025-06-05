@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using VKProxy.Features;
 
 internal class EchoHttpMiddleware : IMiddleware
 {
