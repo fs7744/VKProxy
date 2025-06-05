@@ -7,8 +7,8 @@ var app = Host.CreateDefaultBuilder(args)
     .ConfigureServices(i =>
     {
         //i.Configure<ReverseProxyOptions>(o => o.Section = "TextSection");
-        i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
-        //i.UseHttpMiddleware<EchoHttpMiddleware>();
+        //i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
+        i.UseHttpMiddleware<EchoHttpMiddleware>();
         i.UseSocks5();
         i.UseWSToSocks5();
     })

@@ -4,7 +4,9 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	  <Description>l4 / l7 proxy lib</Description>
+	<Description>l4 / l7 proxy lib</Description>
+	<PackageId>VKProxy</PackageId>
+	<Title>l4 / l7 proxy lib</Title>
   </PropertyGroup>
 
   <ItemGroup>

@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
 	  <LangVersion>preview</LangVersion>
 	  <Description>l4 / l7 proxy lib</Description>
+	  <PackageId>VKProxy.Core</PackageId>
+	  <Title>l4 / l7 proxy lib</Title>
   </PropertyGroup>
 
   <ItemGroup>

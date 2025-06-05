@@ -3,6 +3,8 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	  <PackageId>VKProxy.Storages.Etcd</PackageId>
+	  <Title>etcd storages lib for VKProxy</Title>
 	  <Description>etcd storages lib for VKProxy</Description>
   </PropertyGroup>
 
