@@ -18,7 +18,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
     public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, IEnumerable<ILoadBalancingPolicy> policies, IHealthReporter healthReporter,
         IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers, IForwarderHttpClientFactory httpClientFactory)
     {
-        this.resolvers = resolvers.OrderByDescending(i => i.Order).ToArray();
+        this.resolvers = resolvers.OrderBy(i => i.Order).ToArray();
         this.policies = policies.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
         this.healthReporter = healthReporter;
         this.healthUpdater = healthUpdater;
@@ -96,6 +96,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
                         if (r != null)
                         {
                             states.Add(r);
+                            break;
                         }
                     }
                     catch (Exception ex)

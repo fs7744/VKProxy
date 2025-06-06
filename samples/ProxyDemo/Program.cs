@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ProxyDemo;
+using ProxyDemo.IDestinationResolvers;
 using VKProxy;
+using VKProxy.ServiceDiscovery;
 
 var app = Host.CreateDefaultBuilder(args)
     .ConfigureServices(i =>
@@ -11,6 +13,9 @@ var app = Host.CreateDefaultBuilder(args)
         i.UseHttpMiddleware<EchoHttpMiddleware>();
         i.UseSocks5();
         i.UseWSToSocks5();
+
+        i.AddSingleton<IDestinationResolver, StaticDNS>();
+        i.AddSingleton<IDestinationResolver, NonStaticDNS>();
     })
     .UseReverseProxy()
     .Build();
