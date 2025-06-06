@@ -2,7 +2,9 @@
 using Microsoft.Extensions.Hosting;
 using ProxyDemo;
 using ProxyDemo.IDestinationResolvers;
+using ProxyDemo.Transforms;
 using VKProxy;
+using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.ServiceDiscovery;
 
 var app = Host.CreateDefaultBuilder(args)
@@ -16,6 +18,8 @@ var app = Host.CreateDefaultBuilder(args)
 
         i.AddSingleton<IDestinationResolver, StaticDNS>();
         i.AddSingleton<IDestinationResolver, NonStaticDNS>();
+        i.AddSingleton<ITransformProvider, TestITransformProvider>();
+        i.AddSingleton<ITransformFactory, TestTransformFactory>();
     })
     .UseReverseProxy()
     .Build();
