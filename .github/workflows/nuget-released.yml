@@ -38,7 +38,7 @@ jobs:
     - name: Build cli
       run: |
         cd src/VKProxy.Cli
-        dotnet pack --version-suffix
+        dotnet pack
     - name: push
       env: 
         nugetkey: ${{ secrets.nugetkey }}
