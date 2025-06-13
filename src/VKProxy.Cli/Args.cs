@@ -32,6 +32,10 @@ public class Args
     private void LoadFromEnv()
     {
         this.EtcdOptions = EtcdHostBuilderExtensions.LoadEtcdProxyConfigSourceOptionsFromEnv();
+        if (!this.EtcdOptions.Address.IsNullOrEmpty())
+        {
+            UseEtcd = true;
+        }
         Config = Environment.GetEnvironmentVariable("VKPROXY_CONFIG");
         UseSocks5 = bool.TryParse(Environment.GetEnvironmentVariable("VKPROXY_SOCKS5"), out var useSocks5) && useSocks5;
     }
