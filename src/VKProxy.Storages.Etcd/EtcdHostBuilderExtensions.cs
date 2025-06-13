@@ -11,6 +11,17 @@ public static class EtcdHostBuilderExtensions
 {
     internal static readonly TimeSpan defaultDelay = TimeSpan.FromSeconds(1);
 
+    public static EtcdProxyConfigSourceOptions LoadEtcdProxyConfigSourceOptionsFromEnv()
+    {
+        var address = Environment.GetEnvironmentVariable("ETCD_CONNECTION_STRING");
+        return new EtcdProxyConfigSourceOptions()
+        {
+            Address = string.IsNullOrEmpty(address) ? null : address.Split(",", StringSplitOptions.RemoveEmptyEntries),
+            Prefix = Environment.GetEnvironmentVariable("ETCD_PREFIX"),
+            Delay = TimeSpan.TryParse(Environment.GetEnvironmentVariable("ETCD_DELAY"), out var delay) ? delay : defaultDelay,
+        };
+    }
+
     public static IServiceCollection UseEtcdConfig(this IServiceCollection services, EtcdProxyConfigSourceOptions options, Action<EtcdClientOptions> config = null)
     {
         var o = new EtcdClientOptions()
@@ -31,12 +42,7 @@ public static class EtcdHostBuilderExtensions
 
     public static IServiceCollection UseEtcdConfigFromEnv(this IServiceCollection services, Action<EtcdClientOptions> config = null)
     {
-        return UseEtcdConfig(services, new EtcdProxyConfigSourceOptions()
-        {
-            Address = Environment.GetEnvironmentVariable("ETCD_CONNECTION_STRING").Split(",", StringSplitOptions.RemoveEmptyEntries),
-            Prefix = Environment.GetEnvironmentVariable("ETCD_PREFIX"),
-            Delay = TimeSpan.TryParse(Environment.GetEnvironmentVariable("ETCD_DELAY"), out var delay) ? delay : defaultDelay,
-        }, config);
+        return UseEtcdConfig(services, LoadEtcdProxyConfigSourceOptionsFromEnv(), config);
     }
 
     public static IServiceCollection UseEtcdConfig(this IServiceCollection services, IConfiguration configuration, string sectionKey = null, Action<EtcdClientOptions> config = null)

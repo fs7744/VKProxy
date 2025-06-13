@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "VKProxy.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "-c \"D:\\code\\github\\VKProxy\\samples\\ProxyDemo\\appsettings.json\" -h"
+    }
+  }
+}

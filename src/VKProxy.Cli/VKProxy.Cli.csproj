@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="../../ProjectCommon.targets" />
+  <PropertyGroup>
+	  <IsPackable>True</IsPackable>
+	  <OutputType>Exe</OutputType>
+	  <PackAsTool>True</PackAsTool>
+	  <ToolCommandName>vkproxy</ToolCommandName>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	  <GenerateAssemblyInfo>True</GenerateAssemblyInfo>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	  <PackageId>VKProxy.Cli</PackageId>
+	  <Title>command for VKProxy</Title>
+	  <Description>command for  VKProxy</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VKProxy.Storages.Etcd\VKProxy.Storages.Etcd.csproj" />
+  </ItemGroup>
+
+</Project>
