@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using VKProxy.Config;
 using VKProxy.Core.Config;
 
@@ -14,12 +15,17 @@ public static class EtcdHostBuilderExtensions
     public static EtcdProxyConfigSourceOptions LoadEtcdProxyConfigSourceOptionsFromEnv()
     {
         var address = Environment.GetEnvironmentVariable("ETCD_CONNECTION_STRING");
-        return new EtcdProxyConfigSourceOptions()
+        var r = new EtcdProxyConfigSourceOptions()
         {
             Address = string.IsNullOrEmpty(address) ? null : address.Split(",", StringSplitOptions.RemoveEmptyEntries),
             Prefix = Environment.GetEnvironmentVariable("ETCD_PREFIX"),
             Delay = TimeSpan.TryParse(Environment.GetEnvironmentVariable("ETCD_DELAY"), out var delay) ? delay : defaultDelay,
         };
+        if (string.IsNullOrWhiteSpace(r.Prefix))
+        {
+            r.Prefix = "/ReverseProxy/";
+        }
+        return r;
     }
 
     public static IServiceCollection UseEtcdConfig(this IServiceCollection services, EtcdProxyConfigSourceOptions options, Action<EtcdClientOptions> config = null)
