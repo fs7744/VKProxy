@@ -116,9 +116,10 @@ internal class ListenHandler : ListenHandlerBase
             await http(context);
         else
         {
-            var r = limiter.TryLockOne();
+            var r = limiter.TryLockOne(context);
             if (r == null)
             {
+                logger.ConnectionRejected(context.Connection.Id);
                 context.Abort();
                 return;
             }
@@ -147,9 +148,10 @@ internal class ListenHandler : ListenHandlerBase
             await tcp.Proxy(connection, proxyFeature);
         else
         {
-            var r = limiter.TryLockOne();
+            var r = limiter.TryLockOne(connection);
             if (r == null)
             {
+                logger.ConnectionRejected(connection.ConnectionId);
                 await connection.DisposeAsync();
                 return;
             }
@@ -180,9 +182,10 @@ internal class ListenHandler : ListenHandlerBase
                 await udp.Proxy(context, proxyFeature);
             else
             {
-                var r = limiter.TryLockOne();
+                var r = limiter.TryLockOne(connection);
                 if (r == null)
                 {
+                    logger.ConnectionRejected(connection.ConnectionId);
                     await connection.DisposeAsync();
                     return;
                 }

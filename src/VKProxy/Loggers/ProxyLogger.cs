@@ -174,6 +174,11 @@ public partial class ProxyLogger : ILogger
         };
     }
 
+    public void ConnectionRejected(string connectionId)
+    {
+        GeneralLog.ConnectionRejected(generalLogger, connectionId);
+    }
+
     private static partial class GeneralLog
     {
         [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
@@ -238,5 +243,8 @@ public partial class ProxyLogger : ILogger
 
         [LoggerMessage(20, LogLevel.Warning, "Invalid Sec-WebSocket-Key header: '{key}'.", EventName = "InvalidSecWebSocketKeyHeader")]
         public static partial void InvalidSecWebSocketKeyHeader(ILogger logger, string key);
+
+        [LoggerMessage(21, LogLevel.Warning, @"Connection id ""{ConnectionId}"" rejected because the maximum number of concurrent connections has been reached.", EventName = "ConnectionRejected")]
+        public static partial void ConnectionRejected(ILogger logger, string connectionId);
     }
 }
