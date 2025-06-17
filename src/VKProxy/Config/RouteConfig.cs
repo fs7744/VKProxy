@@ -1,4 +1,5 @@
 ﻿using VKProxy.Core.Infrastructure;
+using VKProxy.Features.Limits;
 using VKProxy.Middlewares.Http.Transforms;
 
 namespace VKProxy.Config;
@@ -25,6 +26,10 @@ public class RouteConfig
 
     public IReadOnlyDictionary<string, string>? Metadata { get; set; }
 
+    public long? MaxConcurrentConnections { get; set; }
+
+    public IConnectionLimiter? ConnectionLimiter { get; set; }
+
     public static bool Equals(RouteConfig? t, RouteConfig? other)
     {
         if (other is null)
@@ -44,7 +49,8 @@ public class RouteConfig
             && t.UdpResponses == other.UdpResponses
             && RouteMatch.Equals(t.Match, other.Match)
             && CollectionUtilities.Equals(t.Metadata, other.Metadata)
-            && CollectionUtilities.Equals(t.Transforms, other.Transforms);
+            && CollectionUtilities.Equals(t.Transforms, other.Transforms)
+            && t.MaxConcurrentConnections == other.MaxConcurrentConnections;
     }
 
     public override bool Equals(object? obj)
@@ -63,6 +69,7 @@ public class RouteConfig
         code.Add(Match?.GetHashCode());
         code.Add(CollectionUtilities.GetHashCode(Metadata));
         code.Add(CollectionUtilities.GetHashCode(Transforms));
+        code.Add(MaxConcurrentConnections?.GetHashCode());
         return code.ToHashCode();
     }
 }

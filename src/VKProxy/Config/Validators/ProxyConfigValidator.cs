@@ -1,4 +1,5 @@
-﻿using VKProxy.Middlewares.Http;
+﻿using VKProxy.Features.Limits;
+using VKProxy.Middlewares.Http;
 using VKProxy.Middlewares.Http.Transforms;
 
 namespace VKProxy.Config.Validators;
@@ -11,13 +12,15 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
     private readonly IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators;
     private readonly IForwarderHttpClientFactory httpClientFactory;
     private readonly ITransformBuilder transformBuilder;
+    private readonly IConnectionLimitFactory connectionLimitFactory;
 
     public ProxyConfigValidator(IEnumerable<IValidator<ListenConfig>> listenConfigValidators,
         IEnumerable<IValidator<SniConfig>> sniConfigValidators,
         IEnumerable<IValidator<RouteConfig>> routeConfigValidators,
         IEnumerable<IValidator<ClusterConfig>> clusterConfigValidators,
         IForwarderHttpClientFactory httpClientFactory,
-        ITransformBuilder transformBuilder)
+        ITransformBuilder transformBuilder,
+        IConnectionLimitFactory connectionLimitFactory)
     {
         this.listenConfigValidators = listenConfigValidators;
         this.sniConfigValidators = sniConfigValidators;
@@ -25,6 +28,7 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
         this.clusterConfigValidators = clusterConfigValidators;
         this.httpClientFactory = httpClientFactory;
         this.transformBuilder = transformBuilder;
+        this.connectionLimitFactory = connectionLimitFactory;
     }
 
     public async ValueTask<bool> ValidateAsync(IProxyConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -72,6 +76,7 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                             break;
                         }
                     }
+                    l.Value.ConnectionLimiter = connectionLimitFactory.Create(l.Value);
                     if (value.Routes.ContainsKey(l.Key) && ll.ClusterConfig != null && ll.Match != null && ll.Match.Paths != null)
                     {
                         ll.ClusterConfig.InitHttp(httpClientFactory);

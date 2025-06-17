@@ -9,6 +9,7 @@ using VKProxy.Core.Hosting;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
+using VKProxy.Features.Limits;
 using VKProxy.Middlewares;
 
 namespace VKProxy;
@@ -21,10 +22,11 @@ internal class ListenHandler : ListenHandlerBase
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
+    private readonly IConnectionLimitFactory connectionLimitFactory;
     private readonly RequestDelegate http;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IHttpSelector httpSelector,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IConnectionLimitFactory connectionLimitFactory)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -32,6 +34,7 @@ internal class ListenHandler : ListenHandlerBase
         this.sniSelector = sniSelector;
         this.udp = udp;
         this.tcp = tcp;
+        this.connectionLimitFactory = connectionLimitFactory;
         this.http = applicationBuilder.Build();
     }
 
@@ -108,24 +111,97 @@ internal class ListenHandler : ListenHandlerBase
     {
         var proxyFeature = new L7ReverseProxyFeature() { Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context) };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
-        await http(context);
+        var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
+        if (limiter == null)
+            await http(context);
+        else
+        {
+            var r = limiter.TryLockOne();
+            if (r == null)
+            {
+                context.Abort();
+                return;
+            }
+            else
+            {
+                try
+                {
+                    context.Features.Set<IDecrementConcurrentConnectionCountFeature>(r);
+                    await http(context);
+                }
+                finally
+                {
+                    r.ReleaseConnection();
+                }
+                return;
+            }
+        }
     }
 
-    private Task DoTcp(ConnectionContext connection, ListenEndPointOptions? options)
+    private async Task DoTcp(ConnectionContext connection, ListenEndPointOptions? options)
     {
         var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig };
         connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
-        return tcp.Proxy(connection, proxyFeature);
+        var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
+        if (limiter == null)
+            await tcp.Proxy(connection, proxyFeature);
+        else
+        {
+            var r = limiter.TryLockOne();
+            if (r == null)
+            {
+                await connection.DisposeAsync();
+                return;
+            }
+            else
+            {
+                try
+                {
+                    connection.Features.Set<IDecrementConcurrentConnectionCountFeature>(r);
+                    await tcp.Proxy(connection, proxyFeature);
+                }
+                finally
+                {
+                    r.ReleaseConnection();
+                }
+                return;
+            }
+        }
     }
 
-    private Task DoUdp(ConnectionContext connection, ListenEndPointOptions? options)
+    private async Task DoUdp(ConnectionContext connection, ListenEndPointOptions? options)
     {
         if (connection is UdpConnectionContext context)
         {
             var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig };
             context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
-            return udp.Proxy(context, proxyFeature);
+            var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
+            if (limiter == null)
+                await udp.Proxy(context, proxyFeature);
+            else
+            {
+                var r = limiter.TryLockOne();
+                if (r == null)
+                {
+                    await connection.DisposeAsync();
+                    return;
+                }
+                else
+                {
+                    try
+                    {
+                        connection.Features.Set<IDecrementConcurrentConnectionCountFeature>(r);
+                        await udp.Proxy(context, proxyFeature);
+                    }
+                    finally
+                    {
+                        r.ReleaseConnection();
+                    }
+                    return;
+                }
+            }
         }
-        return Task.CompletedTask;
+        else
+            await connection.DisposeAsync();
     }
 }

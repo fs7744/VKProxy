@@ -118,7 +118,8 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Timeout = section.ReadTimeSpan(nameof(RouteConfig.Timeout)).GetValueOrDefault(options.DefaultProxyTimeout),
             Match = CreateRouteMatch(section.GetSection(nameof(RouteConfig.Match))),
             Metadata = section.GetSection(nameof(RouteConfig.Metadata)).ReadStringDictionary(),
-            Transforms = CreateTransforms(section.GetSection(nameof(RouteConfig.Transforms)))
+            Transforms = CreateTransforms(section.GetSection(nameof(RouteConfig.Transforms))),
+            MaxConcurrentConnections = section.ReadInt64(nameof(RouteConfig.MaxConcurrentConnections))
         };
     }
 
