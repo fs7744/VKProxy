@@ -7,6 +7,7 @@ using System.Security.Authentication;
 using VKProxy.Config.Validators;
 using VKProxy.Core.Config;
 using VKProxy.Core.Loggers;
+using VKProxy.Features.Limits;
 using VKProxy.Health;
 
 namespace VKProxy.Config;
@@ -119,7 +120,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Match = CreateRouteMatch(section.GetSection(nameof(RouteConfig.Match))),
             Metadata = section.GetSection(nameof(RouteConfig.Metadata)).ReadStringDictionary(),
             Transforms = CreateTransforms(section.GetSection(nameof(RouteConfig.Transforms))),
-            MaxConcurrentConnections = section.ReadInt64(nameof(RouteConfig.MaxConcurrentConnections))
+            Limit = ConcurrentConnectionLimitOptions.Read(section.GetSection(nameof(RouteConfig.Limit)))
         };
     }
 

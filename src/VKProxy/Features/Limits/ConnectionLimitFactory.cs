@@ -1,26 +1,32 @@
-﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Options;
-using VKProxy.Config;
+﻿using Microsoft.Extensions.Options;
+using System.Collections.Frozen;
 
 namespace VKProxy.Features.Limits;
 
 public class ConnectionLimitFactory : IConnectionLimitFactory
 {
+    private readonly FrozenDictionary<string, IConnectionLimitCreator> creaters;
     private IConnectionLimiter limitConcurrentConnections;
 
-    public ConnectionLimitFactory(IOptions<KestrelServerOptions> options)
+    public ConnectionLimitFactory(IOptions<ReverseProxyOptions> options, IEnumerable<IConnectionLimitCreator> limitCreators)
     {
-        if (options.Value.Limits.MaxConcurrentConnections.HasValue)
-            limitConcurrentConnections = Create(new RouteConfig() { MaxConcurrentConnections = options.Value.Limits.MaxConcurrentConnections });
+        this.creaters = limitCreators.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
+        if (options.Value.Limit != null)
+            limitConcurrentConnections = Create(options.Value.Limit);
     }
 
     public IConnectionLimiter? Default => limitConcurrentConnections;
 
-    public IConnectionLimiter? Create(RouteConfig routeConfig)
+    public IConnectionLimiter? Create(ConcurrentConnectionLimitOptions options)
     {
-        if (routeConfig.MaxConcurrentConnections.HasValue)
-            return routeConfig.MaxConcurrentConnections.Value > 0 ? new ConnectionLimiter(routeConfig.MaxConcurrentConnections.Value) : null;
-        else
-            return limitConcurrentConnections;
+        if (options != null)
+        {
+            if (!creaters.TryGetValue(options.Policy ?? "Count", out var connectionLimitCreator))
+            {
+                connectionLimitCreator = creaters["Count"];
+            }
+            return connectionLimitCreator.Create(options);
+        }
+        return Default;
     }
 }

@@ -55,9 +55,6 @@ internal class KestrelServerOptionsSetup : IConfigureOptions<KestrelServerOption
         l = section.ReadInt64(nameof(KestrelServerLimits.MaxRequestBodySize));
         if (l.HasValue) limits.MaxRequestBodySize = l.Value;
 
-        l = section.ReadInt64(nameof(KestrelServerLimits.MaxConcurrentConnections));
-        if (l.HasValue) limits.MaxConcurrentConnections = l.Value;
-
         l = section.ReadInt64(nameof(KestrelServerLimits.MaxConcurrentUpgradedConnections));
         if (l.HasValue) limits.MaxConcurrentUpgradedConnections = l.Value;
 

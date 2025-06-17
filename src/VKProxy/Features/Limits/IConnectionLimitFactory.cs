@@ -6,5 +6,5 @@ public interface IConnectionLimitFactory
 {
     public IConnectionLimiter? Default { get; }
 
-    public IConnectionLimiter? Create(RouteConfig routeConfig);
+    public IConnectionLimiter? Create(ConcurrentConnectionLimitOptions options);
 }

@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using System.Net.Sockets;
 using VKProxy.Core.Config;
+using VKProxy.Features.Limits;
 
 namespace VKProxy;
 
@@ -15,6 +17,8 @@ public class ReverseProxyOptions
     public AddressFamily? DnsAddressFamily { get; set; }
     public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(3);
     public StringComparison RouteComparison { get; set; } = StringComparison.OrdinalIgnoreCase;
+
+    public ConcurrentConnectionLimitOptions Limit { get; set; }
 }
 
 internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
@@ -48,5 +52,7 @@ internal class ReverseProxyOptionsSetup : IConfigureOptions<ReverseProxyOptions>
 
         var r = section.ReadEnum<StringComparison>(nameof(ReverseProxyOptions.RouteComparison));
         if (r.HasValue) options.RouteComparison = r.Value;
+
+        options.Limit = ConcurrentConnectionLimitOptions.Read(section.GetSection(nameof(ReverseProxyOptions.Limit)));
     }
 }

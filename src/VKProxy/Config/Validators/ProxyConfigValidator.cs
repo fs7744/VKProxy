@@ -76,7 +76,7 @@ public class ProxyConfigValidator : IValidator<IProxyConfig>
                             break;
                         }
                     }
-                    l.Value.ConnectionLimiter = connectionLimitFactory.Create(l.Value);
+                    ll.ConnectionLimiter = connectionLimitFactory.Create(ll.Limit);
                     if (value.Routes.ContainsKey(l.Key) && ll.ClusterConfig != null && ll.Match != null && ll.Match.Paths != null)
                     {
                         ll.ClusterConfig.InitHttp(httpClientFactory);

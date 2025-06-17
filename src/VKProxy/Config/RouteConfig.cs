@@ -26,7 +26,7 @@ public class RouteConfig
 
     public IReadOnlyDictionary<string, string>? Metadata { get; set; }
 
-    public long? MaxConcurrentConnections { get; set; }
+    public ConcurrentConnectionLimitOptions Limit { get; set; }
 
     public IConnectionLimiter? ConnectionLimiter { get; set; }
 
@@ -50,7 +50,7 @@ public class RouteConfig
             && RouteMatch.Equals(t.Match, other.Match)
             && CollectionUtilities.Equals(t.Metadata, other.Metadata)
             && CollectionUtilities.Equals(t.Transforms, other.Transforms)
-            && t.MaxConcurrentConnections == other.MaxConcurrentConnections;
+            && ConcurrentConnectionLimitOptions.Equals(t.Limit, other.Limit);
     }
 
     public override bool Equals(object? obj)
@@ -69,7 +69,7 @@ public class RouteConfig
         code.Add(Match?.GetHashCode());
         code.Add(CollectionUtilities.GetHashCode(Metadata));
         code.Add(CollectionUtilities.GetHashCode(Transforms));
-        code.Add(MaxConcurrentConnections?.GetHashCode());
+        code.Add(Limit?.GetHashCode());
         return code.ToHashCode();
     }
 }
