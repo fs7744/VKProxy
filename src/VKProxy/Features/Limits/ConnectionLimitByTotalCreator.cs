@@ -19,7 +19,7 @@ public class ConnectionLimitByTotalCreator : IConnectionLimitCreator
         else if ("Concurrency".Equals(options.Policy, StringComparison.OrdinalIgnoreCase))
         {
             return options.PermitLimit.HasValue && options.PermitLimit.Value > 0
-                ? new ConcurrencyLimiter(new ConcurrencyLimiterOptions() { PermitLimit = 1, QueueProcessingOrder = QueueProcessingOrder.OldestFirst, QueueLimit = options.PermitLimit.Value })
+                ? new ConcurrencyLimiter(new ConcurrencyLimiterOptions() { PermitLimit = 1, QueueProcessingOrder = QueueProcessingOrder.OldestFirst, QueueLimit = options.QueueLimit.GetValueOrDefault() })
                 : null;
         }
         else if ("FixedWindow".Equals(options.Policy, StringComparison.OrdinalIgnoreCase))
@@ -29,7 +29,7 @@ public class ConnectionLimitByTotalCreator : IConnectionLimitCreator
                 {
                     PermitLimit = options.PermitLimit.Value,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    QueueLimit = options.QueueLimit.GetValueOrDefault(options.PermitLimit.Value),
+                    QueueLimit = options.QueueLimit.GetValueOrDefault(),
                     AutoReplenishment = true,
                     Window = options.Window.GetValueOrDefault(DefaultWindow)
                 })
@@ -42,7 +42,7 @@ public class ConnectionLimitByTotalCreator : IConnectionLimitCreator
                 {
                     PermitLimit = options.PermitLimit.Value,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    QueueLimit = options.QueueLimit.GetValueOrDefault(options.PermitLimit.Value),
+                    QueueLimit = options.QueueLimit.GetValueOrDefault(),
                     AutoReplenishment = true,
                     Window = options.Window.GetValueOrDefault(DefaultWindow),
                     SegmentsPerWindow = options.SegmentsPerWindow.GetValueOrDefault(2)
@@ -56,7 +56,7 @@ public class ConnectionLimitByTotalCreator : IConnectionLimitCreator
                 {
                     TokenLimit = options.PermitLimit.Value,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    QueueLimit = options.QueueLimit.GetValueOrDefault(options.PermitLimit.Value),
+                    QueueLimit = options.QueueLimit.GetValueOrDefault(),
                     AutoReplenishment = true,
                     ReplenishmentPeriod = options.Window.GetValueOrDefault(DefaultWindow),
                     TokensPerPeriod = options.TokensPerPeriod.GetValueOrDefault(options.PermitLimit.Value)
