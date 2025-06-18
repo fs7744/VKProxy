@@ -1,11 +1,16 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using System.Globalization;
+using System.Threading.RateLimiting;
 using VKProxy.Config;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
+using VKProxy.Core.Http;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
@@ -23,10 +28,11 @@ internal class ListenHandler : ListenHandlerBase
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
     private readonly IConnectionLimitFactory connectionLimitFactory;
+    private readonly ReverseProxyOptions options;
     private readonly RequestDelegate http;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IHttpSelector httpSelector,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IConnectionLimitFactory connectionLimitFactory)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IConnectionLimitFactory connectionLimitFactory, IOptions<ReverseProxyOptions> options)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -35,6 +41,7 @@ internal class ListenHandler : ListenHandlerBase
         this.udp = udp;
         this.tcp = tcp;
         this.connectionLimitFactory = connectionLimitFactory;
+        this.options = options.Value;
         this.http = applicationBuilder.Build();
     }
 
@@ -111,31 +118,25 @@ internal class ListenHandler : ListenHandlerBase
     {
         using var proxyFeature = new L7ReverseProxyFeature() { Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context), Http = context };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
-        var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
+        var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
         if (limiter == null)
             await http(context);
         else
         {
-            var r = limiter.TryLockOne(context);
-            if (r == null)
+            var activityCancellationSource = ActivityCancellationTokenSource.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout, context.RequestAborted);
+            using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, activityCancellationSource.Token);
+            if (lease.IsAcquired)
             {
-                logger.ConnectionRejected(context.Connection.Id);
-                context.Abort();
+                await http(context);
                 return;
             }
-            else
+
+            logger.ConnectionRejected(context.Connection.Id);
+            if (lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
             {
-                try
-                {
-                    context.Features.Set<IDecrementConcurrentConnectionCountFeature>(r);
-                    await http(context);
-                }
-                finally
-                {
-                    r.ReleaseConnection();
-                }
-                return;
+                context.Response.Headers["Retry-After"] = ((int)retryAfter.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
+            context.Response.StatusCode = 429;
         }
     }
 
@@ -143,31 +144,21 @@ internal class ListenHandler : ListenHandlerBase
     {
         using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig, Connection = connection };
         connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
-        var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
+        var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
         if (limiter == null)
             await tcp.Proxy(connection, proxyFeature);
         else
         {
-            var r = limiter.TryLockOne(connection);
-            if (r == null)
+            using var s = CancellationTokenSourcePool.Default.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout);
+            using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, s.Token);
+            if (lease.IsAcquired)
             {
-                logger.ConnectionRejected(connection.ConnectionId);
-                await connection.DisposeAsync();
+                await tcp.Proxy(connection, proxyFeature);
                 return;
             }
-            else
-            {
-                try
-                {
-                    connection.Features.Set<IDecrementConcurrentConnectionCountFeature>(r);
-                    await tcp.Proxy(connection, proxyFeature);
-                }
-                finally
-                {
-                    r.ReleaseConnection();
-                }
-                return;
-            }
+
+            logger.ConnectionRejected(connection.ConnectionId);
+            await connection.DisposeAsync();
         }
     }
 
@@ -177,31 +168,21 @@ internal class ListenHandler : ListenHandlerBase
         {
             using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, Connection = connection };
             context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
-            var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
+            var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
             if (limiter == null)
                 await udp.Proxy(context, proxyFeature);
             else
             {
-                var r = limiter.TryLockOne(connection);
-                if (r == null)
+                using var s = CancellationTokenSourcePool.Default.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout);
+                using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, s.Token);
+                if (lease.IsAcquired)
                 {
-                    logger.ConnectionRejected(connection.ConnectionId);
-                    await connection.DisposeAsync();
+                    await udp.Proxy(context, proxyFeature);
                     return;
                 }
-                else
-                {
-                    try
-                    {
-                        connection.Features.Set<IDecrementConcurrentConnectionCountFeature>(r);
-                        await udp.Proxy(context, proxyFeature);
-                    }
-                    finally
-                    {
-                        r.ReleaseConnection();
-                    }
-                    return;
-                }
+
+                logger.ConnectionRejected(connection.ConnectionId);
+                await connection.DisposeAsync();
             }
         }
         else

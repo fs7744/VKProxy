@@ -112,8 +112,8 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<ITransformFactory, ResponseTransformFactory>();
 
         services.AddSingleton<IConnectionLimitFactory, ConnectionLimitFactory>();
-        services.AddSingleton<IConnectionLimitCreator, ConnectionLimitByCountCreator>();
-        services.AddSingleton<IConnectionLimitCreator, ConnectionLimitByIpCreator>();
+        services.AddSingleton<IConnectionLimitCreator, ConnectionLimitByTotalCreator>();
+        services.AddSingleton<IConnectionLimitCreator, ConnectionLimitByKeyCreator>();
 
         services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
         services.AddSingleton<IApplicationBuilder>(i =>

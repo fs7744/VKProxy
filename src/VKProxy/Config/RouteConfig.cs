@@ -1,4 +1,5 @@
-﻿using VKProxy.Core.Infrastructure;
+﻿using System.Threading.RateLimiting;
+using VKProxy.Core.Infrastructure;
 using VKProxy.Features.Limits;
 using VKProxy.Middlewares.Http.Transforms;
 

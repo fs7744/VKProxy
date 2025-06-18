@@ -21,9 +21,9 @@ public class ConnectionLimitFactory : IConnectionLimitFactory
     {
         if (options != null)
         {
-            if (!creaters.TryGetValue(options.Policy ?? "Count", out var connectionLimitCreator))
+            if (!creaters.TryGetValue(options.By ?? "Total", out var connectionLimitCreator))
             {
-                connectionLimitCreator = creaters["Count"];
+                connectionLimitCreator = creaters["Total"];
             }
             return connectionLimitCreator.Create(options);
         }

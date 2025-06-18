@@ -1,10 +1,23 @@
-﻿using Microsoft.AspNetCore.Connections;
+﻿using System.Threading.RateLimiting;
 
 namespace VKProxy.Features.Limits;
 
 public interface IConnectionLimiter
 {
-    IDecrementConcurrentConnectionCountFeature? TryLockOne(Microsoft.AspNetCore.Http.HttpContext context);
+    RateLimiter? GetLimiter(IReverseProxyFeature proxyFeature);
+}
 
-    IDecrementConcurrentConnectionCountFeature? TryLockOne(ConnectionContext connection);
+public class ConnectionLimiter : IConnectionLimiter
+{
+    private readonly RateLimiter rateLimiter;
+
+    public ConnectionLimiter(RateLimiter rateLimiter)
+    {
+        this.rateLimiter = rateLimiter;
+    }
+
+    public RateLimiter? GetLimiter(IReverseProxyFeature proxyFeature)
+    {
+        return rateLimiter;
+    }
 }

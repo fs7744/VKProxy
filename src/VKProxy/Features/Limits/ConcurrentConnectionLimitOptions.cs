@@ -5,10 +5,15 @@ namespace VKProxy.Features.Limits;
 
 public class ConcurrentConnectionLimitOptions
 {
-    public string? Policy { get; set; }
-    public long? MaxConcurrentConnections { get; set; }
-
-    public string? HttpIpHeader { get; set; }
+    public string? Policy { get; set; } // TokenBucket / Concurrency / FixedWindow / SlidingWindow
+    public string? By { get; set; }  // Total / header
+    public int? PermitLimit { get; set; }
+    public int? QueueLimit { get; set; }
+    public int? SegmentsPerWindow { get; set; }
+    public int? TokensPerPeriod { get; set; }
+    public string? Header { get; set; }
+    public TimeSpan? Window { get; set; }
+    public string? Cookie { get; set; }
 
     internal static ConcurrentConnectionLimitOptions Read(IConfigurationSection section)
     {
@@ -16,9 +21,15 @@ public class ConcurrentConnectionLimitOptions
 
         var limits = new ConcurrentConnectionLimitOptions
         {
-            MaxConcurrentConnections = section.ReadInt64(nameof(ConcurrentConnectionLimitOptions.MaxConcurrentConnections)),
+            PermitLimit = section.ReadInt32(nameof(ConcurrentConnectionLimitOptions.PermitLimit)),
+            QueueLimit = section.ReadInt32(nameof(ConcurrentConnectionLimitOptions.QueueLimit)),
+            SegmentsPerWindow = section.ReadInt32(nameof(ConcurrentConnectionLimitOptions.SegmentsPerWindow)),
+            TokensPerPeriod = section.ReadInt32(nameof(ConcurrentConnectionLimitOptions.TokensPerPeriod)),
             Policy = section[nameof(ConcurrentConnectionLimitOptions.Policy)],
-            HttpIpHeader = section[nameof(ConcurrentConnectionLimitOptions.HttpIpHeader)]
+            Cookie = section[nameof(ConcurrentConnectionLimitOptions.Cookie)],
+            By = section[nameof(ConcurrentConnectionLimitOptions.By)],
+            Header = section[nameof(ConcurrentConnectionLimitOptions.Header)],
+            Window = section.ReadTimeSpan(nameof(ConcurrentConnectionLimitOptions.Window)),
         };
         return limits;
     }
@@ -31,9 +42,15 @@ public class ConcurrentConnectionLimitOptions
             return false;
         }
 
-        return t.MaxConcurrentConnections == other.MaxConcurrentConnections
+        return t.PermitLimit == other.PermitLimit
+            && t.QueueLimit == other.QueueLimit
+            && t.SegmentsPerWindow == other.SegmentsPerWindow
+            && t.TokensPerPeriod == other.TokensPerPeriod
             && string.Equals(t.Policy, other.Policy, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(t.HttpIpHeader, other.HttpIpHeader, StringComparison.OrdinalIgnoreCase);
+            && string.Equals(t.Header, other.Header, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(t.By, other.By, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(t.Cookie, other.Cookie, StringComparison.OrdinalIgnoreCase)
+            && t.Window == other.Window;
     }
 
     public override bool Equals(object? obj)
@@ -43,9 +60,17 @@ public class ConcurrentConnectionLimitOptions
 
     public static int GetHashCode(ConcurrentConnectionLimitOptions t)
     {
-        return HashCode.Combine(t.MaxConcurrentConnections,
-            t.Policy?.GetHashCode(StringComparison.OrdinalIgnoreCase),
-            t.HttpIpHeader?.GetHashCode(StringComparison.OrdinalIgnoreCase));
+        var code = new HashCode();
+        code.Add(t.PermitLimit);
+        code.Add(t.QueueLimit);
+        code.Add(t.SegmentsPerWindow);
+        code.Add(t.TokensPerPeriod);
+        code.Add(t.Policy?.GetHashCode(StringComparison.OrdinalIgnoreCase));
+        code.Add(t.Header?.GetHashCode(StringComparison.OrdinalIgnoreCase));
+        code.Add(t.Cookie?.GetHashCode(StringComparison.OrdinalIgnoreCase));
+        code.Add(t.By?.GetHashCode(StringComparison.OrdinalIgnoreCase));
+        code.Add(t.Window);
+        return code.ToHashCode();
     }
 
     public override int GetHashCode()
