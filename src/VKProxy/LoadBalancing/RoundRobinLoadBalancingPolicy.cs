@@ -10,6 +10,10 @@ public sealed class RoundRobinLoadBalancingPolicy : ILoadBalancingPolicy
     private readonly ConditionalWeakTable<RouteConfig, AtomicCounter> _counters = new();
     public string Name => LoadBalancingPolicy.RoundRobin;
 
+    public void Init(ClusterConfig cluster)
+    {
+    }
+
     public DestinationState? PickDestination(IReverseProxyFeature feature, IReadOnlyList<DestinationState> availableDestinations)
     {
         var counter = _counters.GetOrCreateValue(feature.Route);

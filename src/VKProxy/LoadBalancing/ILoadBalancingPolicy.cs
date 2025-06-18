@@ -8,4 +8,6 @@ public interface ILoadBalancingPolicy
     string Name { get; }
 
     DestinationState? PickDestination(IReverseProxyFeature feature, IReadOnlyList<DestinationState> availableDestinations);
+
+    void Init(ClusterConfig cluster);
 }

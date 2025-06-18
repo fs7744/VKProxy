@@ -36,7 +36,7 @@ public class ConnectionIpLimiter : IConnectionLimiter
         else
         {
             r = context.Request.Headers[header].FirstOrDefault();
-            if (r.Contains(','))
+            if (r != null && r.Contains(','))
             {
                 r = r.Split(',', 2).First();
             }

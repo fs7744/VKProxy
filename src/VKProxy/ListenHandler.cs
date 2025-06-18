@@ -109,7 +109,7 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task DoHttp(HttpContext context, ListenEndPointOptions? options)
     {
-        var proxyFeature = new L7ReverseProxyFeature() { Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context) };
+        using var proxyFeature = new L7ReverseProxyFeature() { Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context), Http = context };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
         var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
         if (limiter == null)
@@ -141,7 +141,7 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task DoTcp(ConnectionContext connection, ListenEndPointOptions? options)
     {
-        var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig };
+        using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig, Connection = connection };
         connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
         var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
         if (limiter == null)
@@ -175,7 +175,7 @@ internal class ListenHandler : ListenHandlerBase
     {
         if (connection is UdpConnectionContext context)
         {
-            var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig };
+            using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, Connection = connection };
             context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
             var limiter = proxyFeature.Route?.ConnectionLimiter ?? connectionLimitFactory.Default;
             if (limiter == null)

@@ -15,6 +15,10 @@ public sealed class PowerOfTwoChoicesLoadBalancingPolicy : ILoadBalancingPolicy
         this.randomFactory = randomFactory;
     }
 
+    public void Init(ClusterConfig cluster)
+    {
+    }
+
     public DestinationState? PickDestination(IReverseProxyFeature feature, IReadOnlyList<DestinationState> availableDestinations)
     {
         var destinationCount = availableDestinations.Count;

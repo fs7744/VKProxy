@@ -87,6 +87,7 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<ILoadBalancingPolicy, RoundRobinLoadBalancingPolicy>();
         services.AddSingleton<ILoadBalancingPolicy, LeastRequestsLoadBalancingPolicy>();
         services.AddSingleton<ILoadBalancingPolicy, PowerOfTwoChoicesLoadBalancingPolicy>();
+        services.AddSingleton<ILoadBalancingPolicy, HashLoadBalancingPolicy>();
         services.AddSingleton<ILoadBalancingPolicyFactory, LoadBalancingPolicy>();
 
         services.AddSingleton<IHealthReporter, PassiveHealthReporter>();

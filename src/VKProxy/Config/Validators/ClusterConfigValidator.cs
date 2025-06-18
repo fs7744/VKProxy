@@ -34,6 +34,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
         if (policies.TryGetValue(value.LoadBalancingPolicy ?? LoadBalancingPolicy.Random, out var policy))
         {
             value.LoadBalancingPolicyInstance = policy;
+            policy?.Init(value);
         }
         else
         {

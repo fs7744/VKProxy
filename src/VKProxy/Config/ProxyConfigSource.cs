@@ -171,6 +171,7 @@ internal class ProxyConfigSource : IConfigSource<IProxyConfig>
             Destinations = section.GetSection(nameof(ClusterConfig.Destinations)).GetChildren().Select(CreateDestination).ToList(),
             HttpClientConfig = CreateHttpClientConfig(section.GetSection(nameof(ClusterConfig.HttpClientConfig))),
             HttpRequest = CreateProxyRequestConfig(section.GetSection(nameof(ClusterConfig.HttpRequest))),
+            Metadata = section.GetSection(nameof(ClusterConfig.Metadata)).ReadStringDictionary()
         };
     }
 

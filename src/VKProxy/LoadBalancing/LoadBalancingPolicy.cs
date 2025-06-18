@@ -9,6 +9,7 @@ public sealed class LoadBalancingPolicy : ILoadBalancingPolicyFactory
     public static string RoundRobin => nameof(RoundRobin);
     public static string LeastRequests => nameof(LeastRequests);
     public static string PowerOfTwoChoices => nameof(PowerOfTwoChoices);
+    public static string Hash => nameof(Hash);
 
     public DestinationState? PickDestination(IReverseProxyFeature feature)
     {

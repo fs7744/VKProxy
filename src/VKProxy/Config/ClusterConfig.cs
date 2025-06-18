@@ -25,6 +25,8 @@ public class ClusterConfig
     internal IHealthReporter HealthReporter { get; set; }
     internal HttpMessageInvoker HttpMessageHandler { get; set; }
 
+    public IReadOnlyDictionary<string, string>? Metadata { get; set; }
+
     public void Dispose()
     {
         DestinationStates = null;
@@ -48,7 +50,8 @@ public class ClusterConfig
             && HealthCheckConfig.Equals(t.HealthCheck, other.HealthCheck)
             && CollectionUtilities.Equals(t.Destinations, other.Destinations, DestinationConfig.Comparer)
             && HttpClientConfig.Equals(t.HttpClientConfig, other.HttpClientConfig)
-            && t.HttpRequest == other.HttpRequest;
+            && t.HttpRequest?.Equals(other.HttpRequest) == true
+            && CollectionUtilities.Equals(t.Metadata, other.Metadata);
     }
 
     public override bool Equals(object? obj)

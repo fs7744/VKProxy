@@ -11,4 +11,8 @@ public sealed class RandomLoadBalancingPolicy : ILoadBalancingPolicy
     {
         return availableDestinations[Random.Shared.Next(availableDestinations.Count)];
     }
+
+    public void Init(ClusterConfig cluster)
+    {
+    }
 }

@@ -7,6 +7,10 @@ public class LeastRequestsLoadBalancingPolicy : ILoadBalancingPolicy
 {
     public string Name => LoadBalancingPolicy.LeastRequests;
 
+    public void Init(ClusterConfig cluster)
+    {
+    }
+
     public DestinationState? PickDestination(IReverseProxyFeature feature, IReadOnlyList<DestinationState> availableDestinations)
     {
         var destinationCount = availableDestinations.Count;
