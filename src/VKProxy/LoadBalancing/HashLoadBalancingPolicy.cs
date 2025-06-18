@@ -32,6 +32,13 @@ public sealed class HashLoadBalancingPolicy : ILoadBalancingPolicy
                     cluster.LoadBalancingPolicyInstance = new HashByCookie(key);
                 }
             }
+            else if ("items".Equals(hashBy, StringComparison.OrdinalIgnoreCase))
+            {
+                if (cluster.Metadata.TryGetValue("Key", out var key) && !string.IsNullOrWhiteSpace(key))
+                {
+                    cluster.LoadBalancingPolicyInstance = new HashByItems(key);
+                }
+            }
         }
     }
 
@@ -91,6 +98,43 @@ public sealed class HashLoadBalancingPolicy : ILoadBalancingPolicy
             if (feature is IL7ReverseProxyFeature l7)
             {
                 var k = l7.Http.Request.Cookies[key]?.ToString();
+                if (k != null)
+                {
+                    var c = Math.Abs(StringHashing.HashOrdinalIgnoreCase(k));
+                    return availableDestinations[c % availableDestinations.Count];
+                }
+            }
+
+            if (r == null)
+            {
+                r = availableDestinations[Random.Shared.Next(availableDestinations.Count)];
+            }
+            return r;
+        }
+    }
+
+    private sealed class HashByItems : ILoadBalancingPolicy
+    {
+        private string key;
+
+        public HashByItems(string key)
+        {
+            this.key = key;
+        }
+
+        public string Name => LoadBalancingPolicy.Hash;
+
+        public void Init(ClusterConfig cluster)
+        {
+        }
+
+        public DestinationState? PickDestination(IReverseProxyFeature feature, IReadOnlyList<DestinationState> availableDestinations)
+        {
+            DestinationState r = null;
+
+            if (feature is IL7ReverseProxyFeature l7)
+            {
+                var k = l7.Http.Items[key]?.ToString();
                 if (k != null)
                 {
                     var c = Math.Abs(StringHashing.HashOrdinalIgnoreCase(k));
