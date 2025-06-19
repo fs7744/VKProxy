@@ -6,7 +6,7 @@ namespace VKProxy.Features.Limits;
 public class ConcurrentConnectionLimitOptions
 {
     public string? Policy { get; set; } // TokenBucket / Concurrency / FixedWindow / SlidingWindow
-    public string? By { get; set; }  // Total / header
+    public string? By { get; set; }  // Total / Key
     public int? PermitLimit { get; set; }
     public int? QueueLimit { get; set; }
     public int? SegmentsPerWindow { get; set; }
