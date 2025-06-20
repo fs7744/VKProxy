@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using VKProxy.Storages.Etcd;
 
 namespace VKProxy.Cli;
@@ -18,6 +19,20 @@ public class Program
         var args = new Args(s);
         if (!args.Check()) return null;
         return Host.CreateDefaultBuilder()
+            .ConfigureLogging((HostBuilderContext c, ILoggingBuilder i) =>
+            {
+                if (!string.IsNullOrEmpty(args.Sampler))
+                {
+                    if ("trace".Equals(args.Sampler, StringComparison.OrdinalIgnoreCase))
+                    {
+                        i.AddTraceBasedSampler();
+                    }
+                    else if ("random".Equals(args.Sampler, StringComparison.OrdinalIgnoreCase))
+                    {
+                        i.AddRandomProbabilisticSampler(c.Configuration);
+                    }
+                }
+            })
             .ConfigureHostConfiguration(i =>
             {
                 if (!string.IsNullOrWhiteSpace(args.Config))

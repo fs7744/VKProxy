@@ -100,6 +100,18 @@ public class Args
                 return "Delay must be TimeSpan";
             }
         });
+        r.Add("--Sampler", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-") && !en.Current.Equals("Trace", StringComparison.OrdinalIgnoreCase) && !en.Current.Equals("Random", StringComparison.OrdinalIgnoreCase))
+            {
+                args.Sampler = en.Current;
+                return string.Empty;
+            }
+            else
+            {
+                return "Sampler must be Trace/Random";
+            }
+        });
         r.Add("--help", (args, en) =>
         {
             args.Help = true;
@@ -108,6 +120,7 @@ public class Args
             Console.WriteLine($"--etcd              etcd address, like http://127.0.0.1:2379");
             Console.WriteLine($"--etcd-prefix       default is /ReverseProxy/");
             Console.WriteLine($"--etcd-delay        delay change config when etcd change, default is 00:00:01");
+            Console.WriteLine($"--sampler           log sampling, support trace/random");
             Console.WriteLine($"--help (-h)         show all options");
             return "View more at https://fs7744.github.io/VKProxy.Doc/docs/introduction.html";
         });
@@ -122,6 +135,7 @@ public class Args
     public bool UseEtcd { get; set; }
     public EtcdProxyConfigSourceOptions EtcdOptions { get; set; }
     public bool Help { get; set; }
+    public string Sampler { get; set; }
 
     public bool Check()
     {

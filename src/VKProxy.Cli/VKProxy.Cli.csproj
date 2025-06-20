@@ -14,6 +14,9 @@
 	  <Title>command for VKProxy</Title>
 	  <Description>command for  VKProxy</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Telemetry" Version="9.6.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\VKProxy.Storages.Etcd\VKProxy.Storages.Etcd.csproj" />
