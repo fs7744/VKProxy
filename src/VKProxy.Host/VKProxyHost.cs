@@ -52,6 +52,14 @@ public static class VKProxyHost
         }
         options.Config = Environment.GetEnvironmentVariable("VKPROXY_CONFIG");
         options.UseSocks5 = bool.TryParse(Environment.GetEnvironmentVariable("VKPROXY_SOCKS5"), out var useSocks5) && useSocks5;
+        if (Enum.TryParse<Sampler>(Environment.GetEnvironmentVariable("VKPROXY_SAMPLER") ?? "None", true, out var sampler))
+        {
+            options.Sampler = sampler;
+        }
+        else
+        {
+            options.Sampler = Sampler.None;
+        }
         return options;
     }
 
@@ -182,7 +190,16 @@ public static class VKProxyHost
         return r;
     }
 
-    public static IHostBuilder CreateBuilder(VKProxyHostOptions options, Action<IHostBuilder> action = null)
+    public static IHostBuilder CreateBuilder(Action<IHostBuilder, VKProxyHostOptions> action = null)
+    {
+        var options = LoadFromEnv();
+        return CreateBuilder(options, b =>
+        {
+            action?.Invoke(b, options);
+        });
+    }
+
+    private static IHostBuilder CreateBuilder(VKProxyHostOptions options, Action<IHostBuilder> action = null)
     {
         var b = Host.CreateDefaultBuilder();
         action?.Invoke(b);

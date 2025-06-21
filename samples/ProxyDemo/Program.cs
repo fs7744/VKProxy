@@ -7,7 +7,11 @@ using VKProxy;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.ServiceDiscovery;
 
-var app = VKProxyHost.CreateBuilder(new VKProxyHostOptions() { UseSocks5 = true, Sampler = Sampler.Random })
+var app = VKProxyHost.CreateBuilder((_, o) =>
+    {
+        o.UseSocks5 = true;
+        o.Sampler = Sampler.Random;
+    })
     .ConfigureServices(i =>
     {
         //i.Configure<ReverseProxyOptions>(o => o.Section = "TextSection");
