@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Logging;
 using VKProxy.Features;
 
+namespace ProxyDemo;
+
 internal class EchoHttpMiddleware : IMiddleware
 {
     private readonly ILogger<EchoHttpMiddleware> logger;

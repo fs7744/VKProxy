@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\VKProxy\VKProxy.csproj" />
+    <ProjectReference Include="..\..\src\VKProxy.Host\VKProxy.Host.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,21 +7,18 @@ using VKProxy;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.ServiceDiscovery;
 
-var app = Host.CreateDefaultBuilder(args)
+var app = VKProxyHost.CreateBuilder(new VKProxyHostOptions() { UseSocks5 = true, Sampler = Sampler.Random })
     .ConfigureServices(i =>
     {
         //i.Configure<ReverseProxyOptions>(o => o.Section = "TextSection");
         //i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
         i.UseHttpMiddleware<EchoHttpMiddleware>();
-        i.UseSocks5();
-        i.UseWSToSocks5();
 
         i.AddSingleton<IDestinationResolver, StaticDNS>();
         i.AddSingleton<IDestinationResolver, NonStaticDNS>();
         i.AddSingleton<ITransformProvider, TestITransformProvider>();
         i.AddSingleton<ITransformFactory, TestTransformFactory>();
     })
-    .UseReverseProxy()
     .Build();
 
 await app.RunAsync();
