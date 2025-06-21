@@ -8,12 +8,13 @@ namespace VKProxy;
 
 public static class VKProxyHost
 {
-    public static IHostBuilder CreateBuilder(string[] args)
+    public static IHostBuilder CreateBuilder(string[] args, Action<Dictionary<string, Func<VKProxyHostOptions, IEnumerator<string>, string>>> action = null, Action<IHostBuilder> hostAction = null)
     {
         try
         {
             var options = LoadFromEnv();
             var handlers = GetHandlers();
+            action?.Invoke(handlers);
             var e = (args as IEnumerable<string>).GetEnumerator();
             while (e.MoveNext())
             {
@@ -33,7 +34,7 @@ public static class VKProxyHost
                 }
             }
             if (!Check(options)) return null;
-            return CreateBuilder(options);
+            return CreateBuilder(options, hostAction);
         }
         catch (NotSupportedException)
         {
@@ -162,7 +163,7 @@ public static class VKProxyHost
             }
             else
             {
-                return "Sampler must be Trace/Random";
+                return "Sampler must be Trace/Random/None";
             }
         });
         r.Add("--help", (args, en) =>
