@@ -1,4 +1,4 @@
-﻿using System.Threading.RateLimiting;
+﻿using Microsoft.AspNetCore.Http;
 using VKProxy.Core.Infrastructure;
 using VKProxy.Features.Limits;
 using VKProxy.Middlewares.Http.Transforms;
@@ -30,6 +30,7 @@ public class RouteConfig
     public ConcurrentConnectionLimitOptions Limit { get; set; }
 
     public IConnectionLimiter? ConnectionLimiter { get; set; }
+    internal RequestDelegate HttpFunc { get; set; }
 
     public static bool Equals(RouteConfig? t, RouteConfig? other)
     {

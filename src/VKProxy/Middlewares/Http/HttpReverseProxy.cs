@@ -30,6 +30,12 @@ public class HttpReverseProxy : IMiddleware
 
             if (route is not null)
             {
+                if (route.HttpFunc != null)
+                {
+                    await route.HttpFunc(context);
+                    if (resp.HasStarted) return;
+                }
+
                 var cluster = route.ClusterConfig;
                 DestinationState selectedDestination;
                 if (cluster is null)

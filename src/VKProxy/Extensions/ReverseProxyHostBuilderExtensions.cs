@@ -23,6 +23,7 @@ using VKProxy.Health.ActiveHealthCheckers;
 using VKProxy.LoadBalancing;
 using VKProxy.Middlewares;
 using VKProxy.Middlewares.Http;
+using VKProxy.Middlewares.Http.HttpFuncs;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.Middlewares.Socks5;
 using VKProxy.ServiceDiscovery;
@@ -114,6 +115,9 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<IConnectionLimitFactory, ConnectionLimitFactory>();
         services.AddSingleton<IConnectionLimitCreator, ConnectionLimitByTotalCreator>();
         services.AddSingleton<IConnectionLimitCreator, ConnectionLimitByKeyCreator>();
+
+        services.AddSingleton<IHttpFunc, CorsFunc>();
+        services.AddSingleton<ITransformProvider, CorsResponseHeaderRemoveTransform>();
 
         services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
         services.AddSingleton<IApplicationBuilder>(i =>
