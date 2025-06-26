@@ -24,6 +24,7 @@ using VKProxy.LoadBalancing;
 using VKProxy.Middlewares;
 using VKProxy.Middlewares.Http;
 using VKProxy.Middlewares.Http.HttpFuncs;
+using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.Middlewares.Socks5;
 using VKProxy.ServiceDiscovery;
@@ -118,6 +119,9 @@ public static class ReverseProxyHostBuilderExtensions
 
         services.AddSingleton<IHttpFunc, CorsFunc>();
         services.AddSingleton<ITransformProvider, CorsResponseHeaderRemoveTransform>();
+
+        services.AddSingleton<IHttpFunc, ResponseCachingFunc>();
+        services.AddSingleton<IResponseCache, MemoryResponseCache>();
 
         services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
         services.AddSingleton<IApplicationBuilder>(i =>

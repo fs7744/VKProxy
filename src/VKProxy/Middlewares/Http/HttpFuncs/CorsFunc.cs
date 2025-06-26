@@ -16,14 +16,14 @@ public class CorsFunc : IHttpFunc
         else return async c =>
         {
             var req = c.Request;
-            if (req.Method == HttpMethods.Get)
+            if (HttpMethods.IsGet(req.Method))
             {
                 SetCors(cc, c, true);
             }
-            else if (req.Method == HttpMethods.Options)
+            else if (HttpMethods.IsOptions(req.Method))
             {
                 SetCors(cc, c, false);
-                c.Response.StatusCode = 204;
+                c.Response.StatusCode = StatusCodes.Status204NoContent;
                 await c.Response.CompleteAsync();
                 return;
             }

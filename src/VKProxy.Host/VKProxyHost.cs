@@ -1,5 +1,6 @@
 ﻿using DotNext;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using VKProxy.Storages.Etcd;
@@ -59,6 +60,14 @@ public static class VKProxyHost
         else
         {
             options.Sampler = Sampler.None;
+        }
+        if (long.TryParse(Environment.GetEnvironmentVariable("VKPROXY_MEMORY_CACHE_MAX"), out var max) && max > 0)
+        {
+            options.MemoryCacheSizeLimit = max;
+        }
+        if (double.TryParse(Environment.GetEnvironmentVariable("VKPROXY_MEMORY_CACHE_COMPACTION_PERCENTAGE"), out var p) && (p >= 0 && p <= 1))
+        {
+            options.MemoryCacheCompactionPercentage = p;
         }
         return options;
     }
@@ -174,15 +183,41 @@ public static class VKProxyHost
                 return "Sampler must be Trace/Random/None";
             }
         });
+        r.Add("--memory-cache-max", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-") && long.TryParse(en.Current, out var e) && e > 0)
+            {
+                args.MemoryCacheSizeLimit = e;
+                return string.Empty;
+            }
+            else
+            {
+                return "Memory Cache Size Limit must be long";
+            }
+        });
+        r.Add("--memory-cache-percentage", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-") && double.TryParse(en.Current, out var e) && (e >= 0 && e <= 1))
+            {
+                args.MemoryCacheCompactionPercentage = e;
+                return string.Empty;
+            }
+            else
+            {
+                return "Memory Cache Compaction Percentage must be between 0 and 1 inclusive";
+            }
+        });
         r.Add("--help", (args, en) =>
         {
-            Console.WriteLine($"--config (-c)       json file config, like /xx/app.json");
-            Console.WriteLine($"--socks5            use simple socks5 support");
-            Console.WriteLine($"--etcd              etcd address, like http://127.0.0.1:2379");
-            Console.WriteLine($"--etcd-prefix       default is /ReverseProxy/");
-            Console.WriteLine($"--etcd-delay        delay change config when etcd change, default is 00:00:01");
-            Console.WriteLine($"--sampler           log sampling, support trace/random/none");
-            Console.WriteLine($"--help (-h)         show all options");
+            Console.WriteLine($"--config (-c)               json file config, like /xx/app.json");
+            Console.WriteLine($"--socks5                    use simple socks5 support");
+            Console.WriteLine($"--etcd                      etcd address, like http://127.0.0.1:2379");
+            Console.WriteLine($"--etcd-prefix               default is /ReverseProxy/");
+            Console.WriteLine($"--etcd-delay                delay change config when etcd change, default is 00:00:01");
+            Console.WriteLine($"--sampler                   log sampling, support trace/random/none");
+            Console.WriteLine($"--memory-cache-max          Memory Cache Size Limit");
+            Console.WriteLine($"--memory-cache-percentage   Memory Cache Compaction Percentage");
+            Console.WriteLine($"--help (-h)                 show all options");
             Console.WriteLine("View more at https://fs7744.github.io/VKProxy.Doc/docs/introduction.html");
             throw new NotSupportedException();
         });
@@ -227,6 +262,11 @@ public static class VKProxyHost
             })
             .ConfigureServices(i =>
             {
+                i.AddMemoryCache(j =>
+                {
+                    j.SizeLimit = options.MemoryCacheSizeLimit;
+                    j.CompactionPercentage = options.MemoryCacheCompactionPercentage;
+                });
                 if (options.UseSocks5)
                 {
                     i.UseSocks5();
