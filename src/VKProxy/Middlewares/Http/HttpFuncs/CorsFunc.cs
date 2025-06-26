@@ -23,8 +23,9 @@ public class CorsFunc : IHttpFunc
             else if (req.Method == HttpMethods.Options)
             {
                 SetCors(cc, c, false);
-                c.Response.StatusCode = 200;
+                c.Response.StatusCode = 204;
                 await c.Response.CompleteAsync();
+                return;
             }
 
             await next(c);

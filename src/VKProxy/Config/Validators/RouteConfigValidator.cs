@@ -8,11 +8,12 @@ namespace VKProxy.Config.Validators;
 public class RouteConfigValidator : IValidator<RouteConfig>
 {
     private IHttpFunc[] funcs;
-    public static RequestDelegate Nothing = c => Task.CompletedTask;
+    private readonly HttpReverseProxy http;
 
-    public RouteConfigValidator(IEnumerable<IHttpFunc> funcs)
+    public RouteConfigValidator(IEnumerable<IHttpFunc> funcs, HttpReverseProxy http)
     {
         this.funcs = funcs.OrderByDescending(i => i.Order).ToArray();
+        this.http = http;
     }
 
     public ValueTask<bool> ValidateAsync(RouteConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -40,7 +41,7 @@ public class RouteConfigValidator : IValidator<RouteConfig>
 
         if (!funcs.IsNullOrEmpty())
         {
-            value.HttpFunc = Nothing;
+            value.HttpFunc = http.Proxy;
             foreach (var func in funcs)
             {
                 try
@@ -52,7 +53,7 @@ public class RouteConfigValidator : IValidator<RouteConfig>
                     exceptions.Add(ex);
                 }
             }
-            if (value.HttpFunc == Nothing)
+            if (value.HttpFunc == http.Proxy)
                 value.HttpFunc = null;
         }
 

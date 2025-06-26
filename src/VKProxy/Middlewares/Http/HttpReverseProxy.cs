@@ -33,50 +33,77 @@ public class HttpReverseProxy : IMiddleware
                 if (route.HttpFunc != null)
                 {
                     await route.HttpFunc(context);
-                    if (resp.HasStarted) return;
-                }
-
-                var cluster = route.ClusterConfig;
-                DestinationState selectedDestination;
-                if (cluster is null)
-                {
-                    selectedDestination = null;
                 }
                 else
                 {
-                    selectedDestination = proxyFeature.SelectedDestination;
-                    selectedDestination ??= loadBalancing.PickDestination(proxyFeature);
+                    await DoProxy(context, resp, proxyFeature, route);
                 }
-
-                if (selectedDestination is null)
-                {
-                    logger.NotFoundAvailableUpstream(route.ClusterId);
-                    resp.StatusCode = StatusCodes.Status503ServiceUnavailable;
-                    return;
-                }
-                selectedDestination.ConcurrencyCounter.Increment();
-                try
-                {
-                    await forwarder.SendAsync(context, proxyFeature, selectedDestination, cluster, route.Transformer);
-                    if (DestinationFailed(context))
-                    {
-                        selectedDestination.ReportFailed();
-                    }
-                    else
-                    {
-                        selectedDestination.ReportSuccessed();
-                    }
-                }
-                finally
-                {
-                    selectedDestination.ConcurrencyCounter.Decrement();
-                }
-
                 return;
             }
         }
 
         resp.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    public async Task Proxy(HttpContext context)
+    {
+        var resp = context.Response;
+        if (resp.HasStarted) return;
+        var proxyFeature = context.Features.Get<IReverseProxyFeature>();
+        if (proxyFeature is not null)
+        {
+            var route = proxyFeature.Route;
+
+            if (route is not null)
+            {
+                await DoProxy(context, resp, proxyFeature, route);
+                return;
+            }
+        }
+
+        resp.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+
+    private async Task DoProxy(HttpContext context, HttpResponse resp, IReverseProxyFeature proxyFeature, RouteConfig route)
+    {
+        var cluster = route.ClusterConfig;
+        DestinationState selectedDestination;
+        if (cluster is null)
+        {
+            selectedDestination = null;
+        }
+        else
+        {
+            selectedDestination = proxyFeature.SelectedDestination;
+            selectedDestination ??= loadBalancing.PickDestination(proxyFeature);
+        }
+
+        if (selectedDestination is null)
+        {
+            logger.NotFoundAvailableUpstream(route.ClusterId);
+            resp.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            return;
+        }
+        selectedDestination.ConcurrencyCounter.Increment();
+        try
+        {
+            await forwarder.SendAsync(context, proxyFeature, selectedDestination, cluster, route.Transformer);
+            if (DestinationFailed(context))
+            {
+                selectedDestination.ReportFailed();
+            }
+            else
+            {
+                selectedDestination.ReportSuccessed();
+            }
+        }
+        finally
+        {
+            selectedDestination.ConcurrencyCounter.Decrement();
+        }
+
         return;
     }
 

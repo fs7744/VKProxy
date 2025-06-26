@@ -48,6 +48,12 @@ internal class CorsResponseHeaderRemoveTransform : ResponseTransform, ITransform
             {
                 respH.AccessControlExposeHeaders = d.First();
             }
+
+            d = respH.Vary;
+            if (d.Count > 1)
+            {
+                respH.Vary = d.First();
+            }
         }
         return default;
     }
