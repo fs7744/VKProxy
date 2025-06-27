@@ -118,4 +118,6 @@ internal class ResponseCachingContext
             return _responseMaxAge;
         }
     }
+
+    public TimeSpan? CacheTime { get; internal set; }
 }

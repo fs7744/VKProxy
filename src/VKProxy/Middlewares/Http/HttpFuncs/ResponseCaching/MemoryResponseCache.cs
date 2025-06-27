@@ -4,13 +4,13 @@ using Microsoft.Extensions.Primitives;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
-internal class MemoryResponseCache : IResponseCache
+public class MemoryResponseCache : IResponseCache
 {
     private readonly IMemoryCache cache;
 
     public string Name => "Memory";
 
-    internal MemoryResponseCache(IMemoryCache cache)
+    public MemoryResponseCache(IMemoryCache cache)
     {
         this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }

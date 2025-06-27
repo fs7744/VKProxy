@@ -40,19 +40,20 @@ public class ResponseCachingFunc : IHttpFunc
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
     {
-        var routeId = string.Concat(config.Key, "#");
-        var (cc, cache, maximumBodySize) = GetCacheKeyFunc(config);
+        var routeId = string.Concat(config.Key.ToUpperInvariant(), "#");
+        var (cc, cache, maximumBodySize, when, forceCache, cacheTime) = GetCacheKeyFunc(config);
         if (cc == null || cache == null)
             return next;
         else return async c =>
         {
-            var key = cc(c);
-            if (!string.IsNullOrEmpty(key))
+            if (when(c))
             {
-                key = string.Concat(routeId, key);
-                if (AllowCache(c))
+                var key = cc(c);
+                if (!string.IsNullOrEmpty(key))
                 {
-                    var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize };
+                    key = string.Concat(routeId, key);
+
+                    var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize, ShouldCacheResponse = forceCache, CacheTime = cacheTime };
                     if (await TryServeFromCacheAsync(cache.Get(context.Key), context))
                         return;
 
@@ -188,20 +189,24 @@ public class ResponseCachingFunc : IHttpFunc
 
     private bool OnFinalizeCacheHeaders(ResponseCachingContext context)
     {
-        if (IsResponseCacheable(context))
+        if (context.ShouldCacheResponse || IsResponseCacheable(context))
         {
-            var storeVaryByEntry = false;
             context.ShouldCacheResponse = true;
 
             // Create the cache entry now
             var response = context.HttpContext.Response;
             var headers = response.Headers;
-            var varyHeaders = new StringValues(headers.GetCommaSeparatedValues(HeaderNames.Vary));
-            var varyQueryKeys = new StringValues(context.HttpContext.Features.Get<IResponseCachingFeature>()?.VaryByQueryKeys);
-            context.CachedResponseValidFor = context.ResponseSharedMaxAge ??
-                context.ResponseMaxAge ??
-                (context.ResponseExpires - context.ResponseTime!.Value) ??
-                DefaultExpirationTimeSpan;
+            if (context.CacheTime.HasValue)
+            {
+                context.CachedResponseValidFor = context.CacheTime.Value;
+            }
+            else
+            {
+                context.CachedResponseValidFor = context.ResponseSharedMaxAge ??
+                    context.ResponseMaxAge ??
+                    (context.ResponseExpires - context.ResponseTime!.Value) ??
+                    DefaultExpirationTimeSpan;
+            }
 
             // Ensure date header is set
             if (!context.ResponseDate.HasValue)
@@ -227,7 +232,7 @@ public class ResponseCachingFunc : IHttpFunc
                 }
             }
 
-            return storeVaryByEntry;
+            return true;
         }
 
         context.ResponseCachingStream.DisableBuffering();
@@ -560,33 +565,43 @@ public class ResponseCachingFunc : IHttpFunc
         return true;
     }
 
-    private (Func<HttpContext, string>, IResponseCache, long) GetCacheKeyFunc(RouteConfig config)
+    private (Func<HttpContext, string>, IResponseCache, long, Func<HttpContext, bool>, bool, TimeSpan?) GetCacheKeyFunc(RouteConfig config)
     {
+        string c = null;
+        config.Metadata?.TryGetValue("Cache", out c);
         if (config.Metadata == null
-            || !config.Metadata.TryGetValue("Cache", out var c)
             || !caches.TryGetValue(c ?? "Memory", out var cache)
             || !config.Metadata.TryGetValue("CacheKey", out var key)
-            || !TryConvertFunc(key, out var f)) return (null, null, 0);
+            || !TryConvertFunc(key, out var f)) return (null, null, 0, null, false, null);
         long maximumBodySize = 64 * 1024 * 1024;
         if (config.Metadata.TryGetValue("CacheMaximumBodySize", out var s) && long.TryParse(s, out var sl) && sl > 0)
         {
             maximumBodySize = sl;
         }
 
+        Func<HttpContext, bool> whenFunc = AllowCache;
         if (config.Metadata.TryGetValue("CacheWhen", out var when))
         {
             try
             {
-                var whenFunc = HttpRoutingStatementParser.ConvertToFunc(when);
-                f = c => whenFunc(c) ? f(c) : null;
+                whenFunc = HttpRoutingStatementParser.ConvertToFunc(when);
             }
             catch (Exception ex)
             {
                 logger.ErrorConfig(ex.Message);
-                return (null, null, 0);
+                return (null, null, 0, null, false, null);
             }
         }
-        return (f, cache, maximumBodySize);
+        var forceCache = false;
+        if (config.Metadata.TryGetValue("ForceCache", out var forceCacheS) && bool.TryParse(forceCacheS, out forceCache))
+        {
+        }
+        TimeSpan? tt = null;
+        if (config.Metadata.TryGetValue("CacheTime", out var cacheTime) && TimeSpan.TryParse(cacheTime, out var t))
+        {
+            tt = t;
+        }
+        return (f, cache, maximumBodySize, whenFunc, forceCache, tt);
     }
 
     private bool TryConvertFunc(string key, out Func<HttpContext, string> f)
