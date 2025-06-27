@@ -190,7 +190,7 @@ internal static partial class GeneralLog
     public static partial void BindListenOptionsError(ILogger logger, ListenEndPointOptions endpoint, Exception ex);
 
     [LoggerMessage(2, LogLevel.Warning, @"{msg}", EventName = "ErrorConfig")]
-    public static partial void ErrorConfig(ILogger logger, string msg);
+    public static partial void ErrorConfig(this ILogger logger, string msg);
 
     [LoggerMessage(3, LogLevel.Information, @"Listening on: {s}", EventName = "BindListenOptions")]
     public static partial void BindListenOptions(ILogger logger, ListenEndPointOptions s);

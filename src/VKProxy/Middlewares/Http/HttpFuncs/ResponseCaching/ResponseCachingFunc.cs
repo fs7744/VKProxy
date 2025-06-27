@@ -6,6 +6,7 @@ using Microsoft.Net.Http.Headers;
 using System.Collections.Frozen;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
+using VKProxy.HttpRoutingStatement;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
@@ -36,15 +37,17 @@ public class ResponseCachingFunc : IHttpFunc
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
     {
+        var routeId = string.Concat(config.Key, "#");
         var (cc, cache, maximumBodySize) = GetCacheKeyFunc(config);
         if (cc == null || cache == null)
             return next;
         else return async c =>
         {
-            if (AllowCache(c))
+            var key = cc(c);
+            if (!string.IsNullOrEmpty(key))
             {
-                var key = cc(c);
-                if (!string.IsNullOrEmpty(key))
+                key = string.Concat(routeId, key);
+                if (AllowCache(c))
                 {
                     var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize };
                     if (await TryServeFromCacheAsync(cache.Get(context.Key), context))
@@ -558,12 +561,44 @@ public class ResponseCachingFunc : IHttpFunc
     {
         if (config.Metadata == null
             || !config.Metadata.TryGetValue("Cache", out var c)
-            || !caches.TryGetValue(c ?? "Memory", out var cache)) return (null, null, 0);
+            || !caches.TryGetValue(c ?? "Memory", out var cache)
+            || !config.Metadata.TryGetValue("CacheKey", out var key)
+            || !TryConvertFunc(key, out var f)) return (null, null, 0);
         long maximumBodySize = 64 * 1024 * 1024;
         if (config.Metadata.TryGetValue("CacheMaximumBodySize", out var s) && long.TryParse(s, out var sl) && sl > 0)
         {
             maximumBodySize = sl;
         }
-        return (null, cache, maximumBodySize);
+
+        if (config.Metadata.TryGetValue("CacheWhen", out var when))
+        {
+            try
+            {
+                var whenFunc = HttpRoutingStatementParser.ConvertToFunc(when);
+                f = c => whenFunc(c) ? f(c) : null;
+            }
+            catch (Exception ex)
+            {
+                logger.ErrorConfig(ex.Message);
+                return (null, null, 0);
+            }
+        }
+        return (f, cache, maximumBodySize);
+    }
+
+    private bool TryConvertFunc(string key, out Func<HttpContext, string> f)
+    {
+        try
+        {
+            // todo
+            f = null;
+        }
+        catch (Exception ex)
+        {
+            f = null;
+            logger.ErrorConfig(ex.Message);
+            return false;
+        }
+        return true;
     }
 }
