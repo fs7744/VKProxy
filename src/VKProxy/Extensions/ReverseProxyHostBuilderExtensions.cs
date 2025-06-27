@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using System.Net.Quic;
 using VKProxy;
@@ -28,6 +29,7 @@ using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.Middlewares.Socks5;
 using VKProxy.ServiceDiscovery;
+using VKProxy.TemplateStatement;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -122,6 +124,9 @@ public static class ReverseProxyHostBuilderExtensions
 
         services.AddSingleton<IHttpFunc, ResponseCachingFunc>();
         services.AddSingleton<IResponseCache, MemoryResponseCache>();
+
+        services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
+        services.TryAddSingleton<ITemplateStatementFactory, TemplateStatementFactory>();
 
         services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
         services.AddSingleton<IApplicationBuilder>(i =>

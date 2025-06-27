@@ -131,7 +131,7 @@ public static partial class HttpRoutingStatementParser
         return null;
     }
 
-    private static Func<HttpContext, object> ConvertToField(ValueStatement v)
+    internal static Func<HttpContext, object> ConvertToField(ValueStatement v)
     {
         if (v is DynamicFieldStatement d)
         {
