@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.ResponseCaching;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System.Collections.Frozen;
 using VKProxy.Config;
+using VKProxy.Core.Loggers;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
@@ -12,6 +13,7 @@ public class ResponseCachingFunc : IHttpFunc
 {
     private readonly FrozenDictionary<string, IResponseCache> caches;
     private readonly TimeProvider timeProvider;
+    private readonly ILogger logger;
     private static readonly TimeSpan DefaultExpirationTimeSpan = TimeSpan.FromSeconds(10);
 
     // see https://tools.ietf.org/html/rfc7232#section-4.1
@@ -25,10 +27,11 @@ public class ResponseCachingFunc : IHttpFunc
 
     public int Order => 10;
 
-    public ResponseCachingFunc(IEnumerable<IResponseCache> caches, TimeProvider timeProvider)
+    public ResponseCachingFunc(IEnumerable<IResponseCache> caches, TimeProvider timeProvider, ProxyLogger logger)
     {
         this.caches = caches.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
         this.timeProvider = timeProvider;
+        this.logger = logger.generalLogger;
     }
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
@@ -77,28 +80,28 @@ public class ResponseCachingFunc : IHttpFunc
         };
     }
 
-    public bool IsResponseCacheable(ResponseCachingContext context)
+    internal bool IsResponseCacheable(ResponseCachingContext context)
     {
         var responseCacheControlHeader = context.HttpContext.Response.Headers.CacheControl;
 
         // Only cache pages explicitly marked with public
         if (!HeaderUtilities.ContainsCacheDirective(responseCacheControlHeader, CacheControlHeaderValue.PublicString))
         {
-            context.Logger.ResponseWithoutPublicNotCacheable();
+            logger.ResponseWithoutPublicNotCacheable();
             return false;
         }
 
         // Check response no-store
         if (HeaderUtilities.ContainsCacheDirective(responseCacheControlHeader, CacheControlHeaderValue.NoStoreString))
         {
-            context.Logger.ResponseWithNoStoreNotCacheable();
+            logger.ResponseWithNoStoreNotCacheable();
             return false;
         }
 
         // Check no-cache
         if (HeaderUtilities.ContainsCacheDirective(responseCacheControlHeader, CacheControlHeaderValue.NoCacheString))
         {
-            context.Logger.ResponseWithNoCacheNotCacheable();
+            logger.ResponseWithNoCacheNotCacheable();
             return false;
         }
 
@@ -107,7 +110,7 @@ public class ResponseCachingFunc : IHttpFunc
         // Do not cache responses with Set-Cookie headers
         if (!StringValues.IsNullOrEmpty(response.Headers.SetCookie))
         {
-            context.Logger.ResponseWithSetCookieNotCacheable();
+            logger.ResponseWithSetCookieNotCacheable();
             return false;
         }
 
@@ -115,21 +118,21 @@ public class ResponseCachingFunc : IHttpFunc
         var varyHeader = response.Headers.Vary;
         if (varyHeader.Count == 1 && string.Equals(varyHeader, "*", StringComparison.OrdinalIgnoreCase))
         {
-            context.Logger.ResponseWithVaryStarNotCacheable();
+            logger.ResponseWithVaryStarNotCacheable();
             return false;
         }
 
         // Check private
         if (HeaderUtilities.ContainsCacheDirective(responseCacheControlHeader, CacheControlHeaderValue.PrivateString))
         {
-            context.Logger.ResponseWithPrivateNotCacheable();
+            logger.ResponseWithPrivateNotCacheable();
             return false;
         }
 
         // Check response code
         if (response.StatusCode != StatusCodes.Status200OK)
         {
-            context.Logger.ResponseWithUnsuccessfulStatusCodeNotCacheable(response.StatusCode);
+            logger.ResponseWithUnsuccessfulStatusCodeNotCacheable(response.StatusCode);
             return false;
         }
 
@@ -140,7 +143,7 @@ public class ResponseCachingFunc : IHttpFunc
                 !context.ResponseMaxAge.HasValue &&
                 context.ResponseTime!.Value >= context.ResponseExpires)
             {
-                context.Logger.ExpirationExpiresExceeded(context.ResponseTime.Value, context.ResponseExpires.Value);
+                logger.ExpirationExpiresExceeded(context.ResponseTime.Value, context.ResponseExpires.Value);
                 return false;
             }
         }
@@ -151,7 +154,7 @@ public class ResponseCachingFunc : IHttpFunc
             // Validate shared max age
             if (age >= context.ResponseSharedMaxAge)
             {
-                context.Logger.ExpirationSharedMaxAgeExceeded(age, context.ResponseSharedMaxAge.Value);
+                logger.ExpirationSharedMaxAgeExceeded(age, context.ResponseSharedMaxAge.Value);
                 return false;
             }
             else if (!context.ResponseSharedMaxAge.HasValue)
@@ -159,7 +162,7 @@ public class ResponseCachingFunc : IHttpFunc
                 // Validate max age
                 if (age >= context.ResponseMaxAge)
                 {
-                    context.Logger.ExpirationMaxAgeExceeded(age, context.ResponseMaxAge.Value);
+                    logger.ExpirationMaxAgeExceeded(age, context.ResponseMaxAge.Value);
                     return false;
                 }
                 else if (!context.ResponseMaxAge.HasValue)
@@ -167,7 +170,7 @@ public class ResponseCachingFunc : IHttpFunc
                     // Validate expiration
                     if (context.ResponseTime.Value >= context.ResponseExpires)
                     {
-                        context.Logger.ExpirationExpiresExceeded(context.ResponseTime.Value, context.ResponseExpires.Value);
+                        logger.ExpirationExpiresExceeded(context.ResponseTime.Value, context.ResponseExpires.Value);
                         return false;
                     }
                 }
@@ -251,17 +254,17 @@ public class ResponseCachingFunc : IHttpFunc
                 }
 
                 context.CachedResponse.Body = cachedResponseBody;
-                _logger.ResponseCached();
+                logger.ResponseCached();
                 context.Cache.Set(context.Key, context.CachedResponse, context.CachedResponseValidFor);
             }
             else
             {
-                _logger.ResponseContentLengthMismatchNotCached();
+                logger.ResponseContentLengthMismatchNotCached();
             }
         }
         else
         {
-            _logger.LogResponseNotCached();
+            logger.LogResponseNotCached();
         }
     }
 
@@ -306,11 +309,11 @@ public class ResponseCachingFunc : IHttpFunc
 
         if (HeaderUtilities.ContainsCacheDirective(c.HttpContext.Request.Headers.CacheControl, CacheControlHeaderValue.OnlyIfCachedString))
         {
-            _logger.GatewayTimeoutServed();
+            logger.GatewayTimeoutServed();
             c.HttpContext.Response.StatusCode = StatusCodes.Status504GatewayTimeout;
             return true;
         }
-        _logger.NoResponseServed();
+        logger.NoResponseServed();
         return false;
     }
 
@@ -332,7 +335,7 @@ public class ResponseCachingFunc : IHttpFunc
             // Check conditional request rules
             if (ContentIsNotModified(context))
             {
-                _logger.NotModifiedServed();
+                logger.NotModifiedServed();
                 context.HttpContext.Response.StatusCode = StatusCodes.Status304NotModified;
 
                 if (context.CachedResponseHeaders != null)
@@ -374,7 +377,7 @@ public class ResponseCachingFunc : IHttpFunc
                         context.HttpContext.Abort();
                     }
                 }
-                _logger.CachedResponseServed();
+                logger.CachedResponseServed();
             }
             return true;
         }
@@ -382,7 +385,7 @@ public class ResponseCachingFunc : IHttpFunc
         return false;
     }
 
-    internal static bool ContentIsNotModified(ResponseCachingContext context)
+    internal bool ContentIsNotModified(ResponseCachingContext context)
     {
         var cachedResponseHeaders = context.CachedResponseHeaders;
         var ifNoneMatchHeader = context.HttpContext.Request.Headers.IfNoneMatch;
@@ -391,7 +394,7 @@ public class ResponseCachingFunc : IHttpFunc
         {
             if (ifNoneMatchHeader.Count == 1 && StringSegment.Equals(ifNoneMatchHeader[0], EntityTagHeaderValue.Any.Tag, StringComparison.OrdinalIgnoreCase))
             {
-                context.Logger.NotModifiedIfNoneMatchStar();
+                logger.NotModifiedIfNoneMatchStar();
                 return true;
             }
 
@@ -405,7 +408,7 @@ public class ResponseCachingFunc : IHttpFunc
                     var requestETag = ifNoneMatchEtags[i];
                     if (eTag.Compare(requestETag, useStrongComparison: false))
                     {
-                        context.Logger.NotModifiedIfNoneMatchMatched(requestETag);
+                        logger.NotModifiedIfNoneMatchMatched(requestETag);
                         return true;
                     }
                 }
@@ -427,7 +430,7 @@ public class ResponseCachingFunc : IHttpFunc
                 if (HeaderUtilities.TryParseDate(ifModifiedSince.ToString(), out modifiedSince) &&
                     modified <= modifiedSince)
                 {
-                    context.Logger.NotModifiedIfModifiedSinceSatisfied(modified, modifiedSince);
+                    logger.NotModifiedIfModifiedSinceSatisfied(modified, modifiedSince);
                     return true;
                 }
             }
@@ -446,7 +449,7 @@ public class ResponseCachingFunc : IHttpFunc
         if (HeaderUtilities.TryParseSeconds(requestCacheControlHeaders, CacheControlHeaderValue.MinFreshString, out var minFresh))
         {
             age += minFresh.Value;
-            context.Logger.ExpirationMinFreshAdded(minFresh.Value);
+            logger.ExpirationMinFreshAdded(minFresh.Value);
         }
 
         // Validate shared max age, this overrides any max age settings for shared caches
@@ -456,7 +459,7 @@ public class ResponseCachingFunc : IHttpFunc
         if (age >= cachedSharedMaxAge)
         {
             // shared max age implies must revalidate
-            context.Logger.ExpirationSharedMaxAgeExceeded(age, cachedSharedMaxAge.Value);
+            logger.ExpirationSharedMaxAgeExceeded(age, cachedSharedMaxAge.Value);
             return false;
         }
         else if (!cachedSharedMaxAge.HasValue)
@@ -475,7 +478,7 @@ public class ResponseCachingFunc : IHttpFunc
                 if (HeaderUtilities.ContainsCacheDirective(cachedCacheControlHeaders, CacheControlHeaderValue.MustRevalidateString)
                     || HeaderUtilities.ContainsCacheDirective(cachedCacheControlHeaders, CacheControlHeaderValue.ProxyRevalidateString))
                 {
-                    context.Logger.ExpirationMustRevalidate(age, lowestMaxAge.Value);
+                    logger.ExpirationMustRevalidate(age, lowestMaxAge.Value);
                     return false;
                 }
 
@@ -486,18 +489,18 @@ public class ResponseCachingFunc : IHttpFunc
                 // Request allows stale values with no age limit
                 if (maxStaleExist && !requestMaxStale.HasValue)
                 {
-                    context.Logger.ExpirationInfiniteMaxStaleSatisfied(age, lowestMaxAge.Value);
+                    logger.ExpirationInfiniteMaxStaleSatisfied(age, lowestMaxAge.Value);
                     return true;
                 }
 
                 // Request allows stale values with age limit
                 if (requestMaxStale.HasValue && age - lowestMaxAge < requestMaxStale)
                 {
-                    context.Logger.ExpirationMaxStaleSatisfied(age, lowestMaxAge.Value, requestMaxStale.Value);
+                    logger.ExpirationMaxStaleSatisfied(age, lowestMaxAge.Value, requestMaxStale.Value);
                     return true;
                 }
 
-                context.Logger.ExpirationMaxAgeExceeded(age, lowestMaxAge.Value);
+                logger.ExpirationMaxAgeExceeded(age, lowestMaxAge.Value);
                 return false;
             }
             else if (!cachedMaxAge.HasValue && !requestMaxAge.HasValue)
@@ -507,7 +510,7 @@ public class ResponseCachingFunc : IHttpFunc
                 if (HeaderUtilities.TryParseDate(context.CachedResponseHeaders.Expires.ToString(), out expires) &&
                     context.ResponseTime!.Value >= expires)
                 {
-                    context.Logger.ExpirationExpiresExceeded(context.ResponseTime.Value, expires);
+                    logger.ExpirationExpiresExceeded(context.ResponseTime.Value, expires);
                     return false;
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using System.Net;
 using VKProxy.Config;
 using VKProxy.Core.Http;
@@ -9,7 +10,7 @@ namespace VKProxy.Core.Loggers;
 
 public partial class ProxyLogger : ILogger
 {
-    private readonly ILogger generalLogger;
+    internal readonly ILogger generalLogger;
 
     public ProxyLogger(ILoggerFactory loggerFactory)
     {
@@ -178,73 +179,165 @@ public partial class ProxyLogger : ILogger
     {
         GeneralLog.ConnectionRejected(generalLogger, connectionId);
     }
+}
 
-    private static partial class GeneralLog
-    {
-        [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
-        public static partial void UnexpectedException(ILogger logger, string msg, Exception ex);
+internal static partial class GeneralLog
+{
+    [LoggerMessage(0, LogLevel.Error, @"Unexpected exception {Msg}.", EventName = "UnexpectedException", SkipEnabledCheck = true)]
+    public static partial void UnexpectedException(ILogger logger, string msg, Exception ex);
 
-        [LoggerMessage(1, LogLevel.Critical, @"Unable to bind to {Endpoint} on config reload.", EventName = "BindListenOptionsError")]
-        public static partial void BindListenOptionsError(ILogger logger, ListenEndPointOptions endpoint, Exception ex);
+    [LoggerMessage(1, LogLevel.Critical, @"Unable to bind to {Endpoint} on config reload.", EventName = "BindListenOptionsError")]
+    public static partial void BindListenOptionsError(ILogger logger, ListenEndPointOptions endpoint, Exception ex);
 
-        [LoggerMessage(2, LogLevel.Warning, @"{msg}", EventName = "ErrorConfig")]
-        public static partial void ErrorConfig(ILogger logger, string msg);
+    [LoggerMessage(2, LogLevel.Warning, @"{msg}", EventName = "ErrorConfig")]
+    public static partial void ErrorConfig(ILogger logger, string msg);
 
-        [LoggerMessage(3, LogLevel.Information, @"Listening on: {s}", EventName = "BindListenOptions")]
-        public static partial void BindListenOptions(ILogger logger, ListenEndPointOptions s);
+    [LoggerMessage(3, LogLevel.Information, @"Listening on: {s}", EventName = "BindListenOptions")]
+    public static partial void BindListenOptions(ILogger logger, ListenEndPointOptions s);
 
-        [LoggerMessage(4, LogLevel.Warning, @"Not found active health check policy {policy}.", EventName = "NotFoundActiveHealthCheckPolicy")]
-        public static partial void NotFoundActiveHealthCheckPolicy(ILogger logger, string policy);
+    [LoggerMessage(4, LogLevel.Warning, @"Not found active health check policy {policy}.", EventName = "NotFoundActiveHealthCheckPolicy")]
+    public static partial void NotFoundActiveHealthCheckPolicy(ILogger logger, string policy);
 
-        [LoggerMessage(5, LogLevel.Warning, @"Active health failed, can not connect socket {endPoint} {ex}.", EventName = "SocketConnectionCheckFailed")]
-        public static partial void SocketConnectionCheckFailed(ILogger logger, EndPoint endPoint, string ex);
+    [LoggerMessage(5, LogLevel.Warning, @"Active health failed, can not connect socket {endPoint} {ex}.", EventName = "SocketConnectionCheckFailed")]
+    public static partial void SocketConnectionCheckFailed(ILogger logger, EndPoint endPoint, string ex);
 
-        [LoggerMessage(6, LogLevel.Warning, @"Not found available upstream for cluster ""{ClusterId}"".", EventName = "NotFoundAvailableUpstream")]
-        public static partial void NotFoundAvailableUpstream(ILogger logger, string clusterId);
+    [LoggerMessage(6, LogLevel.Warning, @"Not found available upstream for cluster ""{ClusterId}"".", EventName = "NotFoundAvailableUpstream")]
+    public static partial void NotFoundAvailableUpstream(ILogger logger, string clusterId);
 
-        [LoggerMessage(7, LogLevel.Information, @"Connect upstream timeout for route {routeId}.", EventName = "ConnectUpstreamTimeout")]
-        public static partial void ConnectUpstreamTimeout(ILogger logger, string routeId);
+    [LoggerMessage(7, LogLevel.Information, @"Connect upstream timeout for route {routeId}.", EventName = "ConnectUpstreamTimeout")]
+    public static partial void ConnectUpstreamTimeout(ILogger logger, string routeId);
 
-        [LoggerMessage(8, LogLevel.Information, @"Proxy timeout ({time}) for route {routeId}.", EventName = "ProxyTimeout")]
-        public static partial void ProxyTimeout(ILogger logger, string routeId, TimeSpan time);
+    [LoggerMessage(8, LogLevel.Information, @"Proxy timeout ({time}) for route {routeId}.", EventName = "ProxyTimeout")]
+    public static partial void ProxyTimeout(ILogger logger, string routeId, TimeSpan time);
 
-        [LoggerMessage(9, LogLevel.Information, @"Begin proxy for route {routeId}.", EventName = "ProxyBegin")]
-        public static partial void ProxyBegin(ILogger logger, string routeId);
+    [LoggerMessage(9, LogLevel.Information, @"Begin proxy for route {routeId}.", EventName = "ProxyBegin")]
+    public static partial void ProxyBegin(ILogger logger, string routeId);
 
-        [LoggerMessage(10, LogLevel.Information, @"End proxy for route {routeId}.", EventName = "ProxyEnd")]
-        public static partial void ProxyEnd(ILogger logger, string routeId);
+    [LoggerMessage(10, LogLevel.Information, @"End proxy for route {routeId}.", EventName = "ProxyEnd")]
+    public static partial void ProxyEnd(ILogger logger, string routeId);
 
-        [LoggerMessage(11, LogLevel.Information, @"Not found sni route for ""{host}"".", EventName = "NotFoundRouteSni")]
-        public static partial void NotFoundRouteSni(ILogger logger, string host);
+    [LoggerMessage(11, LogLevel.Information, @"Not found sni route for ""{host}"".", EventName = "NotFoundRouteSni")]
+    public static partial void NotFoundRouteSni(ILogger logger, string host);
 
-        [LoggerMessage(12, LogLevel.Information, @"Not found http route for ""{host} {path}"".", EventName = "NotFoundRouteHttp")]
-        public static partial void NotFoundRouteHttp(ILogger logger, string host, string path);
+    [LoggerMessage(12, LogLevel.Information, @"Not found http route for ""{host} {path}"".", EventName = "NotFoundRouteHttp")]
+    public static partial void NotFoundRouteHttp(ILogger logger, string host, string path);
 
-        [LoggerMessage(13, LogLevel.Information, "Not Proxying, a {statusCode} response was set by the transforms.", EventName = "NotForwarding")]
-        public static partial void NotProxying(ILogger logger, int statusCode);
+    [LoggerMessage(13, LogLevel.Information, "Not Proxying, a {statusCode} response was set by the transforms.", EventName = "NotForwarding")]
+    public static partial void NotProxying(ILogger logger, int statusCode);
 
-        [LoggerMessage(14, LogLevel.Information, "Proxying to {targetUrl} {version} {versionPolicy} {isStreaming}", EventName = "Forwarding", SkipEnabledCheck = true)]
-        public static partial void Proxying(ILogger logger, string targetUrl, string version, string versionPolicy, string isStreaming);
+    [LoggerMessage(14, LogLevel.Information, "Proxying to {targetUrl} {version} {versionPolicy} {isStreaming}", EventName = "Forwarding", SkipEnabledCheck = true)]
+    public static partial void Proxying(ILogger logger, string targetUrl, string version, string versionPolicy, string isStreaming);
 
-        [LoggerMessage(15, LogLevel.Information, "Received HTTP/{version} response {statusCode}.", EventName = "ResponseReceived")]
-        public static partial void ResponseReceived(ILogger logger, Version version, HttpStatusCode statusCode);
+    [LoggerMessage(15, LogLevel.Information, "Received HTTP/{version} response {statusCode}.", EventName = "ResponseReceived")]
+    public static partial void ResponseReceived(ILogger logger, Version version, HttpStatusCode statusCode);
 
-        [LoggerMessage(16, LogLevel.Information, "Unable to proxy the WebSocket using HTTP/2, the server does not support RFC 8441, retrying with HTTP/1.1.", EventName = "RetryingWebSocketDowngradeNoConnect")]
-        public static partial void RetryingWebSocketDowngradeNoConnect(ILogger logger);
+    [LoggerMessage(16, LogLevel.Information, "Unable to proxy the WebSocket using HTTP/2, the server does not support RFC 8441, retrying with HTTP/1.1.", EventName = "RetryingWebSocketDowngradeNoConnect")]
+    public static partial void RetryingWebSocketDowngradeNoConnect(ILogger logger);
 
-        [LoggerMessage(17, LogLevel.Information, "Unable to proxy the WebSocket using HTTP/2, server does not support HTTP/2. Retrying with HTTP/1.1. Disable HTTP/2 negotiation for improved performance.", EventName = "RetryingWebSocketDowngradeNoHttp2")]
-        public static partial void RetryingWebSocketDowngradeNoHttp2(ILogger logger);
+    [LoggerMessage(17, LogLevel.Information, "Unable to proxy the WebSocket using HTTP/2, server does not support HTTP/2. Retrying with HTTP/1.1. Disable HTTP/2 negotiation for improved performance.", EventName = "RetryingWebSocketDowngradeNoHttp2")]
+    public static partial void RetryingWebSocketDowngradeNoHttp2(ILogger logger);
 
-        [LoggerMessage(18, LogLevel.Warning, "{error}: {message}", EventName = "ForwardingError")]
-        public static partial void ProxyError(ILogger logger, ForwarderError error, string message, Exception ex);
+    [LoggerMessage(18, LogLevel.Warning, "{error}: {message}", EventName = "ForwardingError")]
+    public static partial void ProxyError(ILogger logger, ForwarderError error, string message, Exception ex);
 
-        [LoggerMessage(19, LogLevel.Debug, "{error}: {message}", EventName = "ForwardingRequestCancelled")]
-        public static partial void ProxyRequestCancelled(ILogger logger, ForwarderError error, string message, Exception ex);
+    [LoggerMessage(19, LogLevel.Debug, "{error}: {message}", EventName = "ForwardingRequestCancelled")]
+    public static partial void ProxyRequestCancelled(ILogger logger, ForwarderError error, string message, Exception ex);
 
-        [LoggerMessage(20, LogLevel.Warning, "Invalid Sec-WebSocket-Key header: '{key}'.", EventName = "InvalidSecWebSocketKeyHeader")]
-        public static partial void InvalidSecWebSocketKeyHeader(ILogger logger, string key);
+    [LoggerMessage(20, LogLevel.Warning, "Invalid Sec-WebSocket-Key header: '{key}'.", EventName = "InvalidSecWebSocketKeyHeader")]
+    public static partial void InvalidSecWebSocketKeyHeader(ILogger logger, string key);
 
-        [LoggerMessage(21, LogLevel.Warning, @"Connection id ""{ConnectionId}"" rejected because the maximum number of concurrent connections has been reached.", EventName = "ConnectionRejected")]
-        public static partial void ConnectionRejected(ILogger logger, string connectionId);
-    }
+    [LoggerMessage(21, LogLevel.Warning, @"Connection id ""{ConnectionId}"" rejected because the maximum number of concurrent connections has been reached.", EventName = "ConnectionRejected")]
+    public static partial void ConnectionRejected(ILogger logger, string connectionId);
+
+    [LoggerMessage(22, LogLevel.Debug, "The response time of the entry is {ResponseTime} and has exceeded the expiry date of {Expired} specified by the 'Expires' header.",
+        EventName = "ExpirationExpiresExceeded")]
+    internal static partial void ExpirationExpiresExceeded(this ILogger logger, DateTimeOffset responseTime, DateTimeOffset expired);
+
+    [LoggerMessage(23, LogLevel.Debug, "The age of the entry is {Age} and has exceeded the maximum age of {MaxAge} specified by the 'max-age' cache directive.", EventName = "ExpirationMaxAgeExceeded")]
+    internal static partial void ExpirationMaxAgeExceeded(this ILogger logger, TimeSpan age, TimeSpan maxAge);
+
+    [LoggerMessage(24, LogLevel.Debug, "The age of the entry is {Age} and has exceeded the maximum age for shared caches of {SharedMaxAge} specified by the 's-maxage' cache directive.",
+        EventName = "ExpirationSharedMaxAgeExceeded")]
+    internal static partial void ExpirationSharedMaxAgeExceeded(this ILogger logger, TimeSpan age, TimeSpan sharedMaxAge);
+
+    [LoggerMessage(25, LogLevel.Debug, "Response is not cacheable because its status code {StatusCode} does not indicate success.",
+        EventName = "ResponseWithUnsuccessfulStatusCodeNotCacheable")]
+    internal static partial void ResponseWithUnsuccessfulStatusCodeNotCacheable(this ILogger logger, int statusCode);
+
+    [LoggerMessage(26, LogLevel.Debug, "Response is not cacheable because it contains a 'no-cache' cache directive.",
+        EventName = "ResponseWithNoCacheNotCacheable")]
+    internal static partial void ResponseWithNoCacheNotCacheable(this ILogger logger);
+
+    [LoggerMessage(27, LogLevel.Debug, "Response is not cacheable because it contains a 'SetCookie' header.", EventName = "ResponseWithSetCookieNotCacheable")]
+    internal static partial void ResponseWithSetCookieNotCacheable(this ILogger logger);
+
+    [LoggerMessage(28, LogLevel.Debug, "Response is not cacheable because it contains a '.Vary' header with a value of *.",
+        EventName = "ResponseWithVaryStarNotCacheable")]
+    internal static partial void ResponseWithVaryStarNotCacheable(this ILogger logger);
+
+    [LoggerMessage(29, LogLevel.Debug, "Response is not cacheable because it contains the 'private' cache directive.",
+        EventName = "ResponseWithPrivateNotCacheable")]
+    internal static partial void ResponseWithPrivateNotCacheable(this ILogger logger);
+
+    [LoggerMessage(30, LogLevel.Debug, "Response is not cacheable because it does not contain the 'public' cache directive.",
+        EventName = "ResponseWithoutPublicNotCacheable")]
+    internal static partial void ResponseWithoutPublicNotCacheable(this ILogger logger);
+
+    [LoggerMessage(31, LogLevel.Debug, "Response is not cacheable because it or its corresponding request contains a 'no-store' cache directive.",
+        EventName = "ResponseWithNoStoreNotCacheable")]
+    internal static partial void ResponseWithNoStoreNotCacheable(this ILogger logger);
+
+    [LoggerMessage(32, LogLevel.Information, "The response has been cached.", EventName = "ResponseCached")]
+    internal static partial void ResponseCached(this ILogger logger);
+
+    [LoggerMessage(33, LogLevel.Information, "The response could not be cached for this request.", EventName = "ResponseNotCached")]
+    internal static partial void LogResponseNotCached(this ILogger logger);
+
+    [LoggerMessage(34, LogLevel.Warning, "The response could not be cached for this request because the 'Content-Length' did not match the body length.",
+        EventName = "responseContentLengthMismatchNotCached")]
+    internal static partial void ResponseContentLengthMismatchNotCached(this ILogger logger);
+
+    [LoggerMessage(35, LogLevel.Information, "No cached response available for this request and the 'only-if-cached' cache directive was specified.",
+        EventName = "GatewayTimeoutServed")]
+    internal static partial void GatewayTimeoutServed(this ILogger logger);
+
+    [LoggerMessage(36, LogLevel.Information, "No cached response available for this request.", EventName = "NoResponseServed")]
+    internal static partial void NoResponseServed(this ILogger logger);
+
+    [LoggerMessage(37, LogLevel.Information, "The content requested has not been modified.", EventName = "NotModifiedServed")]
+    internal static partial void NotModifiedServed(this ILogger logger);
+
+    [LoggerMessage(38, LogLevel.Information, "Serving response from cache.", EventName = "CachedResponseServed")]
+    internal static partial void CachedResponseServed(this ILogger logger);
+
+    [LoggerMessage(39, LogLevel.Debug, "The 'IfNoneMatch' header of the request contains a value of *.", EventName = "NotModifiedIfNoneMatchStar")]
+    internal static partial void NotModifiedIfNoneMatchStar(this ILogger logger);
+
+    [LoggerMessage(40, LogLevel.Debug, "The ETag {ETag} in the 'IfNoneMatch' header matched the ETag of a cached entry.",
+        EventName = "NotModifiedIfNoneMatchMatched")]
+    internal static partial void NotModifiedIfNoneMatchMatched(this ILogger logger, EntityTagHeaderValue etag);
+
+    [LoggerMessage(41, LogLevel.Debug, "The last modified date of {LastModified} is before the date {IfModifiedSince} specified in the 'IfModifiedSince' header.",
+        EventName = "NotModifiedIfModifiedSinceSatisfied")]
+    internal static partial void NotModifiedIfModifiedSinceSatisfied(this ILogger logger, DateTimeOffset lastModified, DateTimeOffset ifModifiedSince);
+
+    [LoggerMessage(42, LogLevel.Debug, "Adding a minimum freshness requirement of {Duration} specified by the 'min-fresh' cache directive.",
+        EventName = "LogRequestMethodNotCacheable")]
+    internal static partial void ExpirationMinFreshAdded(this ILogger logger, TimeSpan duration);
+
+    [LoggerMessage(43, LogLevel.Debug, "The age of the entry is {Age} and has exceeded the maximum age of {MaxAge} specified by the 'max-age' cache directive. " +
+        "It must be revalidated because the 'must-revalidate' or 'proxy-revalidate' cache directive is specified.",
+        EventName = "ExpirationMustRevalidate")]
+    internal static partial void ExpirationMustRevalidate(this ILogger logger, TimeSpan age, TimeSpan maxAge);
+
+    [LoggerMessage(44, LogLevel.Debug, "The age of the entry is {Age} and has exceeded the maximum age of {MaxAge} specified by the 'max-age' cache directive. " +
+    "However, it satisfied the maximum stale allowance of {MaxStale} specified by the 'max-stale' cache directive.",
+    EventName = "ExpirationMaxStaleSatisfied")]
+    internal static partial void ExpirationMaxStaleSatisfied(this ILogger logger, TimeSpan age, TimeSpan maxAge, TimeSpan maxStale);
+
+    [LoggerMessage(45, LogLevel.Debug,
+        "The age of the entry is {Age} and has exceeded the maximum age of {MaxAge} specified by the 'max-age' cache directive. " +
+        "However, the 'max-stale' cache directive was specified without an assigned value and a stale response of any age is accepted.",
+        EventName = "ExpirationInfiniteMaxStaleSatisfied")]
+    internal static partial void ExpirationInfiniteMaxStaleSatisfied(this ILogger logger, TimeSpan age, TimeSpan maxAge);
 }
