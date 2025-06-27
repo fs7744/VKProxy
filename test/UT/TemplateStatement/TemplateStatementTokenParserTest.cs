@@ -30,6 +30,7 @@ public class TemplateStatementTokenParserTest
     [InlineData("{Query('x-c')}", "xxx")]
     [InlineData("{Cookie('x-c')}", "ddd")]
     [InlineData("{Path}#{Cookie('x-c')}", "/testp#ddd")]
+    [InlineData("{Path}#{{}}{Cookie('x-c')}", "/testp#{}ddd")]
     public void ShouldConvert(string test, string expected)
     {
         var context = new Mock<HttpContext>();
@@ -52,6 +53,9 @@ public class TemplateStatementTokenParserTest
 
     [Theory]
     [InlineData("{")]
+    [InlineData("}")]
+    [InlineData("{ {} }")]
+    [InlineData("{ dsd{}dds }")]
     public void ShouldThrows(string test)
     {
         var c = Assert.Throws<ParserExecption>(() => f.Convert(test));

@@ -33,12 +33,18 @@ public class TemplateStatementFactory : ITemplateStatementFactory
             var c = enumerator.Current;
             if (c.Type == TokenType.Sign)
             {
-                if ("{{".Equals(c.GetValue().ToString()) || "}}".Equals(c.GetValue().ToString()))
+                var s = c.GetValue().ToString();
+                if ("{{".Equals(s))
                 {
-                    list.Add(c.GetValue().ToString());
+                    list.Add("{");
                     continue;
                 }
-                else if ("{".Equals(c.GetValue().ToString()))
+                else if ("}}".Equals(s))
+                {
+                    list.Add("}");
+                    continue;
+                }
+                else if ("{".Equals(s))
                 {
                     if (TryConvertField(enumerator, list))
                     {
@@ -46,7 +52,7 @@ public class TemplateStatementFactory : ITemplateStatementFactory
                     }
                 }
 
-                throw new ParserExecption($"Can't parse near by {c.GetValue()} (Line:{c.StartLine},Col:{c.StartColumn})");
+                throw new ParserExecption($"Can't parse near by {s} (Line:{c.StartLine},Col:{c.StartColumn})");
             }
             else
             {
