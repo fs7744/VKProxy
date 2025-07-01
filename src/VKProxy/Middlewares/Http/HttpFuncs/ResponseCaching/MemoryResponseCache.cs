@@ -15,24 +15,6 @@ public class MemoryResponseCache : IResponseCache
         this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
-    public IResponseCacheEntry? Get(string key)
-    {
-        var entry = cache.Get(key);
-        return entry as IResponseCacheEntry;
-    }
-
-    public void Set(string key, IResponseCacheEntry entry, TimeSpan validFor)
-    {
-        cache.Set(
-                key,
-                entry,
-                new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = validFor,
-                    Size = EstimateCachedResponseSize(entry as CachedResponse)
-                });
-    }
-
     internal static long EstimateCachedResponseSize(CachedResponse cachedResponse)
     {
         if (cachedResponse == null)
@@ -81,5 +63,24 @@ public class MemoryResponseCache : IResponseCache
 
             return size;
         }
+    }
+
+    public ValueTask<IResponseCacheEntry?> GetAsync(string key)
+    {
+        var entry = cache.Get(key);
+        return ValueTask.FromResult(entry as IResponseCacheEntry);
+    }
+
+    public ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
+    {
+        cache.Set(
+                key,
+                entry,
+                new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = validFor,
+                    Size = EstimateCachedResponseSize(entry as CachedResponse)
+                });
+        return ValueTask.CompletedTask;
     }
 }

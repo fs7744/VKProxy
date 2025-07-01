@@ -8,9 +8,9 @@ internal sealed class ResponseCachingStream : Stream
     private readonly long _maxBufferSize;
     private readonly int _segmentSize;
     private readonly SegmentWriteStream _segmentWriteStream;
-    private readonly Action _startResponseCallback;
+    private readonly Func<ValueTask> _startResponseCallback;
 
-    internal ResponseCachingStream(Stream innerStream, long maxBufferSize, int segmentSize, Action startResponseCallback)
+    internal ResponseCachingStream(Stream innerStream, long maxBufferSize, int segmentSize, Func<ValueTask> startResponseCallback)
     {
         _innerStream = innerStream;
         _maxBufferSize = maxBufferSize;
@@ -70,7 +70,7 @@ internal sealed class ResponseCachingStream : Stream
     {
         try
         {
-            _startResponseCallback();
+            _startResponseCallback().ConfigureAwait(false).GetAwaiter().GetResult();
             _innerStream.Flush();
         }
         catch
@@ -84,7 +84,7 @@ internal sealed class ResponseCachingStream : Stream
     {
         try
         {
-            _startResponseCallback();
+            await _startResponseCallback().ConfigureAwait(false);
             await _innerStream.FlushAsync(cancellationToken);
         }
         catch
@@ -102,7 +102,7 @@ internal sealed class ResponseCachingStream : Stream
     {
         try
         {
-            _startResponseCallback();
+            _startResponseCallback().ConfigureAwait(false).GetAwaiter().GetResult();
             _innerStream.Write(buffer, offset, count);
         }
         catch
@@ -131,7 +131,7 @@ internal sealed class ResponseCachingStream : Stream
     {
         try
         {
-            _startResponseCallback();
+            await _startResponseCallback().ConfigureAwait(false);
             await _innerStream.WriteAsync(buffer, cancellationToken);
         }
         catch

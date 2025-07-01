@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System.Collections.Frozen;
+using System.Threading.Tasks;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
 using VKProxy.HttpRoutingStatement;
@@ -54,7 +55,7 @@ public class ResponseCachingFunc : IHttpFunc
                     key = string.Concat(routeId, key);
 
                     var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize, ShouldCacheResponse = forceCache, CacheTime = cacheTime };
-                    if (await TryServeFromCacheAsync(cache.Get(context.Key), context))
+                    if (await TryServeFromCacheAsync(await cache.GetAsync(context.Key), context))
                         return;
 
                     // Check request no-store
@@ -68,10 +69,10 @@ public class ResponseCachingFunc : IHttpFunc
                             await next(c);
 
                             // If there was no response body, check the response headers now. We can cache things like redirects.
-                            StartResponse(context);
+                            await StartResponse(context);
 
                             // Finalize the cache entry
-                            FinalizeCacheBody(context);
+                            await FinalizeCacheBody(context);
                         }
                         finally
                         {
@@ -256,15 +257,17 @@ public class ResponseCachingFunc : IHttpFunc
         return false;
     }
 
-    internal void FinalizeCacheHeaders(ResponseCachingContext context)
+    internal ValueTask FinalizeCacheHeaders(ResponseCachingContext context)
     {
         if (OnFinalizeCacheHeaders(context))
         {
-            context.Cache.Set(context.Key, context.CachedResponse, context.CachedResponseValidFor);
+            return context.Cache.SetAsync(context.Key, context.CachedResponse, context.CachedResponseValidFor);
         }
+        else
+            return ValueTask.CompletedTask;
     }
 
-    internal void FinalizeCacheBody(ResponseCachingContext context)
+    internal ValueTask FinalizeCacheBody(ResponseCachingContext context)
     {
         if (context.ShouldCacheResponse && context.ResponseCachingStream.BufferingEnabled)
         {
@@ -283,7 +286,7 @@ public class ResponseCachingFunc : IHttpFunc
 
                 context.CachedResponse.Body = cachedResponseBody;
                 logger.ResponseCached();
-                context.Cache.Set(context.Key, context.CachedResponse, context.CachedResponseValidFor);
+                return context.Cache.SetAsync(context.Key, context.CachedResponse, context.CachedResponseValidFor);
             }
             else
             {
@@ -294,14 +297,18 @@ public class ResponseCachingFunc : IHttpFunc
         {
             logger.LogResponseNotCached();
         }
+
+        return ValueTask.CompletedTask;
     }
 
-    internal void StartResponse(ResponseCachingContext context)
+    internal ValueTask StartResponse(ResponseCachingContext context)
     {
         if (OnStartResponse(context))
         {
-            FinalizeCacheHeaders(context);
+            return FinalizeCacheHeaders(context);
         }
+        else
+            return ValueTask.CompletedTask;
     }
 
     private bool OnStartResponse(ResponseCachingContext context)

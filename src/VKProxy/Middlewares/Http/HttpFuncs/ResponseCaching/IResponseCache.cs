@@ -4,7 +4,7 @@ public interface IResponseCache
 {
     string Name { get; }
 
-    IResponseCacheEntry? Get(string key);
+    ValueTask<IResponseCacheEntry?> GetAsync(string key);
 
-    void Set(string key, IResponseCacheEntry entry, TimeSpan validFor);
+    ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor);
 }
