@@ -120,4 +120,6 @@ internal class ResponseCachingContext
     }
 
     public TimeSpan? CacheTime { get; internal set; }
+
+    public CancellationToken CancellationToken { get; internal set; }
 }

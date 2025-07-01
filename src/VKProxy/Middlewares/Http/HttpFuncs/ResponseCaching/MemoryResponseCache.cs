@@ -65,13 +65,13 @@ public class MemoryResponseCache : IResponseCache
         }
     }
 
-    public ValueTask<IResponseCacheEntry?> GetAsync(string key)
+    public ValueTask<IResponseCacheEntry?> GetAsync(string key, CancellationToken cancellationToken)
     {
         var entry = cache.Get(key);
         return ValueTask.FromResult(entry as IResponseCacheEntry);
     }
 
-    public ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
+    public ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor, CancellationToken cancellationToken)
     {
         cache.Set(
                 key,

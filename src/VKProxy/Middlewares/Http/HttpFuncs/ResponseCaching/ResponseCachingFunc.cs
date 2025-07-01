@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.ResponseCaching;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System.Collections.Frozen;
 using System.Threading.Tasks;
 using VKProxy.Config;
+using VKProxy.Core.Http;
 using VKProxy.Core.Loggers;
 using VKProxy.HttpRoutingStatement;
 using VKProxy.TemplateStatement;
@@ -41,6 +43,7 @@ public class ResponseCachingFunc : IHttpFunc
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
     {
+        var timeout = config.Timeout;
         var routeId = string.Concat(config.Key.ToUpperInvariant(), "#");
         var (cc, cache, maximumBodySize, when, forceCache, cacheTime) = GetCacheKeyFunc(config);
         if (cc == null || cache == null)
@@ -54,8 +57,9 @@ public class ResponseCachingFunc : IHttpFunc
                 {
                     key = string.Concat(routeId, key);
 
-                    var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize, ShouldCacheResponse = forceCache, CacheTime = cacheTime };
-                    if (await TryServeFromCacheAsync(await cache.GetAsync(context.Key), context))
+                    var activityCancellationSource = ActivityCancellationTokenSource.Rent(timeout, c.RequestAborted);
+                    var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize, ShouldCacheResponse = forceCache, CacheTime = cacheTime, CancellationToken = activityCancellationSource.Token };
+                    if (await TryServeFromCacheAsync(await cache.GetAsync(context.Key, context.CancellationToken), context))
                         return;
 
                     // Check request no-store
@@ -261,7 +265,7 @@ public class ResponseCachingFunc : IHttpFunc
     {
         if (OnFinalizeCacheHeaders(context))
         {
-            return context.Cache.SetAsync(context.Key, context.CachedResponse, context.CachedResponseValidFor);
+            return context.Cache.SetAsync(context.Key, context.CachedResponse, context.CachedResponseValidFor, context.CancellationToken);
         }
         else
             return ValueTask.CompletedTask;
@@ -286,7 +290,7 @@ public class ResponseCachingFunc : IHttpFunc
 
                 context.CachedResponse.Body = cachedResponseBody;
                 logger.ResponseCached();
-                return context.Cache.SetAsync(context.Key, context.CachedResponse, context.CachedResponseValidFor);
+                return context.Cache.SetAsync(context.Key, context.CachedResponse, context.CachedResponseValidFor, context.CancellationToken);
             }
             else
             {

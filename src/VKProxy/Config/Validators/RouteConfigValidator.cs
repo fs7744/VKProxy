@@ -41,20 +41,22 @@ public class RouteConfigValidator : IValidator<RouteConfig>
 
         if (!funcs.IsNullOrEmpty())
         {
-            value.HttpFunc = http.Proxy;
+            RequestDelegate f = http.Proxy;
             foreach (var func in funcs)
             {
                 try
                 {
-                    value.HttpFunc = func.Create(value, value.HttpFunc);
+                    f = func.Create(value, f);
                 }
                 catch (Exception ex)
                 {
                     exceptions.Add(ex);
                 }
             }
-            if (value.HttpFunc == http.Proxy)
+            if (f == http.Proxy)
                 value.HttpFunc = null;
+            else
+                value.HttpFunc = f;
         }
 
         return new ValueTask<bool>(r);
