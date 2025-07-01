@@ -89,6 +89,23 @@ public class ResponseCachingFunc : IHttpFunc
 
     internal bool IsResponseCacheable(ResponseCachingContext context)
     {
+        if (context.ShouldCacheResponse)
+        {
+            var res = context.HttpContext.Response;
+            if (res.StatusCode != StatusCodes.Status200OK)
+            {
+                logger.ResponseWithUnsuccessfulStatusCodeNotCacheable(res.StatusCode);
+                return false;
+            }
+            // Do not cache responses with Set-Cookie headers
+            if (!StringValues.IsNullOrEmpty(res.Headers.SetCookie))
+            {
+                logger.ResponseWithSetCookieNotCacheable();
+                return false;
+            }
+            return true;
+        }
+
         var responseCacheControlHeader = context.HttpContext.Response.Headers.CacheControl;
 
         // Only cache pages explicitly marked with public
@@ -189,7 +206,7 @@ public class ResponseCachingFunc : IHttpFunc
 
     private bool OnFinalizeCacheHeaders(ResponseCachingContext context)
     {
-        if (context.ShouldCacheResponse || IsResponseCacheable(context))
+        if (IsResponseCacheable(context))
         {
             context.ShouldCacheResponse = true;
 
