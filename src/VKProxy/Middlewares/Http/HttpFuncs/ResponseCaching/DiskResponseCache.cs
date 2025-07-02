@@ -33,3 +33,31 @@ public class DiskResponseCache : IResponseCache
         await cache.SetAsync(key, writer.WrittenMemory, new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);
     }
 }
+
+public class MemoryAndDiskResponseCache : IResponseCache
+{
+    private readonly DiskResponseCache disk;
+    private readonly MemoryResponseCache memory;
+
+    public string Name => "MemoryAndDisk";
+
+    public MemoryAndDiskResponseCache(DiskResponseCache disk, MemoryResponseCache memory)
+    {
+        this.disk = disk;
+        this.memory = memory;
+    }
+
+    public async ValueTask<CachedResponse?> GetAsync(string key, CancellationToken cancellationToken)
+    {
+        var r = await memory.GetAsync(key, cancellationToken);
+        if (r == null)
+            r = await disk.GetAsync(key, cancellationToken);
+        return r;
+    }
+
+    public async ValueTask SetAsync(string key, CachedResponse entry, TimeSpan validFor, CancellationToken cancellationToken)
+    {
+        await disk.SetAsync(key, entry, validFor, cancellationToken);
+        await memory.SetAsync(key, entry, validFor, cancellationToken);
+    }
+}
