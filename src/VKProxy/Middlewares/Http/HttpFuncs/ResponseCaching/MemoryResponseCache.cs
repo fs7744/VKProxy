@@ -65,13 +65,13 @@ public class MemoryResponseCache : IResponseCache
         }
     }
 
-    public ValueTask<IResponseCacheEntry?> GetAsync(string key, CancellationToken cancellationToken)
+    public ValueTask<CachedResponse?> GetAsync(string key, CancellationToken cancellationToken)
     {
         var entry = cache.Get(key);
-        return ValueTask.FromResult(entry as IResponseCacheEntry);
+        return ValueTask.FromResult(entry as CachedResponse);
     }
 
-    public ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor, CancellationToken cancellationToken)
+    public ValueTask SetAsync(string key, CachedResponse entry, TimeSpan validFor, CancellationToken cancellationToken)
     {
         cache.Set(
                 key,
@@ -79,7 +79,7 @@ public class MemoryResponseCache : IResponseCache
                 new MemoryCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = validFor,
-                    Size = EstimateCachedResponseSize(entry as CachedResponse)
+                    Size = EstimateCachedResponseSize(entry)
                 });
         return ValueTask.CompletedTask;
     }

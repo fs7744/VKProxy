@@ -10,12 +10,12 @@ public class DiskResponseCache : IResponseCache
 {
     public string Name => "Disk";
 
-    public ValueTask<IResponseCacheEntry?> GetAsync(string key, CancellationToken cancellationToken)
+    public ValueTask<CachedResponse?> GetAsync(string key, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
 
-    public ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor, CancellationToken cancellationToken)
+    public ValueTask SetAsync(string key, CachedResponse entry, TimeSpan validFor, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

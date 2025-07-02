@@ -4,7 +4,7 @@ public interface IResponseCache
 {
     string Name { get; }
 
-    ValueTask<IResponseCacheEntry?> GetAsync(string key, CancellationToken cancellationToken);
+    ValueTask<CachedResponse?> GetAsync(string key, CancellationToken cancellationToken);
 
-    ValueTask SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor, CancellationToken cancellationToken);
+    ValueTask SetAsync(string key, CachedResponse entry, TimeSpan validFor, CancellationToken cancellationToken);
 }

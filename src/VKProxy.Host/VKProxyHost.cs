@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using VKProxy.StackExchangeRedis;
 using VKProxy.Storages.Etcd;
 
 namespace VKProxy;
@@ -69,6 +70,12 @@ public static class VKProxyHost
         {
             options.MemoryCacheCompactionPercentage = p;
         }
+
+        if (int.TryParse(Environment.GetEnvironmentVariable("VKPROXY_REDIS_POOL_SIZE"), out var pool) && pool > 0)
+        {
+            options.RedisPoolSize = pool;
+        }
+        options.Redis = Environment.GetEnvironmentVariable("VKPROXY_REDIS");
         return options;
     }
 
@@ -207,6 +214,30 @@ public static class VKProxyHost
                 return "Memory Cache Compaction Percentage must be between 0 and 1 inclusive";
             }
         });
+        r.Add("--redis", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-"))
+            {
+                args.Redis = en.Current;
+                return string.Empty;
+            }
+            else
+            {
+                return "must StackExchangeRedis config format";
+            }
+        });
+        r.Add("--redis-pool-size", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-") && int.TryParse(en.Current, out var e) && e > 0)
+            {
+                args.RedisPoolSize = e;
+                return string.Empty;
+            }
+            else
+            {
+                return "StackExchangeRedis pool size must be int";
+            }
+        });
         r.Add("--help", (args, en) =>
         {
             Console.WriteLine($"--config (-c)               json file config, like /xx/app.json");
@@ -217,6 +248,8 @@ public static class VKProxyHost
             Console.WriteLine($"--sampler                   log sampling, support trace/random/none");
             Console.WriteLine($"--memory-cache-max          Memory Cache Size Limit");
             Console.WriteLine($"--memory-cache-percentage   Memory Cache Compaction Percentage");
+            Console.WriteLine($"--redis                     StackExchangeRedis config");
+            Console.WriteLine($"--redis-pool-size           StackExchangeRedis pool size, default is 10");
             Console.WriteLine($"--help (-h)                 show all options");
             Console.WriteLine("View more at https://fs7744.github.io/VKProxy.Doc/docs/introduction.html");
             throw new NotSupportedException();
@@ -275,6 +308,12 @@ public static class VKProxyHost
                 if (options.EtcdOptions != null)
                 {
                     i.UseEtcdConfig(options.EtcdOptions);
+                }
+
+                if (!string.IsNullOrWhiteSpace(options.Redis))
+                {
+                    i.AddPooledRedis(options.Redis, options.RedisPoolSize.GetValueOrDefault(10));
+                    i.AddRedisResponseCache();
                 }
             })
             .UseReverseProxy();

@@ -11,4 +11,6 @@ public class VKProxyHostOptions
     public Sampler Sampler { get; set; }
     public long? MemoryCacheSizeLimit { get; set; }
     public double MemoryCacheCompactionPercentage { get; set; } = 0.05;
+    public string Redis { get; set; }
+    public int? RedisPoolSize { get; set; } = 10;
 }

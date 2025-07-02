@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
+using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
 namespace VKProxy.StackExchangeRedis;
 
@@ -16,6 +17,13 @@ public static class StackExchangeRedisExtensions
         {
             return new RedisPool(async (i) => new AsyncPooledRedis(i, await ConnectionMultiplexer.ConnectAsync(configuration).ConfigureAwait(false)), maxSize);
         });
+
+        return services;
+    }
+
+    public static IServiceCollection AddRedisResponseCache(this IServiceCollection services)
+    {
+        services.AddSingleton<IResponseCache, RedisResponseCache>();
 
         return services;
     }
