@@ -19,10 +19,17 @@ public class ConnectionByKeyLimiter : IConnectionLimiter
 
     public RateLimiter? GetLimiter(IReverseProxyFeature proxyFeature)
     {
+        string key = GetKey(proxyFeature, options, isHeader);
+
+        return rateLimiters.GetOrAdd(key, CreateLimiter);
+    }
+
+    public static string GetKey(IReverseProxyFeature proxyFeature, ConcurrentConnectionLimitOptions options, bool isHeader)
+    {
         string key;
         if (proxyFeature is IL7ReverseProxyFeature l7)
         {
-            key = isHeader ? GetHeader(l7.Http) : GetCookie(l7.Http);
+            key = isHeader ? GetHeader(l7.Http, options.Header) : GetCookie(l7.Http, options.Cookie);
         }
         else if (proxyFeature is IL4ReverseProxyFeature l4 && l4.Connection.RemoteEndPoint is not null)
         {
@@ -41,13 +48,12 @@ public class ConnectionByKeyLimiter : IConnectionLimiter
 
         if (key == null)
             key = string.Empty;
-
-        return rateLimiters.GetOrAdd(key, CreateLimiter);
+        return key;
     }
 
-    private string? GetCookie(HttpContext context)
+    public static string? GetCookie(HttpContext context, string cookie)
     {
-        string r = context.Request.Cookies[options.Cookie];
+        string r = context.Request.Cookies[cookie];
         if (r == null)
         {
             r = context.Connection.RemoteIpAddress?.ToString();
@@ -60,9 +66,9 @@ public class ConnectionByKeyLimiter : IConnectionLimiter
         return ConnectionLimitByTotalCreator.CreateLimiter(options);
     }
 
-    private string? GetHeader(HttpContext context)
+    public static string? GetHeader(HttpContext context, string header)
     {
-        string r = context.Request.Headers[options.Header].FirstOrDefault();
+        string r = context.Request.Headers[header].FirstOrDefault();
         if (r == null)
         {
             r = context.Connection.RemoteIpAddress?.ToString();

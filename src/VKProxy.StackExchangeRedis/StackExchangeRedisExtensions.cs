@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
+using VKProxy.Features.Limits;
 using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
 namespace VKProxy.StackExchangeRedis;
@@ -24,6 +25,13 @@ public static class StackExchangeRedisExtensions
     public static IServiceCollection AddRedisResponseCache(this IServiceCollection services)
     {
         services.AddSingleton<IResponseCache, RedisResponseCache>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddRedisConcurrency(this IServiceCollection services)
+    {
+        services.AddSingleton<IConnectionLimitCreator, RedisIncrConnectionLimitCreator>();
 
         return services;
     }

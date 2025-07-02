@@ -314,6 +314,7 @@ public static class VKProxyHost
                 {
                     i.AddPooledRedis(options.Redis, options.RedisPoolSize.GetValueOrDefault(10));
                     i.AddRedisResponseCache();
+                    i.AddRedisConcurrency();
                 }
             })
             .UseReverseProxy();
