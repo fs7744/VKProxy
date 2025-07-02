@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 using VKProxy.StackExchangeRedis;
 using VKProxy.Storages.Etcd;
 
@@ -76,6 +77,13 @@ public static class VKProxyHost
             options.RedisPoolSize = pool;
         }
         options.Redis = Environment.GetEnvironmentVariable("VKPROXY_REDIS");
+        var path = Environment.GetEnvironmentVariable("VKPROXY_DISK_CACHE");
+        if (!string.IsNullOrWhiteSpace(path))
+            options.DiskCache.Path = path;
+        if (long.TryParse(Environment.GetEnvironmentVariable("VKPROXY__DISK_CACHE_MAX"), out max))
+        {
+            options.DiskCache.SizeLimmit = max;
+        }
         return options;
     }
 
@@ -214,6 +222,30 @@ public static class VKProxyHost
                 return "Memory Cache Compaction Percentage must be between 0 and 1 inclusive";
             }
         });
+        r.Add("--disk-cache", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-"))
+            {
+                args.DiskCache.Path = en.Current;
+                return string.Empty;
+            }
+            else
+            {
+                return "Disk Cache must be directory";
+            }
+        });
+        r.Add("--disk-cache-max", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-") && long.TryParse(en.Current, out var e))
+            {
+                args.DiskCache.SizeLimmit = e;
+                return string.Empty;
+            }
+            else
+            {
+                return "Disk Cache Size Limit must be long";
+            }
+        });
         r.Add("--redis", (args, en) =>
         {
             if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-"))
@@ -250,6 +282,8 @@ public static class VKProxyHost
             Console.WriteLine($"--memory-cache-percentage   Memory Cache Compaction Percentage");
             Console.WriteLine($"--redis                     StackExchangeRedis config");
             Console.WriteLine($"--redis-pool-size           StackExchangeRedis pool size, default is 10");
+            Console.WriteLine($"--disk-cache                disk cache directory");
+            Console.WriteLine($"--disk-cache-max            disk cache Size Limit");
             Console.WriteLine($"--help (-h)                 show all options");
             Console.WriteLine("View more at https://fs7744.github.io/VKProxy.Doc/docs/introduction.html");
             throw new NotSupportedException();
@@ -300,6 +334,15 @@ public static class VKProxyHost
                     j.SizeLimit = options.MemoryCacheSizeLimit;
                     j.CompactionPercentage = options.MemoryCacheCompactionPercentage;
                 });
+                i.AddDiskCache(false, o =>
+                {
+                    if (!string.IsNullOrWhiteSpace(options.DiskCache.Path))
+                    {
+                        o.Path = options.DiskCache.Path;
+                    }
+                    o.SizeLimmit = options.DiskCache.SizeLimmit;
+                });
+                i.AddSingleton<IResponseCache, DiskResponseCache>();
                 if (options.UseSocks5)
                 {
                     i.UseSocks5();

@@ -1,4 +1,5 @@
-﻿using VKProxy.Storages.Etcd;
+﻿using VKProxy.Core.Infrastructure;
+using VKProxy.Storages.Etcd;
 
 namespace VKProxy;
 
@@ -13,4 +14,5 @@ public class VKProxyHostOptions
     public double MemoryCacheCompactionPercentage { get; set; } = 0.05;
     public string Redis { get; set; }
     public int? RedisPoolSize { get; set; } = 10;
+    public DiskCacheOptions DiskCache { get; private set; } = new DiskCacheOptions();
 }

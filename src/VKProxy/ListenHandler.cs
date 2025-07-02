@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Globalization;
@@ -27,12 +28,12 @@ internal class ListenHandler : ListenHandlerBase
     private readonly ISniSelector sniSelector;
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
-    private readonly IConnectionLimitFactory connectionLimitFactory;
+    private readonly IServiceProvider provider;
     private readonly ReverseProxyOptions options;
     private readonly RequestDelegate http;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IHttpSelector httpSelector,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IConnectionLimitFactory connectionLimitFactory, IOptions<ReverseProxyOptions> options)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IServiceProvider provider, IOptions<ReverseProxyOptions> options)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -40,7 +41,7 @@ internal class ListenHandler : ListenHandlerBase
         this.sniSelector = sniSelector;
         this.udp = udp;
         this.tcp = tcp;
-        this.connectionLimitFactory = connectionLimitFactory;
+        this.provider = provider;
         this.options = options.Value;
         this.http = applicationBuilder.Build();
     }
@@ -63,6 +64,11 @@ internal class ListenHandler : ListenHandlerBase
     public override Task StopAsync(ITransportManager transportManager, CancellationToken cancellationToken)
     {
         configSource.Dispose();
+        var disk = provider.GetService<IDiskCache>();
+        if (disk != null)
+        {
+            disk.Dispose();
+        }
         return Task.CompletedTask;
     }
 

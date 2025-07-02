@@ -3,6 +3,7 @@ using DotNext.Collections.Generic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using VKProxy.Config;
 using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
@@ -90,13 +91,13 @@ public class HttpSelector : IHttpSelector
     private readonly ProxyLogger logger;
     private readonly RequestDelegate next;
     private RouteTable<RouteConfig, PathSelector> route;
-    private readonly Dictionary<string, string> hosts;
+    private readonly ConcurrentDictionary<string, string> hosts;
 
     public HttpSelector(IOptions<ReverseProxyOptions> options, ProxyLogger logger)
     {
         this.options = options.Value;
         this.logger = logger;
-        hosts = new Dictionary<string, string>(CollectionUtilities.MatchComparison(this.options.RouteComparison));
+        hosts = new ConcurrentDictionary<string, string>(CollectionUtilities.MatchComparison(this.options.RouteComparison));
     }
 
     public async ValueTask<RouteConfig> MatchAsync(HttpContext context)
