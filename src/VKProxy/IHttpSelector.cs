@@ -89,7 +89,6 @@ public class HttpSelector : IHttpSelector
 {
     private readonly ReverseProxyOptions options;
     private readonly ProxyLogger logger;
-    private readonly RequestDelegate next;
     private RouteTable<RouteConfig, PathSelector> route;
     private readonly ConcurrentDictionary<string, string> hosts;
 
