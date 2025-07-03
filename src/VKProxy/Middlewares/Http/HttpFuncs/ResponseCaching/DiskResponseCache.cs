@@ -1,6 +1,4 @@
-﻿using DotNext.Buffers;
-using Microsoft.Extensions.Caching.Distributed;
-using System.Buffers;
+﻿using Microsoft.Extensions.Caching.Distributed;
 using VKProxy.Core.Infrastructure;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
@@ -18,19 +16,23 @@ public class DiskResponseCache : IResponseCache
 
     public async ValueTask<CachedResponse?> GetAsync(string key, CancellationToken cancellationToken)
     {
-        using var writer = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
-        if (await cache.GetAsync(key, writer, cancellationToken))
-        {
-            return ResponseCacheFormatter.Deserialize(writer.WrittenMemory);
-        }
-        return null;
+        var stream = await cache.GetStreamAsync(key, cancellationToken);
+        if (stream == null) return null;
+        return ResponseCacheFormatter.Deserialize(stream);
+        //using var writer = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
+        //if (await cache.GetAsync(key, writer, cancellationToken))
+        //{
+        //    return ResponseCacheFormatter.Deserialize(writer.WrittenMemory);
+        //}
+        //return null;
     }
 
     public async ValueTask SetAsync(string key, CachedResponse entry, TimeSpan validFor, CancellationToken cancellationToken)
     {
-        using var writer = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
-        ResponseCacheFormatter.Serialize(writer, entry);
-        await cache.SetAsync(key, writer.WrittenMemory, new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);
+        await cache.SetAsync(key, entry.Body == null ? 0 : entry.Body.Length, stream => ResponseCacheFormatter.SerializeAsync(stream, entry, cancellationToken), new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);
+        //using var writer = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
+        //ResponseCacheFormatter.Serialize(writer, entry);
+        //await cache.SetAsync(key, writer.WrittenMemory, new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);
     }
 }
 

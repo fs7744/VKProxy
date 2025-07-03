@@ -4,7 +4,7 @@ using Microsoft.Net.Http.Headers;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
-internal class ResponseCachingContext
+internal class ResponseCachingContext : IDisposable
 {
     private DateTimeOffset? _responseDate;
     private bool _parsedResponseDate;
@@ -122,4 +122,9 @@ internal class ResponseCachingContext
     public TimeSpan? CacheTime { get; internal set; }
 
     public CancellationToken CancellationToken { get; internal set; }
+
+    public void Dispose()
+    {
+        CachedResponse?.Dispose();
+    }
 }

@@ -58,7 +58,7 @@ public class ResponseCachingFunc : IHttpFunc
                     key = string.Concat(routeId, key);
 
                     var activityCancellationSource = ActivityCancellationTokenSource.Rent(timeout, c.RequestAborted);
-                    var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize, ShouldCacheResponse = forceCache, CacheTime = cacheTime, CancellationToken = activityCancellationSource.Token };
+                    using var context = new ResponseCachingContext(c) { Key = key, Cache = cache, MaximumBodySize = maximumBodySize, ShouldCacheResponse = forceCache, CacheTime = cacheTime, CancellationToken = activityCancellationSource.Token };
                     if (await TryServeFromCacheAsync(await cache.GetAsync(context.Key, context.CancellationToken), context))
                         return;
 

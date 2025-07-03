@@ -186,6 +186,59 @@ public class DiskCache : IDiskCache
         else return false;
     }
 
+    public async Task<Stream?> GetStreamAsync(string key, CancellationToken cancellationToken)
+    {
+        if (!caches.TryGetValue(key, out var info)) return null;
+        var path = info.Path;
+        var expire = info.Expire;
+        if (expire < DateTime.UtcNow)
+        {
+            return null;
+        }
+        if (File.Exists(path))
+        {
+            return File.OpenRead(path);
+        }
+        else return null;
+    }
+
+    public async Task SetAsync(string key, long size, Func<Stream, Task> func, DistributedCacheEntryOptions options, CancellationToken cancellationToken)
+    {
+        var info = caches.GetOrAdd(key, NewDiskCacheInfo);
+        using (await info.Lock.AcquireWriteLockAsync(cancellationToken))
+        {
+            var old = info.Path;
+            var oldSize = info.Size;
+            var newSize = size;
+            var change = newSize - oldSize;
+            if (!hasSizeLimit || Interlocked.Add(ref sizeLimmit, change * -1) >= 0)
+            {
+                var newPath = Path.Combine(path, Guid.NewGuid().ToString());
+                using var stream = File.OpenWrite(newPath);
+                await func(stream).ConfigureAwait(false);
+                info.Options = options;
+                info.Path = newPath;
+                info.Size = newSize;
+                if (options.AbsoluteExpiration.HasValue)
+                    info.Expire = options.AbsoluteExpiration.Value.DateTime.ToUniversalTime();
+                else if (options.AbsoluteExpirationRelativeToNow.HasValue)
+                    info.Expire = DateTime.UtcNow.Add(options.AbsoluteExpirationRelativeToNow.Value);
+                else if (options.SlidingExpiration.HasValue)
+                    info.Expire = DateTime.UtcNow.Add(options.SlidingExpiration.Value);
+                else
+                    info.Expire = DateTime.UtcNow;
+            }
+            if (old != null)
+            {
+                oldCaches.Enqueue(old);
+                if (hasSizeLimit)
+                {
+                    Interlocked.Add(ref sizeLimmit, oldSize);
+                }
+            }
+        }
+    }
+
     public async Task SetAsync(string key, ReadOnlyMemory<byte> value, DistributedCacheEntryOptions options, CancellationToken cancellationToken)
     {
         var info = caches.GetOrAdd(key, NewDiskCacheInfo);

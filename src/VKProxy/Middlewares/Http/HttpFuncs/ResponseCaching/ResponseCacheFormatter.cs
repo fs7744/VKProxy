@@ -4,6 +4,9 @@ using Microsoft.Net.Http.Headers;
 using System.Buffers;
 using System.Collections.Frozen;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 using VKProxy.Core.Infrastructure.Buffers;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
@@ -212,28 +215,136 @@ public static class ResponseCacheFormatter
         // Body:
         //   Bytes count: 7-bit encoded int
         //     data byte[]
-
-        var body = entry.Body;
-        if (body == null || body.Segments == null || body.Segments.Count == 0)
+        if (entry.Body is CachedResponseBody body)
         {
-            writer.Write((byte)0);
-        }
-        else if (body.Segments.Count == 1)
-        {
-            var span = body.Segments.First();
-            writer.Write7BitEncodedInt(span.Length);
-            writer.WriteRaw(span);
-        }
-        else
-        {
-            writer.Write7BitEncodedInt(checked((int)body.Length));
-            foreach (var segment in body.Segments)
+            if (body == null || body.Segments == null || body.Segments.Count == 0)
             {
-                writer.WriteRaw(segment);
+                writer.Write((byte)0);
             }
+            else if (body.Segments.Count == 1)
+            {
+                var span = body.Segments.First();
+                writer.Write7BitEncodedInt(span.Length);
+                writer.WriteRaw(span);
+            }
+            else
+            {
+                writer.Write7BitEncodedInt(checked((int)body.Length));
+                foreach (var segment in body.Segments)
+                {
+                    writer.WriteRaw(segment);
+                }
+            }
+        }
+        else if (entry.Body is CachedStreamResponseBody b)
+        {
+            writer.Write7BitEncodedInt(checked((int)b.Length));
+            var reader = new BinaryReader(b.Stream);
+            writer.WriteRaw(reader.ReadBytes(checked((int)b.Length)));
         }
 
         writer.Flush();
+    }
+
+    public static async Task SerializeAsync(Stream output, CachedResponse entry, CancellationToken cancellationToken)
+    {
+        var writer = new BinaryWriter(output);
+
+        // Creation date:
+        //   Ticks: 7-bit encoded long
+        //   Offset.TotalMinutes: 7-bit encoded long
+
+        writer.Write7BitEncodedInt64(entry.Created.Ticks);
+        writer.Write7BitEncodedInt64((long)entry.Created.Offset.TotalMinutes);
+
+        // Status code:
+        //   7-bit encoded int
+        writer.Write7BitEncodedInt(entry.StatusCode);
+
+        // Headers:
+        //   Headers count: 7-bit encoded int
+
+        writer.Write7BitEncodedInt(entry.Headers.Count);
+
+        //   For each header:
+        //     key name byte length: 7-bit encoded int
+        //     UTF-8 encoded key name byte[]
+
+        foreach (var header in entry.Headers)
+        {
+            WriteCommonHeader(writer, header.Key);
+
+            //     Values count: 7-bit encoded int
+            var count = header.Value.Count;
+            writer.Write7BitEncodedInt(count);
+
+            //     For each header value:
+            //       data byte length: 7-bit encoded int
+            //       UTF-8 encoded byte[]
+            for (var i = 0; i < count; i++)
+            {
+                WriteCommonHeader(writer, header.Value[i]);
+            }
+        }
+
+        // Body:
+        //   Bytes count: 7-bit encoded int
+        //     data byte[]
+
+        if (entry.Body is CachedResponseBody body)
+        {
+            if (body == null || body.Segments == null || body.Segments.Count == 0)
+            {
+                writer.Write((byte)0);
+            }
+            else if (body.Segments.Count == 1)
+            {
+                var span = body.Segments.First();
+                writer.Write7BitEncodedInt(span.Length);
+                writer.Write(span);
+            }
+            else
+            {
+                writer.Write7BitEncodedInt(checked((int)body.Length));
+                foreach (var segment in body.Segments)
+                {
+                    writer.Write(segment);
+                }
+            }
+        }
+        else if (entry.Body is CachedStreamResponseBody b)
+        {
+            writer.Write7BitEncodedInt(checked((int)b.Length));
+            await b.Stream.CopyToAsync(output, cancellationToken);
+        }
+
+        writer.Flush();
+    }
+
+    private static void WriteCommonHeader(BinaryWriter writer, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            writer.Write((byte)0);
+        }
+        else
+        {
+            if (CommonHeadersLookup.TryGetValue(value, out int known))
+            {
+                writer.Write7BitEncodedInt((known << 1) | 1);
+            }
+            else
+            {
+                if (value.Length == 0)
+                {
+                    writer.Write(0); // length prefix
+                    return;
+                }
+                var bytes = Encoding.UTF8.GetBytes(value);
+                writer.Write7BitEncodedInt(bytes.Length << 1); // length prefix
+                writer.BaseStream.Write(bytes, 0, bytes.Length);
+            }
+        }
     }
 
     private static void WriteCommonHeader(ref FormatterBinaryWriter writer, string? value)
@@ -271,6 +382,101 @@ public static class ResponseCacheFormatter
             // non-LSB is the string length
             return reader.ReadString(preamble >> 1);
         }
+    }
+
+    private static string ReadCommonHeader(BinaryReader reader)
+    {
+        int preamble = reader.Read7BitEncodedInt();
+        // LSB means "using common header/value"
+        if ((preamble & 1) == 1)
+        {
+            // non-LSB is the index of the common header
+            return CommonHeaders[preamble >> 1];
+        }
+        else
+        {
+            return new string(reader.ReadChars(preamble >> 1));
+        }
+    }
+
+    public static CachedResponse Deserialize(Stream content)
+    {
+        var reader = new BinaryReader(content);
+
+        // Creation date:
+        //   Ticks: 7-bit encoded long
+        //   Offset.TotalMinutes: 7-bit encoded long
+
+        var ticks = reader.Read7BitEncodedInt64();
+        var offsetMinutes = reader.Read7BitEncodedInt64();
+
+        var created = new DateTimeOffset(ticks, TimeSpan.FromMinutes(offsetMinutes));
+
+        // Status code:
+        //   7-bit encoded int
+
+        var statusCode = reader.Read7BitEncodedInt();
+
+        var result = new CachedResponse() { Created = created, StatusCode = statusCode };
+
+        // Headers:
+        //   Headers count: 7-bit encoded int
+
+        var headersCount = reader.Read7BitEncodedInt();
+
+        //   For each header:
+        //     key name byte length: 7-bit encoded int
+        //     UTF-8 encoded key name byte[]
+        //     Values count: 7-bit encoded int
+        if (headersCount > 0)
+        {
+            var headers = result.Headers = new HeaderDictionary(headersCount);
+
+            for (var i = 0; i < headersCount; i++)
+            {
+                var key = ReadCommonHeader(reader);
+                StringValues value;
+                var valuesCount = reader.Read7BitEncodedInt();
+                //     For each header value:
+                //       data byte length: 7-bit encoded int
+                //       UTF-8 encoded byte[]
+                switch (valuesCount)
+                {
+                    case < 0:
+                        throw new InvalidOperationException();
+                    case 0:
+                        value = StringValues.Empty;
+                        break;
+
+                    case 1:
+                        value = new(ReadCommonHeader(reader));
+                        break;
+
+                    default:
+                        var values = new string[valuesCount];
+
+                        for (var j = 0; j < valuesCount; j++)
+                        {
+                            values[j] = ReadCommonHeader(reader);
+                        }
+                        value = new(values);
+                        break;
+                }
+                headers[key] = value;
+            }
+        }
+
+        // Body:
+        //   Bytes count: 7-bit encoded int
+
+        var payloadLength = checked((int)reader.Read7BitEncodedInt64());
+        if (payloadLength != 0)
+        {   // since the reader only supports linear memory currently, read the entire chunk as a single piece
+            result.Body = new CachedStreamResponseBody(content, payloadLength);
+        }
+        else
+            result.Body = CachedResponseBody.Empty;
+        return result;
     }
 
     public static CachedResponse Deserialize(ReadOnlyMemory<byte> content)
@@ -349,7 +555,7 @@ public static class ResponseCacheFormatter
             result.Body = new CachedResponseBody(new List<byte[]>(1) { reader.ReadBytesSpan(payloadLength).ToArray() }, payloadLength);
         }
         else
-            result.Body = new CachedResponseBody(new List<byte[]>(0), 0);
+            result.Body = CachedResponseBody.Empty;
         Debug.Assert(reader.IsEOF, "should have read entire payload");
         return result;
     }
