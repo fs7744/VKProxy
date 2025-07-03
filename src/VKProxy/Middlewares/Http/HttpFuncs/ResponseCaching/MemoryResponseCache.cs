@@ -15,56 +15,6 @@ public class MemoryResponseCache : IResponseCache
         this.cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
-    internal static long EstimateCachedResponseSize(CachedResponse cachedResponse)
-    {
-        if (cachedResponse == null)
-        {
-            return 0L;
-        }
-
-        checked
-        {
-            // StatusCode
-            long size = sizeof(int);
-
-            // Headers
-            if (cachedResponse.Headers != null)
-            {
-                foreach (var item in cachedResponse.Headers)
-                {
-                    size += (item.Key.Length * sizeof(char)) + EstimateStringValuesSize(item.Value);
-                }
-            }
-
-            // Body
-            if (cachedResponse.Body != null)
-            {
-                size += cachedResponse.Body.Length;
-            }
-
-            return size;
-        }
-    }
-
-    internal static long EstimateStringValuesSize(StringValues stringValues)
-    {
-        checked
-        {
-            var size = 0L;
-
-            for (var i = 0; i < stringValues.Count; i++)
-            {
-                var stringValue = stringValues[i];
-                if (!string.IsNullOrEmpty(stringValue))
-                {
-                    size += stringValue.Length * sizeof(char);
-                }
-            }
-
-            return size;
-        }
-    }
-
     public ValueTask<CachedResponse?> GetAsync(string key, CancellationToken cancellationToken)
     {
         var entry = cache.Get(key);
@@ -79,7 +29,7 @@ public class MemoryResponseCache : IResponseCache
                 new MemoryCacheEntryOptions
                 {
                     AbsoluteExpirationRelativeToNow = validFor,
-                    Size = EstimateCachedResponseSize(entry)
+                    Size = ResponseCacheFormatter.EstimateCachedResponseSize(entry)
                 });
         return ValueTask.CompletedTask;
     }

@@ -29,7 +29,7 @@ public class DiskResponseCache : IResponseCache
 
     public async ValueTask SetAsync(string key, CachedResponse entry, TimeSpan validFor, CancellationToken cancellationToken)
     {
-        await cache.SetAsync(key, entry.Body == null ? 0 : entry.Body.Length, stream => ResponseCacheFormatter.SerializeAsync(stream, entry, cancellationToken), new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);
+        await cache.SetAsync(key, ResponseCacheFormatter.EstimateCachedResponseSize(entry), stream => ResponseCacheFormatter.SerializeAsync(stream, entry, cancellationToken), new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);
         //using var writer = new PoolingArrayBufferWriter<byte>(ArrayPool<byte>.Shared);
         //ResponseCacheFormatter.Serialize(writer, entry);
         //await cache.SetAsync(key, writer.WrittenMemory, new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = validFor }, cancellationToken).ConfigureAwait(false);

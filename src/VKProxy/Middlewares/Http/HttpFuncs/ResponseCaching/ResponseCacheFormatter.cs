@@ -4,8 +4,6 @@ using Microsoft.Net.Http.Headers;
 using System.Buffers;
 using System.Collections.Frozen;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using VKProxy.Core.Infrastructure.Buffers;
 
@@ -144,6 +142,56 @@ public static class ResponseCacheFormatter
     }
 
     internal static bool ShouldStoreHeader(string key) => !IgnoredHeaders.Contains(key);
+
+    public static long EstimateCachedResponseSize(CachedResponse cachedResponse)
+    {
+        if (cachedResponse == null)
+        {
+            return 0L;
+        }
+
+        checked
+        {
+            // StatusCode
+            long size = sizeof(int);
+
+            // Headers
+            if (cachedResponse.Headers != null)
+            {
+                foreach (var item in cachedResponse.Headers)
+                {
+                    size += (item.Key.Length * sizeof(char)) + EstimateStringValuesSize(item.Value);
+                }
+            }
+
+            // Body
+            if (cachedResponse.Body != null)
+            {
+                size += cachedResponse.Body.Length;
+            }
+
+            return size;
+        }
+    }
+
+    internal static long EstimateStringValuesSize(StringValues stringValues)
+    {
+        checked
+        {
+            var size = 0L;
+
+            for (var i = 0; i < stringValues.Count; i++)
+            {
+                var stringValue = stringValues[i];
+                if (!string.IsNullOrEmpty(stringValue))
+                {
+                    size += stringValue.Length * sizeof(char);
+                }
+            }
+
+            return size;
+        }
+    }
 
     // Format:
     // Creation date:
