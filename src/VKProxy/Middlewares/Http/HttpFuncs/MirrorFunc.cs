@@ -73,7 +73,10 @@ public class MirrorFunc : IHttpFunc
             {
                 logger.LogWarning(ex, "Mirror failed");
             }
-            c.Request.Body = originBody;
+            finally
+            {
+                c.Request.Body = originBody;
+            }
         }
     }
 }
