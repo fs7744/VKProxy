@@ -11,13 +11,16 @@ public sealed class LoadBalancingPolicy : ILoadBalancingPolicyFactory
     public static string PowerOfTwoChoices => nameof(PowerOfTwoChoices);
     public static string Hash => nameof(Hash);
 
-    public DestinationState? PickDestination(IReverseProxyFeature feature)
+    public DestinationState? PickDestination(IReverseProxyFeature feature, ClusterConfig clusterConfig = null)
     {
         DestinationState r = null;
         if (feature is not null)
         {
             var route = feature.Route;
-            var clusterConfig = route.ClusterConfig;
+            if (clusterConfig == null)
+            {
+                clusterConfig = route.ClusterConfig;
+            }
             if (!(clusterConfig is null || clusterConfig.AvailableDestinations is null))
             {
                 var states = clusterConfig.AvailableDestinations;

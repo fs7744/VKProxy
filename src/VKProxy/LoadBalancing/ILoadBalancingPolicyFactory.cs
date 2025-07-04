@@ -5,5 +5,5 @@ namespace VKProxy.LoadBalancing;
 
 public interface ILoadBalancingPolicyFactory
 {
-    DestinationState? PickDestination(IReverseProxyFeature feature);
+    DestinationState? PickDestination(IReverseProxyFeature feature, ClusterConfig clusterConfig = null);
 }

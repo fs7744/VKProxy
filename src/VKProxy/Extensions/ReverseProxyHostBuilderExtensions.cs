@@ -127,6 +127,8 @@ public static class ReverseProxyHostBuilderExtensions
 
         services.AddSingleton<IHttpFunc, ResponseCompressionFunc>();
 
+        services.AddSingleton<IHttpFunc, MirrorFunc>();
+
         services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
         services.TryAddSingleton<ITemplateStatementFactory, TemplateStatementFactory>();
 

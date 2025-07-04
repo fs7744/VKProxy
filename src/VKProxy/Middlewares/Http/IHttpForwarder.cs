@@ -56,6 +56,7 @@ public class HttpForwarder : IHttpForwarder
             HttpRequestMessage? destinationRequest = null;
             StreamCopyHttpContent? requestContent = null;
             HttpResponseMessage destinationResponse;
+            var isNonHttpTransformer = transformer is NonHttpTransformer;
             try
             {
                 // :: Step 1-3: Create outgoing HttpRequestMessage
@@ -64,7 +65,7 @@ public class HttpForwarder : IHttpForwarder
                     context, destinationPrefix, transformer, requestConfig, isStreamingRequest, activityCancellationSource);
 
                 // Transforms generated a response, do not proxy.
-                if (RequestUtilities.IsResponseSet(context.Response))
+                if (RequestUtilities.IsResponseSet(context.Response) && !isNonHttpTransformer)
                 {
                     logger.NotProxying(context.Response.StatusCode);
                     return ForwarderError.None;
@@ -122,7 +123,7 @@ public class HttpForwarder : IHttpForwarder
                         context, destinationPrefix, transformer, config, isStreamingRequest, activityCancellationSource);
 
                     // Transforms generated a response, do not proxy.
-                    if (RequestUtilities.IsResponseSet(context.Response))
+                    if (RequestUtilities.IsResponseSet(context.Response) && !isNonHttpTransformer)
                     {
                         logger.NotProxying(context.Response.StatusCode);
                         return ForwarderError.None;
@@ -141,6 +142,12 @@ public class HttpForwarder : IHttpForwarder
             // Reset the timeout since we received the response headers.
             activityCancellationSource.ResetTimeout();
             logger.ResponseReceived(destinationResponse);
+
+            if (isNonHttpTransformer)
+            {
+                destinationResponse.Dispose();
+                return ForwarderError.None;
+            }
 
             try
             {
@@ -366,7 +373,7 @@ public class HttpForwarder : IHttpForwarder
         }
 
         // The transformer generated a response, do not forward.
-        if (RequestUtilities.IsResponseSet(context.Response))
+        if (RequestUtilities.IsResponseSet(context.Response) && transformer is not NonHttpTransformer)
         {
             return (destinationRequest, requestContent, false);
         }
