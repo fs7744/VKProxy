@@ -21,7 +21,7 @@ public abstract class SessionAffinityPolicyBase : ILoadBalancingPolicy
     {
         if (feature is not IL7ReverseProxyFeature l7)
         {
-            return null;
+            return policy.PickDestination(feature, availableDestinations);
         }
         var key = GetRequestAffinityKey(l7);
         DestinationState r = null;
