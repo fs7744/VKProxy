@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using VKProxy.Config;
 using VKProxy.Features;
 
@@ -8,15 +7,12 @@ namespace VKProxy.LoadBalancing.SessionAffinity;
 
 public class SessionAffinityLoadBalancingPolicy : ILoadBalancingPolicy
 {
-    private readonly IServiceProvider serviceProvider;
     private readonly IDataProtector dataProtectionProvider;
-    private ILoadBalancingPolicyFactory policyFactory;
 
     public string Name => "SessionAffinity";
 
-    public SessionAffinityLoadBalancingPolicy(IServiceProvider serviceProvider, IDataProtectionProvider dataProtectionProvider)
+    public SessionAffinityLoadBalancingPolicy(IDataProtectionProvider dataProtectionProvider)
     {
-        this.serviceProvider = serviceProvider;
         this.dataProtectionProvider = dataProtectionProvider.CreateProtector(GetType().FullName);
     }
 
@@ -27,20 +23,9 @@ public class SessionAffinityLoadBalancingPolicy : ILoadBalancingPolicy
 
     public void Init(ClusterConfig cluster)
     {
-        if (policyFactory == null)
-        {
-            policyFactory = serviceProvider.GetRequiredService<ILoadBalancingPolicyFactory>();
-        }
-        if (cluster.Metadata is null) return;
+        if (cluster.Metadata is null || cluster.LoadBalancingPolicyInstance == null) return;
         if (cluster.Metadata.TryGetValue("SessionAffinity", out var way) && !string.IsNullOrWhiteSpace(way))
         {
-            if (!cluster.Metadata.TryGetValue("SessionAffinityPolicy", out var sessionAffinityRedistribute)
-                || string.IsNullOrWhiteSpace(sessionAffinityRedistribute)
-                || Name.Equals(sessionAffinityRedistribute, StringComparison.OrdinalIgnoreCase)
-                || !policyFactory.TryGet(sessionAffinityRedistribute, out var policy))
-            {
-                policyFactory.TryGet(LoadBalancingPolicy.Random, out policy);
-            }
             if (way.Equals("CustomHeader", StringComparison.OrdinalIgnoreCase))
             {
                 string headerName;
@@ -48,7 +33,7 @@ public class SessionAffinityLoadBalancingPolicy : ILoadBalancingPolicy
                 {
                     headerName = "x-sessionaffinity";
                 }
-                cluster.LoadBalancingPolicyInstance = new CustomHeaderSessionAffinityPolicy(policy, headerName, dataProtectionProvider);
+                cluster.LoadBalancingPolicyInstance = new CustomHeaderSessionAffinityPolicy(cluster.LoadBalancingPolicyInstance, headerName, dataProtectionProvider);
                 return;
             }
 
@@ -104,17 +89,17 @@ public class SessionAffinityLoadBalancingPolicy : ILoadBalancingPolicy
 
             if (way.Equals("HashCookie", StringComparison.OrdinalIgnoreCase))
             {
-                cluster.LoadBalancingPolicyInstance = new HashCookieSessionAffinityPolicy(policy, cookie);
+                cluster.LoadBalancingPolicyInstance = new HashCookieSessionAffinityPolicy(cluster.LoadBalancingPolicyInstance, cookie);
                 return;
             }
             else if (way.Equals("ArrCookie", StringComparison.OrdinalIgnoreCase))
             {
-                cluster.LoadBalancingPolicyInstance = new ArrCookieSessionAffinityPolicy(policy, cookie);
+                cluster.LoadBalancingPolicyInstance = new ArrCookieSessionAffinityPolicy(cluster.LoadBalancingPolicyInstance, cookie);
                 return;
             }
             else if (way.Equals("Cookie", StringComparison.OrdinalIgnoreCase))
             {
-                cluster.LoadBalancingPolicyInstance = new CookieSessionAffinityPolicy(policy, cookie, dataProtectionProvider);
+                cluster.LoadBalancingPolicyInstance = new CookieSessionAffinityPolicy(cluster.LoadBalancingPolicyInstance, cookie, dataProtectionProvider);
                 return;
             }
         }

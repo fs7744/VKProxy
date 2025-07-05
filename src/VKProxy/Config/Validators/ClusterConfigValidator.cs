@@ -1,6 +1,8 @@
 ﻿using System.Collections.Frozen;
+using System.Diagnostics.Metrics;
 using VKProxy.Health;
 using VKProxy.LoadBalancing;
+using VKProxy.LoadBalancing.SessionAffinity;
 using VKProxy.Middlewares.Http;
 using VKProxy.ServiceDiscovery;
 
@@ -14,9 +16,11 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
     private readonly IHealthUpdater healthUpdater;
     private readonly IEnumerable<IDestinationConfigParser> destinationConfigParsers;
     private readonly IForwarderHttpClientFactory httpClientFactory;
+    private readonly SessionAffinityLoadBalancingPolicy sessionAffinity;
 
     public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, ILoadBalancingPolicyFactory policies, IHealthReporter healthReporter,
-        IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers, IForwarderHttpClientFactory httpClientFactory)
+        IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers, IForwarderHttpClientFactory httpClientFactory,
+        SessionAffinityLoadBalancingPolicy sessionAffinity)
     {
         this.resolvers = resolvers.OrderBy(i => i.Order).ToArray();
         this.policies = policies;
@@ -24,6 +28,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
         this.healthUpdater = healthUpdater;
         this.destinationConfigParsers = destinationConfigParsers;
         this.httpClientFactory = httpClientFactory;
+        this.sessionAffinity = sessionAffinity;
     }
 
     public async ValueTask<bool> ValidateAsync(ClusterConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -35,6 +40,10 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
         {
             value.LoadBalancingPolicyInstance = policy;
             policy?.Init(value);
+            sessionAffinity.Init(value);
+            if (value.Metadata != null && value.Metadata.TryGetValue("SessionAffinity", out var way) && !string.IsNullOrWhiteSpace(way))
+            {
+            }
         }
         else
         {

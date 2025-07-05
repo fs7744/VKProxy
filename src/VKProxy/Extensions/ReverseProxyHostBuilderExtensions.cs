@@ -96,7 +96,7 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<ILoadBalancingPolicyFactory, LoadBalancingPolicy>();
 
         services.AddDataProtection();
-        services.AddSingleton<ILoadBalancingPolicy, SessionAffinityLoadBalancingPolicy>();
+        services.AddSingleton<SessionAffinityLoadBalancingPolicy>();
 
         services.AddSingleton<IHealthReporter, PassiveHealthReporter>();
         services.AddSingleton<IHealthUpdater, HealthyAndUnknownDestinationsUpdater>();
