@@ -74,10 +74,13 @@ public class HttpReverseProxy : IMiddleware
         {
             selectedDestination = null;
         }
-        else
+        else if (proxyFeature.SelectedDestination is not null)
         {
             selectedDestination = proxyFeature.SelectedDestination;
-            selectedDestination ??= loadBalancing.PickDestination(proxyFeature);
+        }
+        else
+        {
+            proxyFeature.SelectedDestination = selectedDestination = loadBalancing.PickDestination(proxyFeature);
         }
 
         if (selectedDestination is null)

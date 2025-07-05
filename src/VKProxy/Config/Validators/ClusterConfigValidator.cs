@@ -9,17 +9,17 @@ namespace VKProxy.Config.Validators;
 public class ClusterConfigValidator : IValidator<ClusterConfig>
 {
     private readonly IEnumerable<IDestinationResolver> resolvers;
-    private readonly FrozenDictionary<string, ILoadBalancingPolicy> policies;
+    private readonly ILoadBalancingPolicyFactory policies;
     private readonly IHealthReporter healthReporter;
     private readonly IHealthUpdater healthUpdater;
     private readonly IEnumerable<IDestinationConfigParser> destinationConfigParsers;
     private readonly IForwarderHttpClientFactory httpClientFactory;
 
-    public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, IEnumerable<ILoadBalancingPolicy> policies, IHealthReporter healthReporter,
+    public ClusterConfigValidator(IEnumerable<IDestinationResolver> resolvers, ILoadBalancingPolicyFactory policies, IHealthReporter healthReporter,
         IHealthUpdater healthUpdater, IEnumerable<IDestinationConfigParser> destinationConfigParsers, IForwarderHttpClientFactory httpClientFactory)
     {
         this.resolvers = resolvers.OrderBy(i => i.Order).ToArray();
-        this.policies = policies.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
+        this.policies = policies;
         this.healthReporter = healthReporter;
         this.healthUpdater = healthUpdater;
         this.destinationConfigParsers = destinationConfigParsers;
@@ -31,7 +31,7 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
         if (value == null) return false;
         if (value.DestinationStates != null) return true;
 
-        if (policies.TryGetValue(value.LoadBalancingPolicy ?? LoadBalancingPolicy.Random, out var policy))
+        if (policies.TryGet(value.LoadBalancingPolicy ?? LoadBalancingPolicy.Random, out var policy))
         {
             value.LoadBalancingPolicyInstance = policy;
             policy?.Init(value);

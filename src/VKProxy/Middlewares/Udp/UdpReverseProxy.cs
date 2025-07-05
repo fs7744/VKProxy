@@ -98,7 +98,10 @@ internal class UdpReverseProxy : IUdpReverseProxy
         DestinationState selectedDestination = feature.SelectedDestination;
         try
         {
-            selectedDestination ??= loadBalancing.PickDestination(feature);
+            if (selectedDestination is null)
+            {
+                feature.SelectedDestination = selectedDestination = loadBalancing.PickDestination(feature);
+            }
 
             if (selectedDestination is null)
             {

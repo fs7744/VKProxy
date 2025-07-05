@@ -22,6 +22,7 @@ using VKProxy.Features.Limits;
 using VKProxy.Health;
 using VKProxy.Health.ActiveHealthCheckers;
 using VKProxy.LoadBalancing;
+using VKProxy.LoadBalancing.SessionAffinity;
 using VKProxy.Middlewares;
 using VKProxy.Middlewares.Http;
 using VKProxy.Middlewares.Http.HttpFuncs;
@@ -93,6 +94,9 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<ILoadBalancingPolicy, PowerOfTwoChoicesLoadBalancingPolicy>();
         services.AddSingleton<ILoadBalancingPolicy, HashLoadBalancingPolicy>();
         services.AddSingleton<ILoadBalancingPolicyFactory, LoadBalancingPolicy>();
+
+        services.AddDataProtection();
+        services.AddSingleton<ILoadBalancingPolicy, SessionAffinityLoadBalancingPolicy>();
 
         services.AddSingleton<IHealthReporter, PassiveHealthReporter>();
         services.AddSingleton<IHealthUpdater, HealthyAndUnknownDestinationsUpdater>();

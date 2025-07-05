@@ -1,6 +1,5 @@
 ﻿using DotNext.Buffers;
 using DotNext.IO;
-using System;
 
 namespace VKProxy.Core.Infrastructure.Buffers;
 
@@ -35,7 +34,7 @@ public class ReadBufferingStream : Stream, IDisposable
         set => innerStream.WriteTimeout = value;
     }
 
-    public Stream BufferingStream => bufferWriter.AsStream(true);
+    public Stream BufferingStream => bufferWriter.WrittenCount > 0 ? bufferWriter.AsStream(true) : innerStream;
 
     public override void Flush()
     {

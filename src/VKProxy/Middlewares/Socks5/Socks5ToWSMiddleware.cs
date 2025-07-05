@@ -54,10 +54,13 @@ internal class Socks5ToWSMiddleware : ITcpProxyMiddleware
         {
             selectedDestination = null;
         }
-        else
+        else if (feature.SelectedDestination is not null)
         {
             selectedDestination = feature.SelectedDestination;
-            selectedDestination ??= loadBalancing.PickDestination(feature);
+        }
+        else
+        {
+            feature.SelectedDestination = selectedDestination = loadBalancing.PickDestination(feature);
         }
 
         if (selectedDestination is null)

@@ -60,9 +60,7 @@ public class MirrorFunc : IHttpFunc
             try
             {
                 var proxyFeature = c.Features.GetRequiredFeature<IReverseProxyFeature>();
-                var origin = proxyFeature.SelectedDestination;
                 var selectedDestination = loadBalancing.PickDestination(proxyFeature, cluster);
-                proxyFeature.SelectedDestination = origin;
                 if (selectedDestination != null)
                 {
                     cluster.InitHttp(forwarderHttpClientFactory);

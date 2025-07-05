@@ -1,4 +1,5 @@
-﻿using VKProxy.Config;
+﻿using System.Collections.Frozen;
+using VKProxy.Config;
 using VKProxy.Features;
 
 namespace VKProxy.LoadBalancing;
@@ -10,6 +11,13 @@ public sealed class LoadBalancingPolicy : ILoadBalancingPolicyFactory
     public static string LeastRequests => nameof(LeastRequests);
     public static string PowerOfTwoChoices => nameof(PowerOfTwoChoices);
     public static string Hash => nameof(Hash);
+
+    private readonly FrozenDictionary<string, ILoadBalancingPolicy> policies;
+
+    public LoadBalancingPolicy(IEnumerable<ILoadBalancingPolicy> policies)
+    {
+        this.policies = policies.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
+    }
 
     public DestinationState? PickDestination(IReverseProxyFeature feature, ClusterConfig clusterConfig = null)
     {
@@ -37,7 +45,11 @@ public sealed class LoadBalancingPolicy : ILoadBalancingPolicyFactory
                 }
             }
         }
-        feature.SelectedDestination = r;
         return r;
+    }
+
+    public bool TryGet(string key, out ILoadBalancingPolicy policy)
+    {
+        return policies.TryGetValue(key, out policy);
     }
 }

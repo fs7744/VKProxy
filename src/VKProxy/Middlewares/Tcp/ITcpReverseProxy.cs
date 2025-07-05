@@ -225,7 +225,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         DestinationState selectedDestination = null;
         try
         {
-            selectedDestination = loadBalancing.PickDestination(feature);
+            feature.SelectedDestination = selectedDestination = loadBalancing.PickDestination(feature);
             if (selectedDestination is null)
             {
                 return null;
