@@ -62,4 +62,11 @@ Please see  [Doc](https://fs7744.github.io/VKProxy.Doc/docs/introduction.html)
 - [X] socks5(tcp) to websocket to socks5
 - [X] etcd storage
 - [X] simple config web ui
+- [x] cors
+- [x] ResponseCaching
+- [x] Log Sampler
+- [x] Disk cache
+- [x] Redis (cache RateLimit)
+- [x] ResponseCompression
+- [x] Mirror
 
