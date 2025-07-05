@@ -41,9 +41,6 @@ public class ClusterConfigValidator : IValidator<ClusterConfig>
             value.LoadBalancingPolicyInstance = policy;
             policy?.Init(value);
             sessionAffinity.Init(value);
-            if (value.Metadata != null && value.Metadata.TryGetValue("SessionAffinity", out var way) && !string.IsNullOrWhiteSpace(way))
-            {
-            }
         }
         else
         {
