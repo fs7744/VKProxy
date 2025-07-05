@@ -29,7 +29,7 @@ public class SessionAffinityLoadBalancingPolicy : ILoadBalancingPolicy
             if (way.Equals("CustomHeader", StringComparison.OrdinalIgnoreCase))
             {
                 string headerName;
-                if (!cluster.Metadata.TryGetValue("Header", out headerName) || string.IsNullOrWhiteSpace(headerName))
+                if (!cluster.Metadata.TryGetValue("SessionAffinityKey", out headerName) || string.IsNullOrWhiteSpace(headerName))
                 {
                     headerName = "x-sessionaffinity";
                 }
@@ -38,7 +38,7 @@ public class SessionAffinityLoadBalancingPolicy : ILoadBalancingPolicy
             }
 
             var cookie = new SessionAffinityCookieOptions();
-            if (!cluster.Metadata.TryGetValue("Cookie", out var v) || string.IsNullOrWhiteSpace(v))
+            if (!cluster.Metadata.TryGetValue("SessionAffinityKey", out var v) || string.IsNullOrWhiteSpace(v))
             {
                 v = "SessionAffinity";
             }
