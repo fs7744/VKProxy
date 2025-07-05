@@ -14,5 +14,6 @@ public class VKProxyHostOptions
     public double MemoryCacheCompactionPercentage { get; set; } = 0.05;
     public string Redis { get; set; }
     public int? RedisPoolSize { get; set; } = 10;
+    public string? RedisDataProtection { get; set; }
     public DiskCacheOptions DiskCache { get; private set; } = new DiskCacheOptions();
 }

@@ -80,10 +80,13 @@ public static class VKProxyHost
         var path = Environment.GetEnvironmentVariable("VKPROXY_DISK_CACHE");
         if (!string.IsNullOrWhiteSpace(path))
             options.DiskCache.Path = path;
-        if (long.TryParse(Environment.GetEnvironmentVariable("VKPROXY__DISK_CACHE_MAX"), out max))
+        if (long.TryParse(Environment.GetEnvironmentVariable("VKPROXY_DISK_CACHE_MAX"), out max))
         {
             options.DiskCache.SizeLimmit = max;
         }
+        path = Environment.GetEnvironmentVariable("VKPROXY_REDIS_DATA_PROTECTION");
+        if (!string.IsNullOrWhiteSpace(path))
+            options.RedisDataProtection = path;
         return options;
     }
 
@@ -258,6 +261,18 @@ public static class VKProxyHost
                 return "must StackExchangeRedis config format";
             }
         });
+        r.Add("--redis-data-protection", (args, en) =>
+        {
+            if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-"))
+            {
+                args.RedisDataProtection = en.Current;
+                return string.Empty;
+            }
+            else
+            {
+                return "DataProtection sotre in redis key";
+            }
+        });
         r.Add("--redis-pool-size", (args, en) =>
         {
             if (en.MoveNext() && !string.IsNullOrWhiteSpace(en.Current) && !en.Current.StartsWith("-") && int.TryParse(en.Current, out var e) && e > 0)
@@ -282,6 +297,7 @@ public static class VKProxyHost
             Console.WriteLine($"--memory-cache-percentage   Memory Cache Compaction Percentage");
             Console.WriteLine($"--redis                     StackExchangeRedis config");
             Console.WriteLine($"--redis-pool-size           StackExchangeRedis pool size, default is 10");
+            Console.WriteLine($"--redis-data-protection     DataProtection sotre in redis key");
             Console.WriteLine($"--disk-cache                disk cache directory");
             Console.WriteLine($"--disk-cache-max            disk cache Size Limit");
             Console.WriteLine($"--help (-h)                 show all options");
@@ -355,9 +371,14 @@ public static class VKProxyHost
 
                 if (!string.IsNullOrWhiteSpace(options.Redis))
                 {
-                    i.AddPooledRedis(options.Redis, options.RedisPoolSize.GetValueOrDefault(10));
+                    var pool = StackExchangeRedisExtensions.BuildPooledRedis(options.Redis, options.RedisPoolSize.GetValueOrDefault(10));
+                    i.AddSingleton(pool);
                     i.AddRedisResponseCache();
                     i.AddRedisConcurrency();
+                    if (!string.IsNullOrWhiteSpace(options.RedisDataProtection))
+                    {
+                        i.PersistKeysToStackExchangeRedis(pool, options.RedisDataProtection);
+                    }
                 }
             })
             .UseReverseProxy();

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using VKProxy.Features.Limits;
 using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
@@ -7,17 +8,16 @@ namespace VKProxy.StackExchangeRedis;
 
 public static class StackExchangeRedisExtensions
 {
-    public static IServiceCollection AddPooledRedis(this IServiceCollection services, string configuration, int maxSize = 10)
+    public static IRedisPool BuildPooledRedis(string configuration, int maxSize = 10)
     {
         ConfigurationOptions.Parse(configuration);
-        if (maxSize <= 0)
-        {
-            throw new ArgumentException(nameof(maxSize));
-        }
-        services.AddSingleton<IRedisPool>(x =>
-        {
-            return new RedisPool(async (i) => new AsyncPooledRedis(i, await ConnectionMultiplexer.ConnectAsync(configuration).ConfigureAwait(false)), maxSize);
-        });
+        return new RedisPool(async (i) => new AsyncPooledRedis(i, await ConnectionMultiplexer.ConnectAsync(configuration).ConfigureAwait(false)), maxSize);
+    }
+
+    public static IServiceCollection AddPooledRedis(this IServiceCollection services, string configuration, int maxSize = 10)
+    {
+        var pool = BuildPooledRedis(configuration, maxSize);
+        services.AddSingleton<IRedisPool>(pool);
 
         return services;
     }
@@ -33,6 +33,15 @@ public static class StackExchangeRedisExtensions
     {
         services.AddSingleton<IConnectionLimitCreator, RedisIncrConnectionLimitCreator>();
 
+        return services;
+    }
+
+    public static IServiceCollection PersistKeysToStackExchangeRedis(this IServiceCollection services, IRedisPool pool, string key = "DataProtection-Keys")
+    {
+        services.Configure<KeyManagementOptions>(options =>
+        {
+            options.XmlRepository = new RedisXmlRepository(pool, key);
+        });
         return services;
     }
 }
