@@ -46,9 +46,10 @@ public class MirrorFunc : IHttpFunc
             return;
         }
 
-        var originBody = c.Request.Body;
-        using var buffer = new ReadBufferingStream(originBody);
-        c.Request.Body = buffer;
+        c.Request.EnableBuffering();
+        //var originBody = c.Request.Body;
+        //using var buffer = new ReadBufferingStream(originBody);
+        //c.Request.Body = buffer;
 
         try
         {
@@ -56,7 +57,7 @@ public class MirrorFunc : IHttpFunc
         }
         finally
         {
-            c.Request.Body = buffer.BufferingStream;
+            //c.Request.Body = buffer.BufferingStream;
             try
             {
                 var proxyFeature = c.Features.GetRequiredFeature<IReverseProxyFeature>();
@@ -64,6 +65,7 @@ public class MirrorFunc : IHttpFunc
                 if (selectedDestination != null)
                 {
                     cluster.InitHttp(forwarderHttpClientFactory);
+                    c.Request.Body.Seek(0, SeekOrigin.Begin);
                     await forwarder.SendAsync(c, proxyFeature, selectedDestination, cluster, new NonHttpTransformer(proxyFeature.Route.Transformer));
                 }
             }
@@ -71,10 +73,10 @@ public class MirrorFunc : IHttpFunc
             {
                 logger.LogWarning(ex, "Mirror failed");
             }
-            finally
-            {
-                c.Request.Body = originBody;
-            }
+            //finally
+            //{
+            //    c.Request.Body = originBody;
+            //}
         }
     }
 }
