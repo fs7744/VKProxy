@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
 using VKProxy.HttpRoutingStatement;
-using static VKProxy.Core.Adapters.HttpApplication;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs;
 
@@ -59,27 +57,5 @@ public class WAFFunc : IHttpFunc
             }
         }
         return list.Count > 0 ? list.ToArray() : null;
-    }
-}
-
-public class OnlyHttpsFunc : IHttpFunc
-{
-    public int Order => -1000;
-
-    public RequestDelegate Create(RouteConfig config, RequestDelegate next)
-    {
-        if (config.Metadata == null || !config.Metadata.TryGetValue("OnlyHttps", out var v) || !bool.TryParse(v, out var b) || !b) return next;
-        return c =>
-        {
-            if (c.Request.IsHttps)
-            {
-                return next(c);
-            }
-            else
-            {
-                c.Response.Redirect(c.Request.GetEncodedPathAndQuery(), true);
-                return c.Response.CompleteAsync();
-            }
-        };
     }
 }
