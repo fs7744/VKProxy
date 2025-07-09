@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using System.Text;
 using VKProxy.HttpRoutingStatement;
@@ -112,6 +113,11 @@ public class StatementParserTest
     [InlineData("header('x-c') = 'a'", true)]
     [InlineData("Cookie('x-c') = 'ddd'", true)]
     [InlineData("Query('x-c') = 'xxx'", true)]
+    [InlineData("header('#keys') = 'x-c'", true)]
+    [InlineData("header('#keys') = 'a'", false)]
+    [InlineData("header('#values') = 'a'", true)]
+    [InlineData("header('#kvs') = 'x-c'", true)]
+    [InlineData("header('#kvs') = 'a'", true)]
     [InlineData("header('x-c') != 'test'", true)]
     [InlineData("Cookie('x-c') != 'test'", true)]
     [InlineData("Query('x-c') != 'test'", true)]
@@ -136,6 +142,8 @@ public class StatementParserTest
         var context = new Mock<HttpContext>();
         context.Setup(r => r.Request.Path).Returns("/testp");
         context.Setup(r => r.Request.ContentLength).Returns(9);
+        context.Setup(r => r.Request.Headers.Keys).Returns(new string[] { "x-c" });
+        context.Setup(r => r.Request.Headers.Values).Returns(new StringValues[] { "a" });
         context.Setup(r => r.Request.Headers["x-c"]).Returns("a");
         context.Setup(r => r.Request.Cookies["x-c"]).Returns("ddd");
         context.Setup(r => r.Request.Query["x-c"]).Returns("xxx");

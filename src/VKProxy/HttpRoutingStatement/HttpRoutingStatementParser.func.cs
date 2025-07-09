@@ -31,6 +31,24 @@ public static partial class HttpRoutingStatementParser
         //{ "Route", (c, k) => c.Request.RouteValues?[k]}
     }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
+    private static readonly FrozenSet<string> dynamicKeys = new HashSet<string>() { "#Keys", "#Values", "#KVS" }.ToFrozenSet<string>(StringComparer.OrdinalIgnoreCase);
+
+    private static readonly FrozenDictionary<string, Func<HttpContext, IEnumerable<string>>> dynamicFieldEnumerables = new Dictionary<string, Func<HttpContext, IEnumerable<string>>>()
+    {
+        { "Header#Keys", (c) => c.Request.Headers?.Keys},
+        { "Header#Values", (c) => c.Request.Headers?.Values?.SelectMany(i => i)},
+        { "Header#KVS", (c) => c.Request.Headers == null ? null : c.Request.Headers.Keys.Union(c.Request.Headers.Values.SelectMany(i => i))},
+        { "Query#Keys", (c) => c.Request.Query?.Keys},
+        { "Query#Values", (c) => c.Request.Query?.SelectMany(i => i.Value)},
+        { "Query#KVS", (c) => c.Request.Query == null ? null : c.Request.Query.Keys.Union(c.Request.Query.SelectMany(i => i.Value))},
+        { "Cookie#Keys", (c) => c.Request.Cookies?.Keys},
+        { "Cookie#Values", (c) => c.Request.Cookies?.Select(i => i.Value)},
+        { "Cookie#KVS", (c) => c.Request.Cookies == null ? null : c.Request.Cookies.Keys.Union(c.Request.Cookies.Select(i => i.Value))},
+        { "Form#Keys", (c) => c.Request.HasFormContentType && c.Request.Form != null ? c.Request.Form.Keys : null},
+        { "Form#Values", (c) => c.Request.HasFormContentType && c.Request.Form != null ? c.Request.Form.SelectMany(i => i.Value) : null},
+        { "Form#KVS", (c) => c.Request.HasFormContentType && c.Request.Form != null ? c.Request.Form.Keys.Union(c.Request.Form.SelectMany(i => i.Value)) : null},
+    }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
     public static Func<HttpContext, bool> ConvertToFunc(Statement statement)
     {
         if (statement is OperaterStatement os)
@@ -74,11 +92,22 @@ public static partial class HttpRoutingStatementParser
     {
         if (io.Operater.Equals("in", StringComparison.OrdinalIgnoreCase))
         {
-            var o = ConvertToField(io.Left);
+            var en = ConvertToFieldEnumerable(io.Left);
             var array = ConvertToArray(io.Right);
-            if (o != null && array != null)
+            if (array != null)
             {
-                return c => array(o(c));
+                if (en != null)
+                {
+                    return c => en(c).Any(array);
+                }
+                else
+                {
+                    var o = ConvertToField(io.Left);
+                    if (o != null)
+                    {
+                        return c => array(o(c));
+                    }
+                }
             }
         }
         return null;
@@ -126,6 +155,19 @@ public static partial class HttpRoutingStatementParser
                     return set.Contains(d);
                 }
             };
+        }
+
+        return null;
+    }
+
+    internal static Func<HttpContext, IEnumerable<string>> ConvertToFieldEnumerable(ValueStatement v)
+    {
+        if (v is DynamicFieldStatement d)
+        {
+            if (!string.IsNullOrWhiteSpace(d.Key) && dynamicKeys.Contains(d.Key) && dynamicFields.ContainsKey(d.Field) && dynamicFieldEnumerables.TryGetValue($"{d.Field}{d.Key}", out var func))
+            {
+                return func;
+            }
         }
 
         return null;
@@ -179,6 +221,13 @@ public static partial class HttpRoutingStatementParser
 
     private static Func<HttpContext, bool> DoConvertToFunc(OperaterStatement os)
     {
+        var en = ConvertToFieldEnumerable(os.Left);
+        if (en != null)
+            return DoConvertToFunc(en, os, os.Right);
+        en = ConvertToFieldEnumerable(os.Right);
+        if (en != null)
+            return DoConvertToFunc(en, os, os.Left);
+
         var l = ConvertToField(os.Left);
         var r = ConvertToField(os.Right);
         if (l == null || r == null) return null;
@@ -276,6 +325,52 @@ public static partial class HttpRoutingStatementParser
                             var d = l(c);
                             if (d == null) return false;
                             return reg.IsMatch(d.ToString());
+                        };
+                    }
+                }
+                return null;
+
+            default:
+                return null;
+        }
+    }
+
+    private static Func<HttpContext, bool> DoConvertToFunc(Func<HttpContext, IEnumerable<string>> en, OperaterStatement os, ValueStatement v)
+    {
+        var r = ConvertToField(v);
+        if (r == null) return null;
+        switch (os.Operater)
+        {
+            case "=":
+                return c =>
+                {
+                    var rd = r(c);
+                    if (rd is string s)
+                    {
+                        return en(c).Any(ld => string.Equals(s, ld?.ToString(), StringComparison.OrdinalIgnoreCase));
+                    }
+                    return en(c).Any(ld => ld == rd);
+                };
+            case "!=":
+                return c =>
+                {
+                    var rd = r(c);
+                    if (rd is string s)
+                    {
+                        return en(c).Any(ld => !string.Equals(s, ld?.ToString(), StringComparison.OrdinalIgnoreCase));
+                    }
+                    return en(c).Any(ld => ld != rd);
+                };
+            case "~=":
+                if (v is StringValueStatement)
+                {
+                    var s = r(null)?.ToString();
+                    var reg = string.IsNullOrWhiteSpace(s) ? null : new Regex(s, RegexOptions.Compiled);
+                    if (reg != null)
+                    {
+                        return c =>
+                        {
+                            return en(c).Any(reg.IsMatch);
                         };
                     }
                 }
