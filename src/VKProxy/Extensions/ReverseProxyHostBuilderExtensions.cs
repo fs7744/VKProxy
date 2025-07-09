@@ -133,6 +133,7 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<IHttpFunc, MirrorFunc>();
         services.AddSingleton<IHttpFunc, WAFFunc>();
         services.AddSingleton<IHttpFunc, OnlyHttpsFunc>();
+        services.AddSingleton<IHttpFunc, ContentFunc>();
 
         services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
         services.TryAddSingleton<ITemplateStatementFactory, TemplateStatementFactory>();
