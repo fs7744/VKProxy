@@ -33,6 +33,7 @@ public class HttpListenHandler : ListenHandlerBase
         if (string.Equals(context.Request.Path, "/testhttp", StringComparison.OrdinalIgnoreCase))
         {
             resp.Headers.ContentType = "text/html";
+            resp.Headers["x-p"] = context.Request.Protocol;
             await resp.WriteAsync("""
                 <!DOCTYPE html>
                 <html>

@@ -49,7 +49,7 @@ public static class VKProxyHost
     {
         var options = new VKProxyHostOptions();
         options.EtcdOptions = EtcdHostBuilderExtensions.LoadEtcdProxyConfigSourceOptionsFromEnv();
-        if (!options.EtcdOptions.Address.IsNullOrEmpty())
+        if (options.EtcdOptions.Address.IsNullOrEmpty())
         {
             options.EtcdOptions = null;
         }

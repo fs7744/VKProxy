@@ -35,6 +35,10 @@ public class CertificateLoader : ICertificateLoader
             {
                 certificate = X509Certificate2.CreateFromPem(certInfo.PEM);
             }
+            if (OperatingSystem.IsWindows())
+            {
+                return (PersistKey(certificate), fullChain);
+            }
             return (certificate, fullChain);
         }
         else if (certInfo.IsFileCert)
