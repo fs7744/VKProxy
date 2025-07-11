@@ -1,16 +1,14 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.ResponseCaching;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using System.Collections.Frozen;
-using System.Threading.Tasks;
 using VKProxy.Config;
 using VKProxy.Core.Http;
 using VKProxy.Core.Loggers;
 using VKProxy.HttpRoutingStatement;
 using VKProxy.TemplateStatement;
+using VKProxy.Middlewares.Http.Transforms;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
@@ -371,6 +369,7 @@ public class ResponseCachingFunc : IHttpFunc
 
         if (IsCachedEntryFresh(context))
         {
+            context.HttpContext.SetResponseTransformed();
             // Check conditional request rules
             if (ContentIsNotModified(context))
             {
