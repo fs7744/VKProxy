@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.Host", "src\VKProxy
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.StackExchangeRedis", "src\VKProxy.StackExchangeRedis\VKProxy.StackExchangeRedis.csproj", "{B6FCF942-1AA2-4916-9844-F9A186617A00}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApi", "samples\TestApi\TestApi.csproj", "{BBE93DDC-62AF-4BBD-A4AB-E04C03539450}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +101,10 @@ Global
 		{B6FCF942-1AA2-4916-9844-F9A186617A00}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6FCF942-1AA2-4916-9844-F9A186617A00}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6FCF942-1AA2-4916-9844-F9A186617A00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBE93DDC-62AF-4BBD-A4AB-E04C03539450}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBE93DDC-62AF-4BBD-A4AB-E04C03539450}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBE93DDC-62AF-4BBD-A4AB-E04C03539450}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBE93DDC-62AF-4BBD-A4AB-E04C03539450}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +123,7 @@ Global
 		{3536A99B-80E0-417B-9A50-A50B083F2829} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 		{3D790DFA-A18F-4953-8E32-95E519C1AACE} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 		{B6FCF942-1AA2-4916-9844-F9A186617A00} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
+		{BBE93DDC-62AF-4BBD-A4AB-E04C03539450} = {FCC0894D-C703-4E70-9B2B-30C0B69A2B1E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {439F8011-EF6B-4E36-862B-E912231F4FB2}
