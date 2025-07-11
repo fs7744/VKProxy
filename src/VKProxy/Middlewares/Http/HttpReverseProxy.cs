@@ -3,6 +3,7 @@ using VKProxy.Config;
 using VKProxy.Core.Loggers;
 using VKProxy.Features;
 using VKProxy.LoadBalancing;
+using VKProxy.Middlewares.Http.Transforms;
 
 namespace VKProxy.Middlewares.Http;
 
@@ -30,6 +31,10 @@ public class HttpReverseProxy : IMiddleware
 
             if (route is not null)
             {
+                if (route.Transformer is not null)
+                {
+                    resp.OnStarting(static c => TransformHelpers.DoHttpResponseTransformAsync(c as HttpContext), context);
+                }
                 if (route.HttpFunc != null)
                 {
                     await route.HttpFunc(context);

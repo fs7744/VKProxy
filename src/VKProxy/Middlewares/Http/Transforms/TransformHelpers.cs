@@ -1,7 +1,12 @@
-﻿namespace VKProxy.Middlewares.Http.Transforms;
+﻿using Microsoft.AspNetCore.Http;
+using VKProxy.Features;
+
+namespace VKProxy.Middlewares.Http.Transforms;
 
 public static class TransformHelpers
 {
+    public static readonly object ResponseTransformed = new object();
+
     public static bool CheckTooManyParameters(TransformBuilderContext context, IReadOnlyDictionary<string, string> rawTransform, int expected)
     {
         if (rawTransform.Count > expected)
@@ -23,5 +28,35 @@ public static class TransformHelpers
     internal static void RemoveForwardedHeader(TransformBuilderContext context)
     {
         context.RequestTransforms.Add(RequestHeaderForwardedTransform.RemoveTransform);
+    }
+
+    public static bool HasResponseTransformed(this HttpContext context)
+    {
+        return context.Items.ContainsKey(ResponseTransformed);
+    }
+
+    public static void SetResponseTransformed(this HttpContext context)
+    {
+        context.Items[ResponseTransformed] = ResponseTransformed;
+    }
+
+    public static async Task DoHttpResponseTransformAsync(this HttpContext context)
+    {
+        if (context.HasResponseTransformed())
+            return;
+
+        var proxyFeature = context.Features.Get<IReverseProxyFeature>();
+        if (proxyFeature is IL7ReverseProxyFeature l7)
+        {
+            var route = proxyFeature.Route;
+
+            if (route is not null)
+            {
+                if (route.Transformer is not null)
+                {
+                    await route.Transformer.TransformResponseAsync(context, new HttpResponseMessage(), CancellationToken.None);
+                }
+            }
+        }
     }
 }

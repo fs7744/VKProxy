@@ -62,6 +62,8 @@ public sealed class QueryTransformFactory : ITransformFactory
                 return false;
             }
         }
+        else
+            return false;
 
         return true;
     }

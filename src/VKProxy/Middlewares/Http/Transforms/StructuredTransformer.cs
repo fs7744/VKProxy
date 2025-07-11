@@ -142,6 +142,7 @@ public class StructuredTransformer : IHttpTransformer
 
     public async ValueTask<bool> TransformResponseAsync(HttpContext context, HttpResponseMessage proxyResponse, CancellationToken cancellationToken)
     {
+        context.SetResponseTransformed();
         if (ShouldCopyResponseHeaders.GetValueOrDefault(true))
         {
             await TransformResponseAsync(context, proxyResponse);
