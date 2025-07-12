@@ -6,4 +6,4 @@ ENV ETCD_PREFIX=/ReverseProxy/
 
 ADD bin/Release/net9.0 /app
 WORKDIR /app
-CMD ["dotnet", "VKProxy.Cli.dll"]
+CMD ["dotnet", "VKProxy.Cli.dll", "proxy"]

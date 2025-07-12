@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="../../ProjectCommon.targets" />
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Description>ACME client for LetsEncrypt</Description>
+		<PackageId>VKProxy.ACME</PackageId>
+		<Title>ACME client for LetsEncrypt</Title>
+	</PropertyGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\VKProxy.Core\VKProxy.Core.csproj" />
+	</ItemGroup>
+
+</Project>

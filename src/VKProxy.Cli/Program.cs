@@ -6,8 +6,9 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var app = VKProxyHost.CreateBuilder(args)?.Build();
-        if (app != null)
-            await app.RunAsync();
+        await VKProxyHost.RunAsync(args);
+        //var app = VKProxyHost.CreateBuilder(args)?.Build();
+        //if (app != null)
+        //    await app.RunAsync();
     }
 }
