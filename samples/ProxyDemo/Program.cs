@@ -7,7 +7,7 @@ using VKProxy;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.ServiceDiscovery;
 
-var app = VKProxyHost.CreateBuilder((_, o) =>
+var app = VKProxyHost.CreateBuilder(args, (_, o) =>
     {
         o.UseSocks5 = true;
         o.Sampler = Sampler.Random;
