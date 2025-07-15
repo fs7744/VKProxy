@@ -14,6 +14,7 @@
 		<PackageReference Include="Microsoft.Extensions.Telemetry" Version="9.6.0" />
 	</ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\VKProxy.ACME\VKProxy.ACME.csproj" />
     <ProjectReference Include="..\VKProxy.StackExchangeRedis\VKProxy.StackExchangeRedis.csproj" />
     <ProjectReference Include="..\VKProxy.Storages.Etcd\VKProxy.Storages.Etcd.csproj" />
   </ItemGroup>

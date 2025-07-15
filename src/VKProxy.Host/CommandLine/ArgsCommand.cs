@@ -2,12 +2,9 @@
 
 public abstract class ArgsCommand<T> : Command where T : new()
 {
-    private readonly string desc;
-
-    protected ArgsCommand(string name, string desc) : base(name)
+    protected ArgsCommand(string name, string desc) : base(name, desc)
     {
-        this.desc = desc;
-        AddArg(new CommandArg("help", "h", null, "show all options", s => throw new DoCommandException("--help"), false));
+        AddArg(new CommandArg("help", "h", null, "show options", s => throw new DoCommandException("--help"), false));
     }
 
     public T Args { get; } = new T();
@@ -18,7 +15,7 @@ public abstract class ArgsCommand<T> : Command where T : new()
     {
         Console.Write(Name);
         Console.Write("     ");
-        Console.WriteLine(desc);
+        Console.WriteLine(Desc);
         foreach (var arg in commandArgs.Values.Distinct())
         {
             Console.Write("     ");

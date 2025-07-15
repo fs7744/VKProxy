@@ -9,7 +9,7 @@ public class ProxyCommand : ArgsCommand<VKProxyHostOptions>
 {
     private readonly bool isRun;
 
-    public ProxyCommand(bool isRun) : base("Proxy", "L4/L7 proxy build on Kestrel")
+    public ProxyCommand(bool isRun) : base("proxy", "L4/L7 proxy build on Kestrel")
     {
         AddArg(new CommandArg("config", "c", "VKPROXY_CONFIG", "json file config, like /xx/app.json", s =>
         {

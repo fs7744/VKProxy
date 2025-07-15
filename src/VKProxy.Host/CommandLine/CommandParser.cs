@@ -6,14 +6,14 @@ public class CommandParser : IDisposable
 
     public CommandParser()
     {
-        commands["--help"] = new FuncCommand("--help", () =>
+        commands["--help"] = new FuncCommand("--help (-h)", "show options, View more at https://fs7744.github.io/VKProxy.Doc/docs/introduction.html", () =>
         {
             foreach (var item in commands.Values.Distinct())
             {
                 item.Help();
             }
             return Task.CompletedTask;
-        }, "--help (-h)     show all options, View more at https://fs7744.github.io/VKProxy.Doc/docs/introduction.html");
+        });
         commands["-h"] = commands["--help"];
     }
 

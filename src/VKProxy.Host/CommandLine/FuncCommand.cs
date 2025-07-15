@@ -3,18 +3,16 @@
 public class FuncCommand : Command
 {
     private readonly Func<Task> func;
-    private readonly string help;
 
-    public FuncCommand(string name, Func<Task> func, string help = null) : base(name)
+    public FuncCommand(string name, string desc, Func<Task> func) : base(name, !string.IsNullOrEmpty(desc) ? $"{name}    {desc}" : null)
     {
         this.func = func;
-        this.help = help;
     }
 
     public override void Help()
     {
-        if (!string.IsNullOrEmpty(help))
-            Console.WriteLine(help);
+        if (!string.IsNullOrEmpty(Desc))
+            Console.WriteLine(Desc);
     }
 
     public override Func<Task> Parse(IEnumerator<string> value)

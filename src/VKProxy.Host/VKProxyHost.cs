@@ -12,17 +12,35 @@ namespace VKProxy;
 
 public static class VKProxyHost
 {
-    public static Task RunAsync(string[] args)
+    public static async Task RunAsync(string[] args)
     {
-        var f = DoRunAsync(args);
-
-        return f == null ? Task.CompletedTask : f();
+        if (args.Any(i => i.Equals("--debug", StringComparison.OrdinalIgnoreCase)))
+        {
+            var f = DoRunAsync(args.Where(i => !i.Equals("--debug", StringComparison.OrdinalIgnoreCase)).ToArray());
+            if (f != null)
+                await f();
+        }
+        else
+        {
+            try
+            {
+                var f = DoRunAsync(args);
+                if (f != null)
+                    await f();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+            }
+        }
     }
 
     private static Func<Task> DoRunAsync(string[] args)
     {
         var parser = new CommandParser();
+        parser.Add(new VersionCommand());
         parser.Add(new ProxyCommand(true));
+        parser.Add(new ACMECommand());
         return parser.Parse(args);
     }
 
