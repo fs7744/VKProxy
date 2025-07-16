@@ -1,5 +1,4 @@
 ﻿using VKProxy.ACME.Resource;
-using VKProxy.Config;
 
 namespace VKProxy.ACME;
 

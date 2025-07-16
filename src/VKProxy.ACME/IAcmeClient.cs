@@ -1,5 +1,4 @@
 ﻿using VKProxy.ACME.Resource;
-using VKProxy.Config;
 
 namespace VKProxy.ACME;
 
@@ -19,7 +18,7 @@ public class AcmeClient : IAcmeClient
 
     public async Task<AcmeDirectory?> DirectoryAsync(Uri directoryUri, CancellationToken cancellationToken)
     {
-        var (res, data) = await httpClient.GetAsync<AcmeDirectory>(directoryUri, cancellationToken);
-        return data;
+        var data = await httpClient.GetAsync<AcmeDirectory>(directoryUri, cancellationToken);
+        return data.Resource;
     }
 }
