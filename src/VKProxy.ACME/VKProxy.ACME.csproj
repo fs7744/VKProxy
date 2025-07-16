@@ -12,5 +12,8 @@
 	  <ProjectReference Include="..\VKProxy.Core\VKProxy.Core.csproj" />
 	  <ProjectReference Include="..\VKProxy\VKProxy.csproj" />
 	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
+	</ItemGroup>
 
 </Project>

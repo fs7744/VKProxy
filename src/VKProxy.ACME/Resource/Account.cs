@@ -35,4 +35,9 @@ public class Account
     public Uri? Orders { get; set; }
 
     public object? ExternalAccountBinding { get; set; }
+
+    internal class Payload : Account
+    {
+        internal bool? OnlyReturnExisting { get; set; }
+    }
 }

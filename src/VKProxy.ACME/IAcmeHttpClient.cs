@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using VKProxy.ACME.Crypto;
 using VKProxy.ACME.Resource;
 using VKProxy.Config;
 using VKProxy.Middlewares.Http;
@@ -13,9 +14,14 @@ namespace VKProxy.ACME;
 
 public interface IAcmeHttpClient
 {
+    Task<AcmeResponse<T>> HeadAsync<T>(Uri directoryUri, CancellationToken cancellationToken);
+
     Task<AcmeResponse<T>> GetAsync<T>(Uri directoryUri, CancellationToken cancellationToken);
 
     Task<AcmeResponse<T>> PostAsync<T>(Uri uri, object payload, CancellationToken cancellationToken);
+
+    Task<AcmeResponse<T>> PostAsync<T>(JwsSigner jwsSigner, Uri location, object entity,
+            Func<CancellationToken, Task<string>> consumeNonce, int retryCount = 1, CancellationToken cancellationToken = default);
 }
 
 public class DefaultAcmeHttpClient : IAcmeHttpClient
@@ -23,7 +29,7 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
     private readonly IForwarderHttpClientFactory httpClientFactory;
     private HttpMessageInvoker? httpClient;
 
-    private static readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
+    public static readonly JsonSerializerOptions JsonSerializerOptions = new JsonSerializerOptions()
     {
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -55,7 +61,17 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
 
     public async Task<AcmeResponse<T>> GetAsync<T>(Uri directoryUri, CancellationToken cancellationToken)
     {
-        var req = new HttpRequestMessage() { Method = HttpMethod.Get, RequestUri = directoryUri };
+        return await SendAsync<T>(HttpMethod.Get, directoryUri, cancellationToken);
+    }
+
+    public async Task<AcmeResponse<T>> HeadAsync<T>(Uri directoryUri, CancellationToken cancellationToken)
+    {
+        return await SendAsync<T>(HttpMethod.Head, directoryUri, cancellationToken);
+    }
+
+    private async Task<AcmeResponse<T>> SendAsync<T>(HttpMethod method, Uri directoryUri, CancellationToken cancellationToken)
+    {
+        var req = new HttpRequestMessage() { Method = method, RequestUri = directoryUri };
         req.Headers.UserAgent.AddAll(userAgentHeaders);
         using var resp = await httpClient.SendAsync(req, cancellationToken);
         return await ProcessResponseAsync<T>(resp, cancellationToken);
@@ -63,7 +79,7 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
 
     public async Task<AcmeResponse<T>> PostAsync<T>(Uri uri, object payload, CancellationToken cancellationToken)
     {
-        var payloadJson = JsonSerializer.Serialize(payload, jsonSerializerOptions);
+        var payloadJson = JsonSerializer.Serialize(payload, JsonSerializerOptions);
         var content = new StringContent(payloadJson, Encoding.UTF8, MimeJoseJson);
         // boulder will reject the request if sending charset=utf-8
         content.Headers.ContentType.CharSet = null;
@@ -80,6 +96,34 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
         return await ProcessResponseAsync<T>(response, cancellationToken);
     }
 
+    public async Task<AcmeResponse<T>> PostAsync<T>(
+            JwsSigner jwsSigner,
+            Uri location,
+            object entity,
+            Func<CancellationToken, Task<string>> consumeNonce,
+            int retryCount = 1, CancellationToken cancellationToken = default)
+    {
+        var payload = jwsSigner.Sign(entity, url: location, nonce: await consumeNonce(cancellationToken));
+        var response = await PostAsync<T>(location, payload, cancellationToken);
+
+        while (response.Error?.Status == System.Net.HttpStatusCode.BadRequest &&
+            response.Error.Type?.CompareTo("urn:ietf:params:acme:error:badNonce") == 0 &&
+            retryCount-- > 0)
+        {
+            payload = jwsSigner.Sign(entity, url: location, nonce: await consumeNonce(cancellationToken));
+            response = await PostAsync<T>(location, payload, cancellationToken);
+        }
+
+        if (response.Error != null)
+        {
+            throw new AcmeRequestException(
+                string.Format("Fail to load resource from '{0}'.", location),
+                response.Error);
+        }
+
+        return response;
+    }
+
     private async Task<AcmeResponse<T>> ProcessResponseAsync<T>(HttpResponseMessage resp, CancellationToken cancellationToken)
     {
         var location = resp.Headers.Location;
@@ -91,18 +135,23 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
 
         if (resp.IsSuccessStatusCode)
         {
-            result = await resp.Content.ReadFromJsonAsync<T>(jsonSerializerOptions, cancellationToken);
+            if (typeof(T) == typeof(string))
+            {
+                result = (T)(object)(await resp.Content.ReadAsStringAsync(cancellationToken));
+            }
+            else
+                result = await resp.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken);
         }
         else
         {
             if (IsJson(resp.Content?.Headers?.ContentType?.MediaType))
             {
-                error = await resp.Content.ReadFromJsonAsync<AcmeError>(jsonSerializerOptions, cancellationToken);
+                error = await resp.Content.ReadFromJsonAsync<AcmeError>(JsonSerializerOptions, cancellationToken);
             }
             else
                 resp.EnsureSuccessStatusCode();
         }
-        return new AcmeResponse<T>(location, result, links, error, retryafter);
+        return new AcmeResponse<T>(location, result, links, nonce, error, retryafter);
     }
 
     private bool IsJson(string? mediaType)

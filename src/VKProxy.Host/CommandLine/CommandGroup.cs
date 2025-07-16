@@ -6,6 +6,12 @@ public class CommandGroup : Command
 
     public CommandGroup(string name, string desc) : base(name, desc)
     {
+        commands["--help"] = new FuncCommand("--help (-h)", null, () =>
+        {
+            Help();
+            return Task.CompletedTask;
+        });
+        commands["-h"] = commands["--help"];
     }
 
     public override void Help()
@@ -15,6 +21,8 @@ public class CommandGroup : Command
         Console.WriteLine(Desc);
         foreach (var arg in commands.Values.Distinct())
         {
+            if (arg.Desc == null)
+                continue;
             Console.Write("     ");
             Console.Write(arg.Name);
             Console.Write("     ");

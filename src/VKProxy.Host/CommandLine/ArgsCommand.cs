@@ -81,5 +81,10 @@ public abstract class ArgsCommand<T> : Command where T : new()
             commandArgs.Add(arg.ShortName, arg);
     }
 
-    public abstract Func<Task> Do();
+    protected virtual Func<Task> Do()
+    {
+        return ExecAsync;
+    }
+
+    protected abstract Task ExecAsync();
 }

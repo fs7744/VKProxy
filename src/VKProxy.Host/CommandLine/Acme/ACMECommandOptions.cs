@@ -12,7 +12,7 @@ public class ACMECommandOptions
     public bool? DangerousAcceptAnyServerCertificate { get; set; } = false;
     public Uri? WebProxy { get; set; }
 
-    public static void AddCommonArgs(ArgsCommand<ACMECommandOptions> command)
+    public static void AddCommonArgs<T>(ArgsCommand<T> command) where T : ACMECommandOptions, new()
     {
         command.AddArg(new CommandArg("server", "s", null, $"The dictionary URI to an ACME server. (default is test server: {WellKnownServers.LetsEncryptStagingV2})", s => command.Args.Server = new Uri(s)));
         command.AddArg(new CommandArg("timeout", null, null, $"Timeout of http request. (default is 00:00:30)", s => command.Args.Timeout = TimeSpan.Parse(s)));

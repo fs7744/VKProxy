@@ -7,12 +7,7 @@ internal class TermsCommand : ArgsCommand<ACMECommandOptions>
         ACMECommandOptions.AddCommonArgs(this);
     }
 
-    public override Func<Task> Do()
-    {
-        return GetTermsAsync;
-    }
-
-    private async Task GetTermsAsync()
+    protected override async Task ExecAsync()
     {
         var s = Args.GetCancellationTokenSource();
         var conetxt = await Args.GetAcmeContextAsync(s.Token);

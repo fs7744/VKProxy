@@ -97,7 +97,7 @@ public class ProxyCommand : ArgsCommand<VKProxyHostOptions>
         this.isRun = isRun;
     }
 
-    public override Func<Task> Do()
+    protected override Func<Task> Do()
     {
         if (isRun)
         {
@@ -129,5 +129,10 @@ public class ProxyCommand : ArgsCommand<VKProxyHostOptions>
         }
         else
             return null;
+    }
+
+    protected override async Task ExecAsync()
+    {
+        throw new NotImplementedException();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using VKProxy.ACME.Crypto;
 using VKProxy.Middlewares.Http;
 
 namespace VKProxy.ACME;
@@ -16,5 +17,10 @@ public static class DIExtensions
         services.TryAddSingleton<IAcmeHttpClient, DefaultAcmeHttpClient>();
         services.TryAddSingleton<IAcmeClient, AcmeClient>();
         return services;
+    }
+
+    public static IKey NewKey(this KeyAlgorithm algorithm, int? keySize = null)
+    {
+        return KeyAlgorithmProvider.NewKey(algorithm, keySize);
     }
 }
