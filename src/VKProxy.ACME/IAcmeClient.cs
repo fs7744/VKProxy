@@ -11,7 +11,7 @@ public interface IAcmeClient
 
     Task<AcmeResponse<T>> GetAsync<T>(Uri uri, CancellationToken cancellationToken = default);
 
-    Task<AcmeResponse<Account>> NewAccountAsync(AcmeDirectory directory, Account account, IKey accountKey, Func<CancellationToken, Task<string>> consumeNonce, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, int retryCount = 1, CancellationToken cancellationToken = default);
+    Task<AcmeResponse<Account>> NewAccountAsync(AcmeDirectory directory, Account account, Key accountKey, Func<CancellationToken, Task<string>> consumeNonce, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, int retryCount = 1, CancellationToken cancellationToken = default);
 
     Task<AcmeResponse<string>> NewNonceAsync(AcmeDirectory directory, CancellationToken cancellationToken = default);
 
@@ -38,7 +38,7 @@ public class AcmeClient : IAcmeClient
         return httpClient.HeadAsync<string>(directory.NewNonce, cancellationToken);
     }
 
-    public Task<AcmeResponse<Account>> NewAccountAsync(AcmeDirectory directory, Account account, IKey accountKey, Func<CancellationToken, Task<string>> consumeNonce, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, int retryCount = 1, CancellationToken cancellationToken = default)
+    public Task<AcmeResponse<Account>> NewAccountAsync(AcmeDirectory directory, Account account, Key accountKey, Func<CancellationToken, Task<string>> consumeNonce, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, int retryCount = 1, CancellationToken cancellationToken = default)
     {
         var endpoint = directory.NewAccount;
         var jws = new JwsSigner(accountKey);

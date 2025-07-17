@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using VKProxy.ACME.Crypto;
 using VKProxy.ACME.Resource;
 
 namespace VKProxy.ACME;
@@ -11,24 +10,25 @@ public interface IAcmeContext
     void TrySetNonce<T>(AcmeResponse<T> response);
 
     AcmeDirectory Directory { get; }
-    JwsSigner AccountSigner { get; }
+
+    IAccountContext Account { get; }
 
     int RetryCount { get; set; }
 
     Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default);
 
-    Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, IKey accountKey,
+    Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, Key accountKey,
         string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, CancellationToken cancellationToken = default);
 
-    Task<IAccountContext> AccountAsync(IKey accountKey, CancellationToken cancellationToken = default);
+    Task<IAccountContext> AccountAsync(Key accountKey, CancellationToken cancellationToken = default);
 
     Task<string> ConsumeNonceAsync(CancellationToken cancellationToken = default);
 
-    IAsyncEnumerable<Uri> ListOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken = default);
+    IAsyncEnumerable<IOrderContext> ListOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken = default);
 
     Task<AcmeResponse<T>> GetResourceAsync<T>(Uri resourceUri, CancellationToken cancellationToken = default);
 
-    Task<Order> GetOrderDetailAsync(Uri orderLocation, CancellationToken cancellationToken = default);
+    Task<IOrderContext> NewOrderAsync(IList<string> identifiers, DateTimeOffset? notBefore = null, DateTimeOffset? notAfter = null, CancellationToken cancellationToken = default);
 }
 
 public class AcmeContext : IAcmeContext
@@ -70,8 +70,6 @@ public class AcmeContext : IAcmeContext
         }
     }
 
-    public JwsSigner AccountSigner => Account.Signer;
-
     public int RetryCount { get; set; }
 
     public async Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default)
@@ -94,7 +92,7 @@ public class AcmeContext : IAcmeContext
         return nonce;
     }
 
-    public async Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, IKey accountKey,
+    public async Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, Key accountKey,
         string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, CancellationToken cancellationToken = default)
     {
         var r = await client.NewAccountAsync(Directory, new Account
@@ -106,7 +104,7 @@ public class AcmeContext : IAcmeContext
         return account;
     }
 
-    public async Task<IAccountContext> AccountAsync(IKey accountKey, CancellationToken cancellationToken = default)
+    public async Task<IAccountContext> AccountAsync(Key accountKey, CancellationToken cancellationToken = default)
     {
         var r = await client.NewAccountAsync(Directory, new Account.Payload
         {
@@ -116,27 +114,23 @@ public class AcmeContext : IAcmeContext
         return account;
     }
 
-    public async IAsyncEnumerable<Uri> ListOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<IOrderContext> ListOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var account = await Account.GetResourceAsync(cancellationToken);
         var next = account.Orders;
         while (next != null)
         {
-            var resp = await client.GetAsync<OrderList>(next, cancellationToken);
+            //var resp = await client.GetAsync<OrderList>(next, cancellationToken);
+            var resp = await GetResourceAsync<OrderList>(next, cancellationToken);
             next = resp.Links["next"].FirstOrDefault();
             if (resp.Resource != null && resp.Resource.Orders != null)
             {
                 foreach (var item in resp.Resource.Orders)
                 {
-                    yield return item;
+                    yield return new OrderContext(this, item);
                 }
             }
         }
-    }
-
-    public async Task<Order> GetOrderDetailAsync(Uri orderLocation, CancellationToken cancellationToken = default)
-    {
-        return (await GetResourceAsync<Order>(orderLocation, cancellationToken)).Resource;
     }
 
     public void TrySetNonce<T>(AcmeResponse<T> response)
@@ -149,6 +143,21 @@ public class AcmeContext : IAcmeContext
 
     public Task<AcmeResponse<T>> GetResourceAsync<T>(Uri resourceUri, CancellationToken cancellationToken)
     {
-        return Client.PostAsync<T>(AccountSigner, resourceUri, account.Location, ConsumeNonceAsync, null, RetryCount, cancellationToken);
+        return Client.PostAsync<T>(Account.Signer, resourceUri, account.Location, ConsumeNonceAsync, null, RetryCount, cancellationToken);
+    }
+
+    public async Task<IOrderContext> NewOrderAsync(IList<string> identifiers, DateTimeOffset? notBefore = null, DateTimeOffset? notAfter = null, CancellationToken cancellationToken = default)
+    {
+        var endpoint = Directory.NewOrder;
+        var body = new Order
+        {
+            Identifiers = identifiers
+                    .Select(id => new Identifier { Type = IdentifierType.Dns, Value = id })
+                    .ToArray(),
+            NotBefore = notBefore,
+            NotAfter = notAfter,
+        };
+        var order = await Client.PostAsync<Order>(Account.Signer, endpoint, account.Location, ConsumeNonceAsync, body, RetryCount, cancellationToken);
+        return new OrderContext(this, order.Location);
     }
 }

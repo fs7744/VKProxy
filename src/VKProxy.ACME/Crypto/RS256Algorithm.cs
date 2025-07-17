@@ -6,9 +6,9 @@ namespace VKProxy.ACME.Crypto;
 
 internal sealed class RS256Algorithm : IKeyAlgorithm
 {
-    public ISigner CreateSigner(IKey key) => new RS256Signer(key);
+    public ISigner CreateSigner(Key key) => new RS256Signer(key);
 
-    public IKey GenerateKey(int? keySize = null)
+    public Key GenerateKey(int? keySize = null)
     {
         if (keySize == null)
         {

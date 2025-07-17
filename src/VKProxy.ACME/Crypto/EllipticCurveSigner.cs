@@ -7,7 +7,7 @@ public sealed class EllipticCurveSigner : AsymmetricCipherSigner
 {
     private readonly int fieldSize;
 
-    public EllipticCurveSigner(IKey key, string signingAlgorithm, string hashAlgorithm)
+    public EllipticCurveSigner(Key key, string signingAlgorithm, string hashAlgorithm)
         : base(key)
     {
         var privKey = Key.KeyPair.Private as ECPrivateKeyParameters;

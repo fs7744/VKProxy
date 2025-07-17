@@ -18,13 +18,13 @@ public class JwsPayload
 /// </summary>
 public class JwsSigner
 {
-    private readonly IKey keyPair;
+    private readonly Key keyPair;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JwsSigner"/> class.
     /// </summary>
     /// <param name="keyPair">The keyPair.</param>
-    public JwsSigner(IKey keyPair)
+    public JwsSigner(Key keyPair)
     {
         this.keyPair = keyPair;
     }

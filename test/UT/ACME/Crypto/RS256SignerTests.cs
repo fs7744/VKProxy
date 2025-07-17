@@ -18,7 +18,7 @@ public class RS256SignerTests
     [Fact]
     public void InvalidKey()
     {
-        var mock = new Mock<IKey>();
+        var mock = new Mock<Key>();
         var obj = mock.Object;
         Assert.Throws<ArgumentException>(() => new RS256Signer(obj));
     }

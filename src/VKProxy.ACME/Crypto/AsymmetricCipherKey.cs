@@ -5,9 +5,9 @@ using Org.BouncyCastle.Pkcs;
 
 namespace VKProxy.ACME.Crypto;
 
-public class AsymmetricCipherKey : IKey
+public class AsymmetricCipherKey : Key
 {
-    public JsonWebKey JsonWebKey
+    public override JsonWebKey JsonWebKey
     {
         get
         {
@@ -48,7 +48,7 @@ public class AsymmetricCipherKey : IKey
 
     public AsymmetricCipherKeyPair KeyPair { get; }
 
-    public KeyAlgorithm Algorithm { get; }
+    public override KeyAlgorithm Algorithm { get; }
 
     public AsymmetricCipherKey(KeyAlgorithm algorithm, AsymmetricCipherKeyPair keyPair)
     {
@@ -56,13 +56,13 @@ public class AsymmetricCipherKey : IKey
         Algorithm = algorithm;
     }
 
-    public byte[] ToDer()
+    public override byte[] ToDer()
     {
         var privateKey = PrivateKeyInfoFactory.CreatePrivateKeyInfo(KeyPair.Private);
         return privateKey.GetDerEncoded();
     }
 
-    public string ToPem()
+    public override string ToPem()
     {
         using (var sr = new StringWriter())
         {

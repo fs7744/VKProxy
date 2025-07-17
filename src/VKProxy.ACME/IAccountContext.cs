@@ -5,7 +5,7 @@ namespace VKProxy.ACME;
 
 public interface IAccountContext : IResourceContext<Account>
 {
-    IKey AccountKey { get; }
+    Key AccountKey { get; }
 
     JwsSigner Signer { get; }
 
@@ -13,7 +13,7 @@ public interface IAccountContext : IResourceContext<Account>
 
     Task<Account> DeactivateAsync(CancellationToken cancellationToken = default);
 
-    Task<Account> ChangeKeyAsync(IKey key, CancellationToken cancellationToken = default);
+    Task<Account> ChangeKeyAsync(Key key, CancellationToken cancellationToken = default);
 }
 
 public class ResourceContext<T> : IResourceContext<T>
@@ -36,13 +36,13 @@ public class ResourceContext<T> : IResourceContext<T>
 
 public class AccountContext : ResourceContext<Account>, IAccountContext
 {
-    public AccountContext(IAcmeContext context, Uri location, Crypto.IKey accountKey) : base(context, location)
+    public AccountContext(IAcmeContext context, Uri location, Key accountKey) : base(context, location)
     {
         AccountKey = accountKey;
         Signer = new JwsSigner(accountKey);
     }
 
-    public IKey AccountKey { get; private set; }
+    public Key AccountKey { get; private set; }
     public JwsSigner Signer { get; private set; }
 
     public async Task<Account> DeactivateAsync(CancellationToken cancellationToken = default)
@@ -57,7 +57,7 @@ public class AccountContext : ResourceContext<Account>, IAccountContext
         return res.Resource;
     }
 
-    public async Task<Account> ChangeKeyAsync(IKey key, CancellationToken cancellationToken = default)
+    public async Task<Account> ChangeKeyAsync(Key key, CancellationToken cancellationToken = default)
     {
         var keyChange = new
         {

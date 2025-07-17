@@ -26,7 +26,7 @@ internal class ChangeAccountKeyCommand : ArgsCommand<ChangeAccountKeyCommandOpti
 
 public class ChangeAccountKeyCommandOptions : AccountCommandOptions
 {
-    public IKey NewAccountKey { get; set; }
+    public Key NewAccountKey { get; set; }
 
     public static void AddCommonArgs<T>(ArgsCommand<T> command) where T : ChangeAccountKeyCommandOptions, new()
     {

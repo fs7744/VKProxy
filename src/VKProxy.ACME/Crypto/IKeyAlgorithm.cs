@@ -2,7 +2,7 @@
 
 public interface IKeyAlgorithm
 {
-    ISigner CreateSigner(IKey key);
+    ISigner CreateSigner(Key key);
 
-    IKey GenerateKey(int? keySize = null);
+    Key GenerateKey(int? keySize = null);
 }

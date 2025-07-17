@@ -19,12 +19,12 @@ public static class DIExtensions
         return services;
     }
 
-    public static IKey NewKey(this KeyAlgorithm algorithm, int? keySize = null)
+    public static Key NewKey(this KeyAlgorithm algorithm, int? keySize = null)
     {
         return KeyAlgorithmProvider.NewKey(algorithm, keySize);
     }
 
-    public static Task<IAccountContext> NewAccountAsync(this IAcmeContext context, string email, bool termsOfServiceAgreed, IKey accountKey,
+    public static Task<IAccountContext> NewAccountAsync(this IAcmeContext context, string email, bool termsOfServiceAgreed, Key accountKey,
         string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, CancellationToken cancellationToken = default)
     {
         return context.NewAccountAsync(new string[] { $"mailto:{email}" }, termsOfServiceAgreed, accountKey, eabKeyId, eabKey, eabKeyAlg, cancellationToken);

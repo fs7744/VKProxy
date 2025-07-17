@@ -6,7 +6,7 @@ public abstract class AsymmetricCipherSigner : ISigner
 {
     protected AsymmetricCipherKey Key { get; private set; }
 
-    public AsymmetricCipherSigner(IKey key)
+    public AsymmetricCipherSigner(Key key)
     {
         Key = (key as AsymmetricCipherKey) ?? throw new ArgumentException(nameof(key));
     }

@@ -8,7 +8,7 @@ public sealed class RS256Signer : AsymmetricCipherSigner
 
     protected override string HashAlgorithm => "SHA256";
 
-    public RS256Signer(IKey key)
+    public RS256Signer(Key key)
         : base(key)
     {
         if (!(Key.KeyPair.Private is RsaPrivateCrtKeyParameters))

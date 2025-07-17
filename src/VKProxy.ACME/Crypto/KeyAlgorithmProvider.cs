@@ -16,7 +16,7 @@ public static class KeyAlgorithmProvider
     internal static readonly IKeyAlgorithm ES384 = new EllipticCurveAlgorithm("P-384", "SHA-384withECDSA", "SHA384");
     internal static readonly IKeyAlgorithm ES512 = new EllipticCurveAlgorithm("P-521", "SHA-512withECDSA", "SHA512");
 
-    public static IKey NewKey(KeyAlgorithm algorithm, int? keySize = null)
+    public static Key NewKey(KeyAlgorithm algorithm, int? keySize = null)
     {
         var algo = Get(algorithm);
         return algo.GenerateKey(keySize);
@@ -31,13 +31,13 @@ public static class KeyAlgorithmProvider
         _ => throw new ArgumentException(nameof(algorithm))
     };
 
-    public static IKey GetKey(byte[] der)
+    public static Key GetKey(byte[] der)
     {
         var keyParam = PrivateKeyFactory.CreateKey(der);
         return ReadKey(keyParam);
     }
 
-    public static IKey GetKey(string pem)
+    public static Key GetKey(string pem)
     {
         using (var reader = new StringReader(pem))
         {
@@ -108,13 +108,13 @@ public static class KeyAlgorithmProvider
         }
     }
 
-    private static IKey ReadKey(AsymmetricKeyParameter keyParam)
+    private static Key ReadKey(AsymmetricKeyParameter keyParam)
     {
         var (algo, keyPair) = ParseKey(keyParam);
         return new AsymmetricCipherKey(algo, keyPair);
     }
 
-    internal static ISigner GetSigner(this IKey key)
+    internal static ISigner GetSigner(this Key key)
     {
         var algorithm = Get(key.Algorithm);
         return algorithm.CreateSigner(key);

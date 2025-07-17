@@ -1,4 +1,5 @@
-﻿using VKProxy.ACME.Crypto;
+﻿using VKProxy.ACME;
+using VKProxy.ACME.Crypto;
 
 namespace VKProxy.CommandLine;
 
@@ -17,7 +18,7 @@ internal class AccountCommand : CommandGroup
 
 public class AccountCommandOptions : ACMECommandOptions
 {
-    public IKey AccountKey { get; set; }
+    public Key AccountKey { get; set; }
 
     public static void AddCommonArgs<T>(ArgsCommand<T> command) where T : AccountCommandOptions, new()
     {

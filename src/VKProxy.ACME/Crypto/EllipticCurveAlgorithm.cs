@@ -30,9 +30,9 @@ public sealed class EllipticCurveAlgorithm : IKeyAlgorithm
         this.hashAlgorithm = hashAlgorithm;
     }
 
-    public ISigner CreateSigner(IKey key) => new EllipticCurveSigner(key, signingAlgorithm, hashAlgorithm);
+    public ISigner CreateSigner(Key key) => new EllipticCurveSigner(key, signingAlgorithm, hashAlgorithm);
 
-    public IKey GenerateKey(int? keySize = null)
+    public Key GenerateKey(int? keySize = null)
     {
         var generator = GeneratorUtilities.GetKeyPairGenerator("ECDSA");
         var generatorParams = new ECKeyGenerationParameters(

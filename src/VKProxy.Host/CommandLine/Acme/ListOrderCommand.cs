@@ -5,7 +5,7 @@ namespace VKProxy.CommandLine;
 
 internal class ListOrderCommand : ArgsCommand<AccountCommandOptions>
 {
-    public ListOrderCommand() : base("list", "Change account key.")
+    public ListOrderCommand() : base("list", "List all orders of account.")
     {
         AccountCommandOptions.AddCommonArgs(this);
     }
@@ -18,9 +18,10 @@ internal class ListOrderCommand : ArgsCommand<AccountCommandOptions>
         await conetxt.AccountAsync(Args.AccountKey, cancellationToken: token);
         await foreach (var u in conetxt.ListOrdersAsync(token))
         {
-            var d = await conetxt.GetOrderDetailAsync(u, token);
-            Console.WriteLine(u);
+            var d = await u.GetResourceAsync(token);
+            Console.WriteLine(u.Location);
             Console.WriteLine(JsonSerializer.Serialize(d, DefaultAcmeHttpClient.JsonSerializerOptions));
+            Console.WriteLine();
         }
     }
 }
