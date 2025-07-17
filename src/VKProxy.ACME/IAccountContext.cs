@@ -54,7 +54,7 @@ public class AccountContext : ResourceContext<Account>, IAccountContext
 
     public async Task<Account> UpdateAsync(IList<string> contact, CancellationToken cancellationToken = default)
     {
-        var res = await context.Client.PostAsync<Account>(Signer, Location, Location, context.ConsumeNonceAsync, new Account { Contact = contact, TermsOfServiceAgreed = true }, context.RetryCount, cancellationToken);
+        var res = await context.Client.PostAsync<Account>(Signer, Location, Location, context.ConsumeNonceAsync, new Account { Contact = contact.ToList(), TermsOfServiceAgreed = true }, context.RetryCount, cancellationToken);
         return res.Resource;
     }
 

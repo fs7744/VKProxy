@@ -92,7 +92,7 @@ public class AcmeContext : IAcmeContext
     {
         var r = await client.NewAccountAsync(Directory, new Account
         {
-            Contact = contact,
+            Contact = contact.ToList(),
             TermsOfServiceAgreed = termsOfServiceAgreed
         }, accountKey, ConsumeNonceAsync, eabKeyId, eabKey, eabKeyAlg, RetryCount, cancellationToken);
         account = new AccountContext(this, r.Location, accountKey);

@@ -29,7 +29,7 @@ public class Account
 {
     public AccountStatus? Status { get; set; }
 
-    public IList<string>? Contact { get; set; }
+    public List<string>? Contact { get; set; }
     public bool? TermsOfServiceAgreed { get; set; }
 
     public Uri? Orders { get; set; }
@@ -38,6 +38,6 @@ public class Account
 
     internal class Payload : Account
     {
-        internal bool? OnlyReturnExisting { get; set; }
+        public bool? OnlyReturnExisting { get; set; }
     }
 }
