@@ -1,4 +1,5 @@
-﻿using VKProxy.ACME.Crypto;
+﻿using System.Runtime.CompilerServices;
+using VKProxy.ACME.Crypto;
 using VKProxy.ACME.Resource;
 
 namespace VKProxy.ACME;
@@ -22,6 +23,12 @@ public interface IAcmeContext
     Task<IAccountContext> AccountAsync(IKey accountKey, CancellationToken cancellationToken = default);
 
     Task<string> ConsumeNonceAsync(CancellationToken cancellationToken = default);
+
+    IAsyncEnumerable<Uri> ListOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken = default);
+
+    Task<AcmeResponse<T>> GetResourceAsync<T>(Uri resourceUri, CancellationToken cancellationToken = default);
+
+    Task<Order> GetOrderDetailAsync(Uri orderLocation, CancellationToken cancellationToken = default);
 }
 
 public class AcmeContext : IAcmeContext
@@ -109,11 +116,39 @@ public class AcmeContext : IAcmeContext
         return account;
     }
 
+    public async IAsyncEnumerable<Uri> ListOrdersAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var account = await Account.GetResourceAsync(cancellationToken);
+        var next = account.Orders;
+        while (next != null)
+        {
+            var resp = await client.GetAsync<OrderList>(next, cancellationToken);
+            next = resp.Links["next"].FirstOrDefault();
+            if (resp.Resource != null && resp.Resource.Orders != null)
+            {
+                foreach (var item in resp.Resource.Orders)
+                {
+                    yield return item;
+                }
+            }
+        }
+    }
+
+    public async Task<Order> GetOrderDetailAsync(Uri orderLocation, CancellationToken cancellationToken = default)
+    {
+        return (await GetResourceAsync<Order>(orderLocation, cancellationToken)).Resource;
+    }
+
     public void TrySetNonce<T>(AcmeResponse<T> response)
     {
         if (response != null && response.ReplayNonce != null)
         {
             nonce = response.ReplayNonce;
         }
+    }
+
+    public Task<AcmeResponse<T>> GetResourceAsync<T>(Uri resourceUri, CancellationToken cancellationToken)
+    {
+        return Client.PostAsync<T>(AccountSigner, resourceUri, account.Location, ConsumeNonceAsync, null, RetryCount, cancellationToken);
     }
 }

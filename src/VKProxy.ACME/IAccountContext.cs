@@ -9,8 +9,6 @@ public interface IAccountContext : IResourceContext<Account>
 
     JwsSigner Signer { get; }
 
-    //Task<IOrderListContext> Orders();
-
     Task<Account> UpdateAsync(IList<string> contact, CancellationToken cancellationToken = default);
 
     Task<Account> DeactivateAsync(CancellationToken cancellationToken = default);
@@ -32,7 +30,7 @@ public class ResourceContext<T> : IResourceContext<T>
 
     public virtual async Task<T> GetResourceAsync(CancellationToken cancellationToken = default)
     {
-        return (await context.Client.PostAsync<T>(context.AccountSigner, Location, Location, context.ConsumeNonceAsync, null, context.RetryCount, cancellationToken)).Resource;
+        return (await context.GetResourceAsync<T>(Location, cancellationToken)).Resource;
     }
 }
 

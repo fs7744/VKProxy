@@ -6,5 +6,6 @@ public class ACMECommand : CommandGroup
     {
         Add(new TermsCommand());
         Add(new AccountCommand());
+        Add(new OrderCommand());
     }
 }
