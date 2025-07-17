@@ -8,6 +8,7 @@ internal class AccountCommand : CommandGroup
     {
         Add(new NewAccountKeyCommand());
         Add(new NewAccountCommand());
+        Add(new UpdateAccountCommand());
     }
 }
 

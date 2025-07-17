@@ -12,11 +12,12 @@ public interface IAcmeContext
     AcmeDirectory Directory { get; }
     JwsSigner AccountSigner { get; }
 
+    int RetryCount { get; set; }
+
     Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default);
 
     Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, IKey accountKey,
-        string eabKeyId = null, string eabKey = null, string eabKeyAlg = null,
-        int retryCount = 1, CancellationToken cancellationToken = default);
+        string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, CancellationToken cancellationToken = default);
 
     Task<IAccountContext> AccountAsync(IKey accountKey, CancellationToken cancellationToken = default);
 
@@ -64,6 +65,8 @@ public class AcmeContext : IAcmeContext
 
     public JwsSigner AccountSigner => Account.Signer;
 
+    public int RetryCount { get; set; }
+
     public async Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default)
     {
         if (directory == null)
@@ -85,14 +88,13 @@ public class AcmeContext : IAcmeContext
     }
 
     public async Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, IKey accountKey,
-        string eabKeyId = null, string eabKey = null, string eabKeyAlg = null,
-        int retryCount = 1, CancellationToken cancellationToken = default)
+        string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, CancellationToken cancellationToken = default)
     {
         var r = await client.NewAccountAsync(Directory, new Account
         {
             Contact = contact,
             TermsOfServiceAgreed = termsOfServiceAgreed
-        }, accountKey, ConsumeNonceAsync, eabKeyId, eabKey, eabKeyAlg, retryCount, cancellationToken);
+        }, accountKey, ConsumeNonceAsync, eabKeyId, eabKey, eabKeyAlg, RetryCount, cancellationToken);
         account = new AccountContext(this, r.Location, accountKey);
         return account;
     }
@@ -102,7 +104,7 @@ public class AcmeContext : IAcmeContext
         var r = await client.NewAccountAsync(Directory, new Account.Payload
         {
             OnlyReturnExisting = true,
-        }, accountKey, ConsumeNonceAsync, null, null, null, 0, cancellationToken);
+        }, accountKey, ConsumeNonceAsync, null, null, null, RetryCount, cancellationToken);
         account = new AccountContext(this, r.Location, accountKey);
         return account;
     }

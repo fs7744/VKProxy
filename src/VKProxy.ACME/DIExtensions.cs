@@ -25,9 +25,8 @@ public static class DIExtensions
     }
 
     public static Task<IAccountContext> NewAccountAsync(this IAcmeContext context, string email, bool termsOfServiceAgreed, IKey accountKey,
-        string eabKeyId = null, string eabKey = null, string eabKeyAlg = null,
-        int retryCount = 1, CancellationToken cancellationToken = default)
+        string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, CancellationToken cancellationToken = default)
     {
-        return context.NewAccountAsync(new string[] { $"mailto:{email}" }, termsOfServiceAgreed, accountKey, eabKeyId, eabKey, eabKeyAlg, retryCount, cancellationToken);
+        return context.NewAccountAsync(new string[] { $"mailto:{email}" }, termsOfServiceAgreed, accountKey, eabKeyId, eabKey, eabKeyAlg, cancellationToken);
     }
 }

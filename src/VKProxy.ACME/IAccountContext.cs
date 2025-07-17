@@ -11,7 +11,7 @@ public interface IAccountContext : IResourceContext<Account>
 
     //Task<IOrderListContext> Orders();
 
-    Task<Account> UpdateAsync(IList<string> contact = null, bool agreeTermsOfService = false, CancellationToken cancellationToken = default);
+    Task<Account> UpdateAsync(IList<string> contact, CancellationToken cancellationToken = default);
 
     Task<Account> DeactivateAsync(CancellationToken cancellationToken = default);
 
@@ -32,7 +32,7 @@ public class ResourceContext<T> : IResourceContext<T>
 
     public virtual async Task<T> GetResourceAsync(CancellationToken cancellationToken = default)
     {
-        return (await context.Client.PostAsync<T>(context.AccountSigner, Location, Location, context.ConsumeNonceAsync, null, 1, cancellationToken)).Resource;
+        return (await context.Client.PostAsync<T>(context.AccountSigner, Location, Location, context.ConsumeNonceAsync, null, context.RetryCount, cancellationToken)).Resource;
     }
 }
 
@@ -52,9 +52,10 @@ public class AccountContext : ResourceContext<Account>, IAccountContext
         throw new NotImplementedException();
     }
 
-    public Task<Account> UpdateAsync(IList<string> contact = null, bool agreeTermsOfService = false, CancellationToken cancellationToken = default)
+    public async Task<Account> UpdateAsync(IList<string> contact, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var res = await context.Client.PostAsync<Account>(Signer, Location, Location, context.ConsumeNonceAsync, new Account { Contact = contact, TermsOfServiceAgreed = true }, context.RetryCount, cancellationToken);
+        return res.Resource;
     }
 
     public Task<Account> ChangeKeyAsync(IKey key, CancellationToken cancellationToken = default)
