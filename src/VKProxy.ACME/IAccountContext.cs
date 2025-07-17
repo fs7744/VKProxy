@@ -47,9 +47,10 @@ public class AccountContext : ResourceContext<Account>, IAccountContext
     public IKey AccountKey { get; }
     public JwsSigner Signer { get; }
 
-    public Task<Account> DeactivateAsync(CancellationToken cancellationToken = default)
+    public async Task<Account> DeactivateAsync(CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var res = await context.Client.PostAsync<Account>(Signer, Location, Location, context.ConsumeNonceAsync, new Account { Status = AccountStatus.Deactivated }, context.RetryCount, cancellationToken);
+        return res.Resource;
     }
 
     public async Task<Account> UpdateAsync(IList<string> contact, CancellationToken cancellationToken = default)

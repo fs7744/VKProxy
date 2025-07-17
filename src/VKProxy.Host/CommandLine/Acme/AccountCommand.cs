@@ -10,6 +10,7 @@ internal class AccountCommand : CommandGroup
         Add(new NewAccountCommand());
         Add(new UpdateAccountCommand());
         Add(new CheckAccountCommand());
+        Add(new DeactivateAccountCommand());
     }
 }
 

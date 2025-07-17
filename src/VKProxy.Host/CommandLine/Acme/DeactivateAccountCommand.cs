@@ -3,9 +3,9 @@ using VKProxy.ACME;
 
 namespace VKProxy.CommandLine;
 
-internal class CheckAccountCommand : ArgsCommand<NewAccountCommandOptions>
+internal class DeactivateAccountCommand : ArgsCommand<NewAccountCommandOptions>
 {
-    public CheckAccountCommand() : base("check", "Check account status.")
+    public DeactivateAccountCommand() : base("deactivate", "Deactivate account.")
     {
         AccountCommandOptions.AddCommonArgs(this);
     }
@@ -16,7 +16,7 @@ internal class CheckAccountCommand : ArgsCommand<NewAccountCommandOptions>
         var token = s.Token;
         var conetxt = await Args.GetAcmeContextAsync(token);
         var account = await conetxt.AccountAsync(Args.AccountKey, cancellationToken: token);
-        var a = await account.GetResourceAsync(token);
+        var a = await account.DeactivateAsync(token);
         Console.WriteLine($"Location: {account.Location}");
         Console.Write("Account: ");
         Console.WriteLine(JsonSerializer.Serialize(a, DefaultAcmeHttpClient.JsonSerializerOptions));
