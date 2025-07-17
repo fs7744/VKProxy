@@ -44,8 +44,8 @@ public class AccountContext : ResourceContext<Account>, IAccountContext
         Signer = new JwsSigner(accountKey);
     }
 
-    public IKey AccountKey { get; }
-    public JwsSigner Signer { get; }
+    public IKey AccountKey { get; private set; }
+    public JwsSigner Signer { get; private set; }
 
     public async Task<Account> DeactivateAsync(CancellationToken cancellationToken = default)
     {
@@ -59,8 +59,19 @@ public class AccountContext : ResourceContext<Account>, IAccountContext
         return res.Resource;
     }
 
-    public Task<Account> ChangeKeyAsync(IKey key, CancellationToken cancellationToken = default)
+    public async Task<Account> ChangeKeyAsync(IKey key, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var keyChange = new
+        {
+            account = Location,
+            oldKey = AccountKey.JsonWebKey,
+        };
+        var jws = new JwsSigner(key);
+        var endpoint = context.Directory.KeyChange;
+        var body = jws.Sign(keyChange, url: endpoint);
+        var res = await context.Client.PostAsync<Account>(Signer, endpoint, Location, context.ConsumeNonceAsync, body, context.RetryCount, cancellationToken);
+        AccountKey = key;
+        Signer = jws;
+        return res.Resource;
     }
 }

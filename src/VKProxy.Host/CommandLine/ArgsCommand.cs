@@ -71,6 +71,13 @@ public abstract class ArgsCommand<T> : Command where T : new()
                 throw new CommandParseException($"Command:{Name}, Not found args: {value.Current}!");
             }
         }
+        foreach (var item in commandArgs.Values.Where(i => i.Check != null).Distinct())
+        {
+            if (!item.Check())
+            {
+                throw new CommandParseException($"Command:{Name}, args: {item.Name} is required.");
+            }
+        }
         return Do();
     }
 

@@ -11,6 +11,7 @@ internal class AccountCommand : CommandGroup
         Add(new UpdateAccountCommand());
         Add(new CheckAccountCommand());
         Add(new DeactivateAccountCommand());
+        Add(new ChangeAccountKeyCommand());
     }
 }
 
@@ -32,7 +33,7 @@ public class AccountCommandOptions : ACMECommandOptions
                 var bytes = File.ReadAllBytes(s);
                 command.Args.AccountKey = KeyAlgorithmProvider.GetKey(bytes);
             }
-        }));
+        }, check: () => command.Args.AccountKey != null));
         ACMECommandOptions.AddCommonArgs(command);
     }
 }

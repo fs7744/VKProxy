@@ -2,7 +2,7 @@
 
 public class CommandArg
 {
-    public CommandArg(string name, string shortName, string env, string desc, Action<string> action, bool hasArg = true)
+    public CommandArg(string name, string shortName, string env, string desc, Action<string> action, bool hasArg = true, Func<bool> check = null)
     {
         Name = $"--{name}";
         if (shortName != null)
@@ -11,6 +11,7 @@ public class CommandArg
         Desc = desc;
         Action = action;
         HasArg = hasArg;
+        Check = check;
     }
 
     public string Name { get; }
@@ -18,6 +19,6 @@ public class CommandArg
     public string Env { get; }
     public string Desc { get; }
     public Action<string> Action { get; }
-    public Action Check { get; }
+    public Func<bool> Check { get; }
     public bool HasArg { get; }
 }
