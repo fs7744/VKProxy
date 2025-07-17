@@ -6,6 +6,8 @@ namespace VKProxy.ACME.Crypto;
 /// Represents and JSON web key.
 /// Note that inheriting classes must define JSON serialisation order to maintain lexographic order as per https://tools.ietf.org/html/rfc7638#page-8
 /// </summary>
+[JsonDerivedType(typeof(EcJsonWebKey))]
+[JsonDerivedType(typeof(RsaJsonWebKey))]
 public class JsonWebKey
 {
     /// <summary>

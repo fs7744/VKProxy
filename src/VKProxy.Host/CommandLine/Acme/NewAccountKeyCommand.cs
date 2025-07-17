@@ -8,7 +8,7 @@ internal class NewAccountKeyCommand : ArgsCommand<NewAccountKeyCommandOptions>
     public NewAccountKeyCommand() : base("key", "Create new account key file.")
     {
         AddArg(new CommandArg("algorithm", null, null, "support RS256/ES256/ES384/ES512", s => Args.Algorithm = Enum.Parse<KeyAlgorithm>(s, true)));
-        AddArg(new CommandArg("output", null, null, "output file path", s => Args.Output = s));
+        AddArg(new CommandArg("output", null, null, "output file path, default is key", s => Args.Output = s));
         AddArg(new CommandArg("format", null, null, "key file format, support pem/der", s =>
         {
             if (string.IsNullOrWhiteSpace(s) || (!s.Equals("der", StringComparison.OrdinalIgnoreCase) && !s.Equals("pem", StringComparison.OrdinalIgnoreCase)))

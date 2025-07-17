@@ -10,6 +10,7 @@ public interface IAcmeContext
     void TrySetNonce<T>(AcmeResponse<T> response);
 
     AcmeDirectory Directory { get; }
+    JwsSigner AccountSigner { get; }
 
     Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default);
 
@@ -60,6 +61,8 @@ public class AcmeContext : IAcmeContext
             return this.account;
         }
     }
+
+    public JwsSigner AccountSigner => Account.Signer;
 
     public async Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default)
     {

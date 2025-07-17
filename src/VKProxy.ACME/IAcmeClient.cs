@@ -12,6 +12,8 @@ public interface IAcmeClient
     Task<AcmeResponse<Account>> NewAccountAsync(AcmeDirectory directory, Account account, IKey accountKey, Func<CancellationToken, Task<string>> consumeNonce, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null, int retryCount = 1, CancellationToken cancellationToken = default);
 
     Task<AcmeResponse<string>> NewNonceAsync(AcmeDirectory directory, CancellationToken cancellationToken = default);
+
+    Task<AcmeResponse<T>> PostAsync<T>(JwsSigner jwsSigner, Uri location, Uri keyId, Func<CancellationToken, Task<string>> consumeNonce, object entity, int retryCount = 1, CancellationToken cancellationToken = default);
 }
 
 public class AcmeClient : IAcmeClient
@@ -86,6 +88,11 @@ public class AcmeClient : IAcmeClient
             };
         }
 
-        return httpClient.PostAsync<Account>(jws, endpoint, account, consumeNonce, retryCount, cancellationToken);
+        return httpClient.PostAsync<Account>(jws, endpoint, account, consumeNonce, null, retryCount, cancellationToken);
+    }
+
+    public Task<AcmeResponse<T>> PostAsync<T>(JwsSigner jwsSigner, Uri location, Uri keyId, Func<CancellationToken, Task<string>> consumeNonce, object entity, int retryCount = 1, CancellationToken cancellationToken = default)
+    {
+        return httpClient.PostAsync<T>(jwsSigner, location, entity, consumeNonce, keyId, retryCount, cancellationToken);
     }
 }

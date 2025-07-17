@@ -11,28 +11,25 @@ internal class AccountCommand : CommandGroup
     }
 }
 
-internal class NewAccountCommand : ArgsCommand<NewAccountCommandOptions>
-{
-    public NewAccountCommand() : base("new", "Create new ACME account.")
-    {
-        ACMECommandOptions.AddCommonArgs(this);
-    }
-
-    protected override async Task ExecAsync()
-    {
-        var s = Args.GetCancellationTokenSource();
-        var conetxt = await Args.GetAcmeContextAsync(s.Token);
-        await conetxt.NewAccountAsync(Args.Contact, Args.TermsOfServiceAgreed, Args.AccountKey, cancellationToken: s.Token);
-    }
-}
-
 public class AccountCommandOptions : ACMECommandOptions
 {
     public IKey AccountKey { get; set; }
-}
 
-public class NewAccountCommandOptions : AccountCommandOptions
-{
-    public IList<string> Contact { get; set; }
-    public bool TermsOfServiceAgreed { get; set; } = true;
+    public static void AddCommonArgs<T>(ArgsCommand<T> command) where T : AccountCommandOptions, new()
+    {
+        command.AddArg(new CommandArg("key", "k", null, $"Account key path", s =>
+        {
+            var ss = File.ReadAllText(s);
+            try
+            {
+                command.Args.AccountKey = KeyAlgorithmProvider.GetKey(ss);
+            }
+            catch (Exception)
+            {
+                var bytes = File.ReadAllBytes(s);
+                command.Args.AccountKey = KeyAlgorithmProvider.GetKey(bytes);
+            }
+        }));
+        ACMECommandOptions.AddCommonArgs(command);
+    }
 }

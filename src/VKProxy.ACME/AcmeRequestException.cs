@@ -5,8 +5,7 @@ namespace VKProxy.ACME;
 [Serializable]
 internal class AcmeRequestException : Exception
 {
-    private string v;
-    private AcmeError error;
+    public AcmeError Error { get; private set; }
 
     public AcmeRequestException()
     {
@@ -16,10 +15,9 @@ internal class AcmeRequestException : Exception
     {
     }
 
-    public AcmeRequestException(string v, AcmeError error)
+    public AcmeRequestException(string message, AcmeError error) : base($"{message} {error?.Detail}")
     {
-        this.v = v;
-        this.error = error;
+        this.Error = error;
     }
 
     public AcmeRequestException(string? message, Exception? innerException) : base(message, innerException)

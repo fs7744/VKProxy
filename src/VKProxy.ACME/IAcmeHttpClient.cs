@@ -21,7 +21,8 @@ public interface IAcmeHttpClient
     Task<AcmeResponse<T>> PostAsync<T>(Uri uri, object payload, CancellationToken cancellationToken);
 
     Task<AcmeResponse<T>> PostAsync<T>(JwsSigner jwsSigner, Uri location, object entity,
-            Func<CancellationToken, Task<string>> consumeNonce, int retryCount = 1, CancellationToken cancellationToken = default);
+            Func<CancellationToken, Task<string>> consumeNonce,
+            Uri keyId = null, int retryCount = 1, CancellationToken cancellationToken = default);
 }
 
 public class DefaultAcmeHttpClient : IAcmeHttpClient
@@ -33,7 +34,11 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
     {
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Converters =
+        {
+            new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+        }
     };
 
     private const string MimeJoseJson = "application/jose+json";
@@ -101,16 +106,17 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
             Uri location,
             object entity,
             Func<CancellationToken, Task<string>> consumeNonce,
+            Uri keyId = null,
             int retryCount = 1, CancellationToken cancellationToken = default)
     {
-        var payload = jwsSigner.Sign(entity, url: location, nonce: await consumeNonce(cancellationToken));
+        var payload = jwsSigner.Sign(entity, keyId, url: location, nonce: await consumeNonce(cancellationToken));
         var response = await PostAsync<T>(location, payload, cancellationToken);
 
         while (response.Error?.Status == System.Net.HttpStatusCode.BadRequest &&
             response.Error.Type?.CompareTo("urn:ietf:params:acme:error:badNonce") == 0 &&
             retryCount-- > 0)
         {
-            payload = jwsSigner.Sign(entity, url: location, nonce: await consumeNonce(cancellationToken));
+            payload = jwsSigner.Sign(entity, keyId, url: location, nonce: await consumeNonce(cancellationToken));
             response = await PostAsync<T>(location, payload, cancellationToken);
         }
 
@@ -140,7 +146,11 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
                 result = (T)(object)(await resp.Content.ReadAsStringAsync(cancellationToken));
             }
             else
+            {
+                //var s = await resp.Content.ReadAsStringAsync(cancellationToken);
+                //result = JsonSerializer.Deserialize<T>(s, JsonSerializerOptions);
                 result = await resp.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken);
+            }
         }
         else
         {
