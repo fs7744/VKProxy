@@ -89,6 +89,10 @@ public class ContextTest
         var order = await context.NewOrderAsync(new string[] { "test.com" });
         var aus = order.GetAuthorizationsAsync().ToBlockingEnumerable().ToArray();
         Assert.NotEmpty(aus);
+        var a = aus.First();
+        var b = await a.HttpAsync();
+        var c = await b.ValidateAsync();
+        var r = await order.DownloadAsync();
     }
 
     private async Task NewAccounts(IAcmeContext context)
