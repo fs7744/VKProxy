@@ -120,7 +120,7 @@ public static class KeyAlgorithmProvider
         return algorithm.CreateSigner(key);
     }
 
-    internal static string ToJwsAlgorithm(this KeyAlgorithm algorithm)
+    public static string ToJwsAlgorithm(this KeyAlgorithm algorithm)
     {
         if (!Enum.IsDefined(typeof(KeyAlgorithm), algorithm))
         {
@@ -130,7 +130,7 @@ public static class KeyAlgorithmProvider
         return algorithm.ToString();
     }
 
-    internal static string ToPkcsObjectId(this KeyAlgorithm algo)
+    public static string ToPkcsObjectId(this KeyAlgorithm algo)
     {
         switch (algo)
         {
