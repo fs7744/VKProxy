@@ -16,24 +16,6 @@ public interface IAccountContext : IResourceContext<Account>
     Task<Account> ChangeKeyAsync(Key key, CancellationToken cancellationToken = default);
 }
 
-public class ResourceContext<T> : IResourceContext<T>
-{
-    protected readonly IAcmeContext context;
-
-    public ResourceContext(IAcmeContext context, Uri location)
-    {
-        this.context = context;
-        Location = location;
-    }
-
-    public Uri Location { get; set; }
-
-    public virtual async Task<T> GetResourceAsync(CancellationToken cancellationToken = default)
-    {
-        return (await context.GetResourceAsync<T>(Location, cancellationToken)).Resource;
-    }
-}
-
 public class AccountContext : ResourceContext<Account>, IAccountContext
 {
     public AccountContext(IAcmeContext context, Uri location, Key accountKey) : base(context, location)

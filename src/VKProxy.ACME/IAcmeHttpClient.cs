@@ -122,7 +122,7 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
 
         if (response.Error != null)
         {
-            throw new AcmeRequestException(
+            throw new AcmeException(
                 string.Format("Fail to load resource from '{0}'.", location),
                 response.Error);
         }
@@ -145,11 +145,11 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
             {
                 result = (T)(object)(await resp.Content.ReadAsStringAsync(cancellationToken));
             }
-            else
+            else if (IsJson(resp.Content?.Headers?.ContentType?.MediaType))
             {
-                //var s = await resp.Content.ReadAsStringAsync(cancellationToken);
-                //result = JsonSerializer.Deserialize<T>(s, JsonSerializerOptions);
-                result = await resp.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken);
+                var s = await resp.Content.ReadAsStringAsync(cancellationToken);
+                result = JsonSerializer.Deserialize<T>(s, JsonSerializerOptions);
+                //result = await resp.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken);
             }
         }
         else

@@ -7,8 +7,6 @@ public interface IAcmeContext
 {
     IAcmeClient Client { get; }
 
-    void TrySetNonce<T>(AcmeResponse<T> response);
-
     AcmeDirectory Directory { get; }
 
     IAccountContext Account { get; }
@@ -36,7 +34,6 @@ public class AcmeContext : IAcmeContext
     private readonly IAcmeClient client;
 
     private AcmeDirectory directory;
-    private string nonce;
     private IAccountContext account;
 
     public AcmeContext(IAcmeClient client)
@@ -70,7 +67,7 @@ public class AcmeContext : IAcmeContext
         }
     }
 
-    public int RetryCount { get; set; }
+    public int RetryCount { get; set; } = 1;
 
     public async Task InitAsync(Uri directoryUri, CancellationToken cancellationToken = default)
     {
@@ -82,14 +79,7 @@ public class AcmeContext : IAcmeContext
 
     public async Task<string> ConsumeNonceAsync(CancellationToken cancellationToken = default)
     {
-        var nonce = Interlocked.Exchange(ref this.nonce, null);
-        if (nonce == null)
-        {
-            this.nonce = (await client.NewNonceAsync(Directory, cancellationToken)).ReplayNonce;
-            nonce = Interlocked.Exchange(ref this.nonce, null);
-        }
-
-        return nonce;
+        return (await client.NewNonceAsync(Directory, cancellationToken)).ReplayNonce;
     }
 
     public async Task<IAccountContext> NewAccountAsync(IList<string> contact, bool termsOfServiceAgreed, Key accountKey,
@@ -130,14 +120,6 @@ public class AcmeContext : IAcmeContext
                     yield return new OrderContext(this, item);
                 }
             }
-        }
-    }
-
-    public void TrySetNonce<T>(AcmeResponse<T> response)
-    {
-        if (response != null && response.ReplayNonce != null)
-        {
-            nonce = response.ReplayNonce;
         }
     }
 
