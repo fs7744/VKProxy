@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNext.Threading" Version="5.22.0" />
+    <PackageReference Include="DotNext.Threading" Version="5.23.0" />
   </ItemGroup>
 
   <ItemGroup>

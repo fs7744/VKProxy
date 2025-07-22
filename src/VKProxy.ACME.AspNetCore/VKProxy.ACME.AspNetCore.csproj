@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="../../ProjectCommon.targets" />
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Description>Provides API for use the ACME protocol configuring ASP.NET Core to automatically generate HTTPS certificates. (like Let's Encrypt https://letsencrypt.org)</Description>
+		<PackageId>VKProxy.ACME.AspNetCore</PackageId>
+		<Title>Provides API for use the ACME protocol configuring ASP.NET Core to automatically generate HTTPS certificates. (like Let's Encrypt https://letsencrypt.org)</Title>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VKProxy.ACME\VKProxy.ACME.csproj" />
+  </ItemGroup>
+
+</Project>

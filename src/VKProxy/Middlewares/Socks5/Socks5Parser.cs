@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Http;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Pipelines;
