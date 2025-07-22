@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using VKProxy.ACME.Crypto;
 using VKProxy.ACME.Resource;
 
 namespace VKProxy.ACME;
@@ -27,6 +28,8 @@ public interface IAcmeContext
     Task<AcmeResponse<T>> GetResourceAsync<T>(Uri resourceUri, CancellationToken cancellationToken = default);
 
     Task<IOrderContext> NewOrderAsync(IList<string> identifiers, DateTimeOffset? notBefore = null, DateTimeOffset? notAfter = null, CancellationToken cancellationToken = default);
+
+    Task RevokeCertificateAsync(byte[] certificate, RevocationReason reason, Key certificatePrivateKey, CancellationToken cancellationToken = default);
 }
 
 public class AcmeContext : IAcmeContext
@@ -125,7 +128,7 @@ public class AcmeContext : IAcmeContext
 
     public Task<AcmeResponse<T>> GetResourceAsync<T>(Uri resourceUri, CancellationToken cancellationToken)
     {
-        return Client.PostAsync<T>(Account.Signer, resourceUri, account.Location, ConsumeNonceAsync, null, RetryCount, cancellationToken);
+        return Client.PostAsync<T>(Account.Signer, resourceUri, Account.Location, ConsumeNonceAsync, null, RetryCount, cancellationToken);
     }
 
     public async Task<IOrderContext> NewOrderAsync(IList<string> identifiers, DateTimeOffset? notBefore = null, DateTimeOffset? notAfter = null, CancellationToken cancellationToken = default)
@@ -139,7 +142,26 @@ public class AcmeContext : IAcmeContext
             NotBefore = notBefore,
             NotAfter = notAfter,
         };
-        var order = await Client.PostAsync<Order>(Account.Signer, endpoint, account.Location, ConsumeNonceAsync, body, RetryCount, cancellationToken);
+        var order = await Client.PostAsync<Order>(Account.Signer, endpoint, Account.Location, ConsumeNonceAsync, body, RetryCount, cancellationToken);
         return new OrderContext(this, order.Location);
+    }
+
+    public async Task RevokeCertificateAsync(byte[] certificate, RevocationReason reason, Key certificatePrivateKey, CancellationToken cancellationToken = default)
+    {
+        var endpoint = Directory.RevokeCert;
+        var body = new CertificateRevocation
+        {
+            Certificate = JwsConvert.ToBase64String(certificate),
+            Reason = reason
+        };
+        if (certificatePrivateKey != null)
+        {
+            var jws = new JwsSigner(certificatePrivateKey);
+            await Client.PostAsync<string>(jws, endpoint, null, ConsumeNonceAsync, body, RetryCount, cancellationToken);
+        }
+        else
+        {
+            await Client.PostAsync<string>(Account.Signer, endpoint, Account.Location, ConsumeNonceAsync, body, RetryCount, cancellationToken);
+        }
     }
 }
