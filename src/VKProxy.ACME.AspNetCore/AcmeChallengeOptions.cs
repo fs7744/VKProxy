@@ -1,42 +1,64 @@
-﻿namespace VKProxy.ACME.AspNetCore;
+﻿using DotNext;
+
+namespace VKProxy.ACME.AspNetCore;
 
 public class AcmeChallengeOptions
 {
     public Uri Server { get; set; } = WellKnownServers.LetsEncryptV2;
 
-    public TimeSpan? Timeout { get; set; } = TimeSpan.FromMinutes(5);
+    public string[] DomainNames { get; set; }
 
-    internal Func<IAcmeContext, Task<IAccountContext>> AccountFunc { get; set; }
+    /// <summary>
+    /// How long before certificate expiration will be renewal attempted.
+    /// Set to <c>null</c> to disable automatic renewal.
+    /// </summary>
+    public TimeSpan? RenewDaysInAdvance { get; set; } = TimeSpan.FromDays(30);
 
-    private (CancellationToken, CancellationTokenSource) Token()
+    /// <summary>
+    /// How often will be certificates checked for renewal
+    /// </summary>
+    public TimeSpan? RenewalCheckPeriod { get; set; } = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// Specifies which kinds of ACME challenges LettuceEncrypt can use to verify domain ownership.
+    /// Defaults to <see cref="ChallengeType.Any"/>.
+    /// </summary>
+    public ChallengeType AllowedChallengeTypes { get; set; } = ChallengeType.Any;
+
+    internal Func<IAcmeContext, CancellationToken, Task<IAccountContext>> AccountFunc { get; set; }
+    internal bool CanNewAccount { get; set; }
+
+    internal void Check()
     {
-        if (Timeout.HasValue)
-        {
-            var s = new CancellationTokenSource(Timeout.Value);
-            return (s.Token, s);
-        }
-        else
-            return (CancellationToken.None, null);
+        if (Server == null)
+            throw new ArgumentNullException(nameof(Server));
+
+        DomainNames = DomainNames?.Where(static i => !string.IsNullOrWhiteSpace(i))?.ToArray();
+
+        if (DomainNames.IsNullOrEmpty())
+            throw new ArgumentNullException(nameof(DomainNames));
     }
 
     public void Account(string pem)
     {
         Key accountKey = pem;
-        AccountFunc = c =>
+        InitAccount(accountKey);
+    }
+
+    private void InitAccount(Key accountKey)
+    {
+        CanNewAccount = false;
+        AccountFunc = async (c, t) =>
         {
-            var (t, s) = Token();
-            return c.AccountAsync(accountKey, t);
+            await c.InitAsync(Server, t);
+            return await c.AccountAsync(accountKey, t);
         };
     }
 
     public void Account(byte[] der)
     {
         Key accountKey = der;
-        AccountFunc = c =>
-        {
-            var (t, s) = Token();
-            return c.AccountAsync(accountKey, t);
-        };
+        InitAccount(accountKey);
     }
 
     public void AccountFromFile(string path)
@@ -50,20 +72,18 @@ public class AcmeChallengeOptions
         {
             accountKey = File.ReadAllBytes(path);
         }
-        AccountFunc = c =>
-        {
-            var (t, s) = Token();
-            return c.AccountAsync(accountKey, t);
-        };
+        InitAccount(accountKey);
     }
 
     public void NewAccount(IList<string> contact, KeyAlgorithm algorithm = KeyAlgorithm.RS256, int? keySize = null, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null)
     {
-        Key accountKey = algorithm.NewKey(keySize);
-        AccountFunc = c =>
+        CanNewAccount = true;
+        AccountFunc = async (c, t) =>
         {
-            var (t, s) = Token();
-            return c.NewAccountAsync(contact, true, accountKey, eabKeyId, eabKey, eabKeyAlg, t);
+            Key accountKey = algorithm.NewKey(keySize);
+            await c.InitAsync(Server, t);
+            var r = await c.NewAccountAsync(contact, true, accountKey, eabKeyId, eabKey, eabKeyAlg, t);
+            return r;
         };
     }
 }
