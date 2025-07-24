@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using VKProxy.ACME;
 using VKProxy.ACME.AspNetCore;
 
@@ -15,6 +17,7 @@ public static class AcmeServiceCollectionExtensions
         var op = new AcmeChallengeOptions();
         action(op);
         op.Check();
+        services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelOptionsSetup>();
         services.AddSingleton(op);
         services.AddACME(config);
         services.AddSingleton<ICertificateSource, DeveloperCertSource>();
@@ -26,7 +29,11 @@ public static class AcmeServiceCollectionExtensions
         services.AddTransient<BeginCertificateCreationAcmeState>();
         services.AddTransient<CheckForRenewalAcmeState>();
         services.AddSingleton<Http01DomainValidator>();
+        services.AddSingleton<Dns01DomainValidator>();
+        services.AddSingleton<TlsAlpn01DomainValidator>();
         services.TryAddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
+        services.TryAddSingleton<IDnsChallengeStore, NothingDnsChallengeStore>();
+        services.TryAddSingleton<ITlsAlpnChallengeStore, TlsAlpnChallengeStore>();
         services.AddSingleton<IStartupFilter, HttpChallengeStartupFilter>()
             .AddSingleton<HttpChallengeResponseMiddleware>();
         return services;
@@ -34,9 +41,14 @@ public static class AcmeServiceCollectionExtensions
 
     public static HttpsConnectionAdapterOptions UseAcmeChallenge(
        this HttpsConnectionAdapterOptions httpsOptions,
-       IServiceProvider applicationServices)
+       IServerCertificateSelector certificateSelector)
     {
-        var certificateSelector = applicationServices.GetRequiredService<IServerCertificateSelector>();
+        var otherHandler = httpsOptions.OnAuthenticate;
+        httpsOptions.OnAuthenticate = (ctx, options) =>
+        {
+            certificateSelector.OnSslAuthenticate(ctx, options);
+            otherHandler?.Invoke(ctx, options);
+        };
         var fallbackSelector = httpsOptions.ServerCertificateSelector;
         httpsOptions.ServerCertificateSelector = (connectionContext, domainName) =>
         {

@@ -1,10 +1,8 @@
-﻿using DotNext.Text;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using VKProxy.ACME.Resource;
 using VKProxy.Core.Config;
-using IdentifierType = VKProxy.ACME.Resource.IdentifierType;
 
 namespace VKProxy.ACME.AspNetCore;
 
@@ -13,12 +11,17 @@ public class BeginCertificateCreationAcmeState : AcmeState
     private readonly ServerCertificateSelector selector;
     private readonly IEnumerable<ICertificateSource> sources;
     private readonly Http01DomainValidator http01;
+    private readonly Dns01DomainValidator dns01;
+    private readonly TlsAlpn01DomainValidator tlsAlpn01;
 
-    public BeginCertificateCreationAcmeState(ServerCertificateSelector selector, IEnumerable<ICertificateSource> sources, Http01DomainValidator http01)
+    public BeginCertificateCreationAcmeState(ServerCertificateSelector selector, IEnumerable<ICertificateSource> sources,
+        Http01DomainValidator http01, Dns01DomainValidator dns01, TlsAlpn01DomainValidator tlsAlpn01)
     {
         this.selector = selector;
         this.sources = sources;
         this.http01 = http01;
+        this.dns01 = dns01;
+        this.tlsAlpn01 = tlsAlpn01;
     }
 
     public override async Task<IAcmeState> MoveNextAsync(CancellationToken stoppingToken)
@@ -143,12 +146,14 @@ public class BeginCertificateCreationAcmeState : AcmeState
             yield return http01;
         }
 
-        if (context.Options.AllowedChallengeTypes.HasFlag(ChallengeType.Dns01))
-        {
-        }
-
         if (context.Options.AllowedChallengeTypes.HasFlag(ChallengeType.TlsAlpn01))
         {
+            yield return tlsAlpn01;
+        }
+
+        if (context.Options.AllowedChallengeTypes.HasFlag(ChallengeType.Dns01))
+        {
+            yield return dns01;
         }
     }
 }

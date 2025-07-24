@@ -1,4 +1,6 @@
-﻿namespace VKProxy.ACME.AspNetCore;
+﻿using Microsoft.Extensions.Logging;
+
+namespace VKProxy.ACME.AspNetCore;
 
 public class Http01DomainValidator : DomainOwnershipValidator
 {
@@ -11,21 +13,20 @@ public class Http01DomainValidator : DomainOwnershipValidator
 
     public override async Task ValidateOwnershipAsync(string domainName, AcmeStateContext context, IAuthorizationContext authzContext, CancellationToken cancellationToken)
     {
+        context.Logger.LogDebug("Validate Http01 for {domainName}", domainName);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var httpChallenge = await authzContext.HttpAsync(cancellationToken);
-
-        if (httpChallenge == null)
-        {
-            throw new AcmeException(
+        var httpChallenge = await authzContext.HttpAsync(cancellationToken) ?? throw new AcmeException(
                 "Did not receive challenge information for challenge type Http01");
+        try
+        {
+            await challengeStore.AddChallengeResponseAsync(httpChallenge.Token, httpChallenge.KeyAuthz, cancellationToken);
+            await httpChallenge.ValidateAsync(cancellationToken);
+            await WaitForChallengeResultAsync(domainName, context, authzContext, cancellationToken);
         }
-
-        var keyAuth = httpChallenge.KeyAuthz;
-        await challengeStore.AddChallengeResponseAsync(httpChallenge.Token, keyAuth, cancellationToken);
-
-        await httpChallenge.ValidateAsync(cancellationToken);
-
-        await WaitForChallengeResultAsync(domainName, context, authzContext, cancellationToken);
+        finally
+        {
+            await challengeStore.RemoveChallengeResponseAsync(httpChallenge.Token, cancellationToken);
+        }
     }
 }

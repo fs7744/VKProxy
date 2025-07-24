@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.Net.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using VKProxy.Core.Extensions;
@@ -126,5 +127,26 @@ public class ServerCertificateSelector : IServerCertificateSelector
         }
         certificate = null;
         return false;
+    }
+
+    public void RemoveChallengeCert(X509Certificate2 cert)
+    {
+        foreach (var dnsName in cert.GetAllDnsNames())
+        {
+            RemoveChallengeCert(dnsName);
+        }
+    }
+
+    public void RemoveChallengeCert(string domainName)
+    {
+        challengeCerts.TryRemove(domainName, out _);
+    }
+
+    public void OnSslAuthenticate(ConnectionContext context, SslServerAuthenticationOptions options)
+    {
+        if (challengeCerts.Count > 0)
+        {
+            (options.ApplicationProtocols ??= new List<SslApplicationProtocol>()).Add(TlsAlpn01DomainValidator.s_acmeTlsProtocol);
+        }
     }
 }

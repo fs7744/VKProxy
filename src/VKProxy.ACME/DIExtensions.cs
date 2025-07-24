@@ -19,6 +19,11 @@ namespace VKProxy.ACME;
 
 public static class DIExtensions
 {
+    private const string DnsAcmePrefix = "_acme-challenge";
+
+    public static string GetAcmeDnsDomain(this string domainName) =>
+        $"{DnsAcmePrefix}.{domainName.TrimStart('*')}";
+
     public static IServiceCollection AddACME(this IServiceCollection services, Action<AcmeOptions> config = null)
     {
         var op = new AcmeOptions();

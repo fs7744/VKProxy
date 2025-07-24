@@ -16,4 +16,10 @@ internal class InMemoryHttpChallengeResponseStore : IHttpChallengeResponseStore
     {
         return values.TryGetValue(token, out var value) ? Task.FromResult(value) : Task.FromResult<string>(null);
     }
+
+    public Task RemoveChallengeResponseAsync(string token, CancellationToken cancellationToken)
+    {
+        values.TryRemove(token, out var value);
+        return Task.CompletedTask;
+    }
 }

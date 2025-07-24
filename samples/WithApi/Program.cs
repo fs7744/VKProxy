@@ -15,6 +15,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddAcmeChallenge(o =>
 {
+    o.AllowedChallengeTypes = VKProxy.ACME.AspNetCore.ChallengeType.TlsAlpn01;
     o.RenewDaysInAdvance = TimeSpan.FromDays(2);
     o.Server = new Uri("https://127.0.0.1:14000/dir");
     o.DomainNames = new[] { "kubernetes.docker.internal" };
@@ -48,15 +49,6 @@ builder.Services.AddAcmeChallenge(o =>
     {
         DangerousAcceptAnyServerCertificate = true
     };
-});
-
-builder.WebHost.UseKestrel(k =>
-{
-    k.ConfigureHttpsDefaults(i => i.UseAcmeChallenge(k.ApplicationServices));
-
-    //k.Listen(IPAddress.Any, 443,
-    //                        o =>
-    //                            o.UseHttps(h => h.UseAcmeChallenge(k.ApplicationServices)));
 });
 
 var app = builder.Build();
