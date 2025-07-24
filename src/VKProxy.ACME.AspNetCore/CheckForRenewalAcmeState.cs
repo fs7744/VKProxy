@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace VKProxy.ACME.AspNetCore;
 
@@ -25,7 +26,7 @@ public class CheckForRenewalAcmeState : AcmeState
             }
 
             var domainNames = context.Options.DomainNames;
-            context.Logger.LogDebug($"Checking certificates' renewals for {string.Join(", ", domainNames)}");
+            context.Logger.LogDebug("Checking certificates' renewals for {domainNames}", new StringValues(domainNames));
 
             foreach (var domainName in domainNames)
             {

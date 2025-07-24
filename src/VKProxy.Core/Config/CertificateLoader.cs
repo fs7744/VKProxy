@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 
 namespace VKProxy.Core.Config;
 
@@ -82,7 +81,7 @@ public class CertificateLoader : ICertificateLoader
         }
     }
 
-    private static X509Certificate2 PersistKey(X509Certificate2 fullCertificate)
+    public static X509Certificate2 PersistKey(X509Certificate2 fullCertificate)
     {
         // We need to force the key to be persisted.
         // See https://github.com/dotnet/runtime/issues/23749

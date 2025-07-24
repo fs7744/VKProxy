@@ -8,17 +8,24 @@ public class AcmeLoader : BackgroundService
     private readonly IEnumerable<ICertificateSource> sources;
     private readonly ServerCertificateSelector selector;
     private readonly IServiceProvider serviceProvider;
+    protected readonly TaskCompletionSource<object?> appStarted = new();
 
-    public AcmeLoader(IEnumerable<ICertificateSource> sources, ServerCertificateSelector selector, IServiceProvider serviceProvider)
+    public AcmeLoader(IHostApplicationLifetime appLifetime, IEnumerable<ICertificateSource> sources, ServerCertificateSelector selector, IServiceProvider serviceProvider)
     {
         this.sources = sources;
         this.selector = selector;
         this.serviceProvider = serviceProvider;
+        appLifetime.ApplicationStarted.Register(() => appStarted.TrySetResult(null));
+        if (appLifetime.ApplicationStarted.IsCancellationRequested)
+        {
+            appStarted.TrySetResult(null);
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await LoadAll(stoppingToken);
+        await appStarted.Task.ConfigureAwait(false);
         var state = serviceProvider.GetRequiredService<IAcmeState>();
         while (state != null && !stoppingToken.IsCancellationRequested)
         {

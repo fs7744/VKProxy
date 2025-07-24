@@ -47,28 +47,23 @@ public class ServerCertificateSelector : IServerCertificateSelector
             certificate,
             (k, currentCert) =>
             {
-                if (currentCert == null || certificate.NotAfter >= currentCert.NotAfter)
-                {
-                    return certificate;
-                }
+                return certificate;
+                //if (currentCert == null || certificate.NotAfter >= currentCert.NotAfter)
+                //{
+                //    return certificate;
+                //}
 
-                return currentCert;
+                //return currentCert;
             });
     }
 
     public void Add(X509Certificate2 certificate)
     {
-        var preloaded = false;
         foreach (var dnsName in certificate.GetAllDnsNames())
         {
-            var selectedCert = AddWithDomainName(certs, dnsName, certificate);
-
-            if (!preloaded && selectedCert == certificate)
-            {
-                preloaded = true;
-                PreloadIntermediateCertificates(selectedCert);
-            }
+            AddWithDomainName(certs, dnsName, certificate);
         }
+        PreloadIntermediateCertificates(certificate);
     }
 
     public void AddChallengeCert(X509Certificate2 certificate)

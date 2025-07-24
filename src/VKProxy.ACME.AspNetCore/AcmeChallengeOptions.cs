@@ -25,6 +25,15 @@ public class AcmeChallengeOptions
     /// </summary>
     public ChallengeType AllowedChallengeTypes { get; set; } = ChallengeType.Any;
 
+    public KeyAlgorithm KeyAlgorithm { get; set; } = KeyAlgorithm.RS256;
+
+    /// <summary>
+    /// The key size used for generating a private key for certificates
+    /// </summary>
+    public int? KeySize { get; set; }
+
+    public string[]? AdditionalIssuers { get; set; }
+
     internal Func<IAcmeContext, CancellationToken, Task<IAccountContext>> AccountFunc { get; set; }
     internal bool CanNewAccount { get; set; }
 
@@ -37,6 +46,12 @@ public class AcmeChallengeOptions
 
         if (DomainNames.IsNullOrEmpty())
             throw new ArgumentNullException(nameof(DomainNames));
+
+        if (!RenewDaysInAdvance.HasValue)
+            RenewDaysInAdvance = TimeSpan.FromDays(30);
+
+        if (!RenewalCheckPeriod.HasValue)
+            RenewalCheckPeriod = TimeSpan.FromDays(1);
     }
 
     public void Account(string pem)
@@ -75,12 +90,12 @@ public class AcmeChallengeOptions
         InitAccount(accountKey);
     }
 
-    public void NewAccount(IList<string> contact, KeyAlgorithm algorithm = KeyAlgorithm.RS256, int? keySize = null, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null)
+    public void NewAccount(IList<string> contact, string eabKeyId = null, string eabKey = null, string eabKeyAlg = null)
     {
         CanNewAccount = true;
         AccountFunc = async (c, t) =>
         {
-            Key accountKey = algorithm.NewKey(keySize);
+            Key accountKey = KeyAlgorithm.NewKey(KeySize);
             await c.InitAsync(Server, t);
             var r = await c.NewAccountAsync(contact, true, accountKey, eabKeyId, eabKey, eabKeyAlg, t);
             return r;

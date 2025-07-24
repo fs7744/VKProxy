@@ -14,7 +14,7 @@ public class InitAcmeState : AcmeState
 
     public override async Task<IAcmeState> MoveNextAsync(CancellationToken stoppingToken)
     {
-        await context.InitAsync(stoppingToken);
+        //await context.InitAsync(stoppingToken);
         var domainNames = context.Options.DomainNames;
         var hasCertForAllDomains = domainNames.All(selector.HasCertForDomain);
         if (hasCertForAllDomains)

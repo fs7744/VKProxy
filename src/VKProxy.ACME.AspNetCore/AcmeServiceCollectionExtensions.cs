@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Server.Kestrel.Https;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Https;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using VKProxy.ACME;
 using VKProxy.ACME.AspNetCore;
@@ -22,6 +25,10 @@ public static class AcmeServiceCollectionExtensions
         services.AddTransient<IAcmeState, InitAcmeState>();
         services.AddTransient<BeginCertificateCreationAcmeState>();
         services.AddTransient<CheckForRenewalAcmeState>();
+        services.AddSingleton<Http01DomainValidator>();
+        services.TryAddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
+        services.AddSingleton<IStartupFilter, HttpChallengeStartupFilter>()
+            .AddSingleton<HttpChallengeResponseMiddleware>();
         return services;
     }
 
@@ -38,5 +45,14 @@ public static class AcmeServiceCollectionExtensions
         };
 
         return httpsOptions;
+    }
+
+    public static IApplicationBuilder UseHttpChallengeResponseMiddleware(this IApplicationBuilder app)
+    {
+        app.Map("/.well-known/acme-challenge", mapped =>
+        {
+            mapped.UseMiddleware<HttpChallengeResponseMiddleware>();
+        });
+        return app;
     }
 }
