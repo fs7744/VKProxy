@@ -4,9 +4,9 @@ namespace VKProxy.ACME.AspNetCore;
 
 public class InitAcmeState : AcmeState
 {
-    private readonly ServerCertificateSelector selector;
+    private readonly IServerCertificateSource selector;
 
-    public InitAcmeState(AcmeChallengeOptions options, IAcmeContext acmeContext, IServiceProvider serviceProvider, ServerCertificateSelector selector)
+    public InitAcmeState(AcmeChallengeOptions options, IAcmeContext acmeContext, IServiceProvider serviceProvider, IServerCertificateSource selector)
     {
         this.selector = selector;
         context = new AcmeStateContext(options, acmeContext, serviceProvider);

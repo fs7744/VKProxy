@@ -8,13 +8,13 @@ namespace VKProxy.ACME.AspNetCore;
 
 public class BeginCertificateCreationAcmeState : AcmeState
 {
-    private readonly ServerCertificateSelector selector;
+    private readonly IServerCertificateSource selector;
     private readonly IEnumerable<ICertificateSource> sources;
     private readonly Http01DomainValidator http01;
     private readonly Dns01DomainValidator dns01;
     private readonly TlsAlpn01DomainValidator tlsAlpn01;
 
-    public BeginCertificateCreationAcmeState(ServerCertificateSelector selector, IEnumerable<ICertificateSource> sources,
+    public BeginCertificateCreationAcmeState(IServerCertificateSource selector, IEnumerable<ICertificateSource> sources,
         Http01DomainValidator http01, Dns01DomainValidator dns01, TlsAlpn01DomainValidator tlsAlpn01)
     {
         this.selector = selector;

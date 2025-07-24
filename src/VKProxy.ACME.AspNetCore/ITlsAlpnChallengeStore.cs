@@ -11,9 +11,9 @@ public interface ITlsAlpnChallengeStore
 
 public class TlsAlpnChallengeStore : ITlsAlpnChallengeStore
 {
-    private readonly ServerCertificateSelector selector;
+    private readonly IServerCertificateSource selector;
 
-    public TlsAlpnChallengeStore(ServerCertificateSelector selector)
+    public TlsAlpnChallengeStore(IServerCertificateSource selector)
     {
         this.selector = selector;
     }

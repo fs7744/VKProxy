@@ -5,9 +5,9 @@ namespace VKProxy.ACME.AspNetCore;
 
 public class CheckForRenewalAcmeState : AcmeState
 {
-    private readonly ServerCertificateSelector selector;
+    private readonly IServerCertificateSource selector;
 
-    public CheckForRenewalAcmeState(ServerCertificateSelector selector)
+    public CheckForRenewalAcmeState(IServerCertificateSource selector)
     {
         this.selector = selector;
     }
@@ -21,7 +21,7 @@ public class CheckForRenewalAcmeState : AcmeState
             if (!checkPeriod.HasValue || !daysInAdvance.HasValue)
             {
                 context.Logger.LogInformation("Automatic certificate renewal is not configured. Stopping {service}",
-                    nameof(AcmeLoader));
+                    nameof(CheckForRenewalAcmeState));
                 return null;
             }
 

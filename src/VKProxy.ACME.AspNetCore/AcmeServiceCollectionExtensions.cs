@@ -12,20 +12,18 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class AcmeServiceCollectionExtensions
 {
-    public static IServiceCollection AddAcmeChallenge(this IServiceCollection services, Action<AcmeChallengeOptions> action, Action<AcmeOptions> config = null)
+    public static IServiceCollection AddAcmeChallengeCore(this IServiceCollection services, Action<AcmeChallengeOptions> defaultConfig = null, Action<AcmeOptions> config = null)
     {
         var op = new AcmeChallengeOptions();
-        action(op);
-        op.Check();
-        services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelOptionsSetup>();
+        defaultConfig?.Invoke(op);
         services.AddSingleton(op);
         services.AddACME(config);
         services.AddSingleton<ICertificateSource, DeveloperCertSource>();
         services.AddSingleton<ICertificateSource, X509CertStoreSource>();
         services.AddSingleton<ServerCertificateSelector>();
         services.AddSingleton<IServerCertificateSelector>(i => i.GetRequiredService<ServerCertificateSelector>());
-        services.AddSingleton<IHostedService, AcmeLoader>();
-        services.AddTransient<IAcmeState, InitAcmeState>();
+        services.TryAddSingleton<IServerCertificateSource>(i => i.GetRequiredService<ServerCertificateSelector>());
+        services.AddSingleton<IAcmeStateIniter, InitAcmeStateIniter>();
         services.AddTransient<BeginCertificateCreationAcmeState>();
         services.AddTransient<CheckForRenewalAcmeState>();
         services.AddSingleton<Http01DomainValidator>();
@@ -34,6 +32,18 @@ public static class AcmeServiceCollectionExtensions
         services.TryAddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
         services.TryAddSingleton<IDnsChallengeStore, NothingDnsChallengeStore>();
         services.TryAddSingleton<ITlsAlpnChallengeStore, TlsAlpnChallengeStore>();
+        return services;
+    }
+
+    public static IServiceCollection AddAcmeChallenge(this IServiceCollection services, Action<AcmeChallengeOptions> action, Action<AcmeOptions> config = null)
+    {
+        services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelOptionsSetup>();
+        services.AddAcmeChallengeCore(op =>
+        {
+            action?.Invoke(op);
+            op.Check();
+        }, config);
+        services.AddSingleton<IHostedService, AcmeLoader>();
         services.AddSingleton<IStartupFilter, HttpChallengeStartupFilter>()
             .AddSingleton<HttpChallengeResponseMiddleware>();
         return services;

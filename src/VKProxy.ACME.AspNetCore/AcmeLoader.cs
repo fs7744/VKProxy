@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 
 namespace VKProxy.ACME.AspNetCore;
 
@@ -7,14 +6,14 @@ public class AcmeLoader : BackgroundService
 {
     private readonly IEnumerable<ICertificateSource> sources;
     private readonly ServerCertificateSelector selector;
-    private readonly IServiceProvider serviceProvider;
+    private readonly IAcmeStateIniter initer;
     protected readonly TaskCompletionSource<object?> appStarted = new();
 
-    public AcmeLoader(IHostApplicationLifetime appLifetime, IEnumerable<ICertificateSource> sources, ServerCertificateSelector selector, IServiceProvider serviceProvider)
+    public AcmeLoader(IHostApplicationLifetime appLifetime, IEnumerable<ICertificateSource> sources, ServerCertificateSelector selector, IAcmeStateIniter initer)
     {
         this.sources = sources;
         this.selector = selector;
-        this.serviceProvider = serviceProvider;
+        this.initer = initer;
         appLifetime.ApplicationStarted.Register(() => appStarted.TrySetResult(null));
         if (appLifetime.ApplicationStarted.IsCancellationRequested)
         {
@@ -26,11 +25,7 @@ public class AcmeLoader : BackgroundService
     {
         await LoadAll(stoppingToken);
         await appStarted.Task.ConfigureAwait(false);
-        var state = serviceProvider.GetRequiredService<IAcmeState>();
-        while (state != null && !stoppingToken.IsCancellationRequested)
-        {
-            state = await state.MoveNextAsync(stoppingToken);
-        }
+        await initer.StartAsync(null, stoppingToken);
     }
 
     private async Task LoadAll(CancellationToken stoppingToken)
