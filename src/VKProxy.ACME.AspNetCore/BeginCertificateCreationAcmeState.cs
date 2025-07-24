@@ -26,6 +26,14 @@ public class BeginCertificateCreationAcmeState : AcmeState
 
     public override async Task<IAcmeState> MoveNextAsync(CancellationToken stoppingToken)
     {
+        X509Certificate2 cert = await CreateCertificateAsync(stoppingToken);
+        await SaveCertificateAsync(cert, stoppingToken);
+
+        return MoveTo<CheckForRenewalAcmeState>();
+    }
+
+    internal async Task<X509Certificate2> CreateCertificateAsync(CancellationToken stoppingToken)
+    {
         await context.InitAsync(stoppingToken);
         var expectedDomains = new HashSet<string>(context.Options.DomainNames);
         IOrderContext? orderContext = null;
@@ -60,9 +68,7 @@ public class BeginCertificateCreationAcmeState : AcmeState
         }
         await Task.WhenAll(tasks);
         var cert = await CompleteCertificateRequestAsync(orderContext, stoppingToken);
-        await SaveCertificateAsync(cert, stoppingToken);
-
-        return MoveTo<CheckForRenewalAcmeState>();
+        return cert;
     }
 
     private async Task SaveCertificateAsync(X509Certificate2 cert, CancellationToken stoppingToken)

@@ -8,7 +8,7 @@ public abstract class AcmeState : IAcmeState
 
     public abstract Task<IAcmeState> MoveNextAsync(CancellationToken stoppingToken);
 
-    protected T MoveTo<T>() where T : IAcmeState
+    internal T MoveTo<T>() where T : IAcmeState
     {
         var r = context.ServiceProvider.GetRequiredService<T>();
         if (r is AcmeState state)

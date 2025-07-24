@@ -1,4 +1,6 @@
-﻿namespace VKProxy.ACME.AspNetCore;
+﻿using System.Security.Cryptography.X509Certificates;
+
+namespace VKProxy.ACME.AspNetCore;
 
 public static class InitAcmeStateIniterExtensions
 {
@@ -9,5 +11,11 @@ public static class InitAcmeStateIniterExtensions
         {
             state = await state.MoveNextAsync(cancellationToken);
         }
+    }
+
+    public static Task<X509Certificate2> CreateCertificateAsync(this IAcmeStateIniter initer, AcmeChallengeOptions options, CancellationToken cancellationToken = default)
+    {
+        var state = (initer.Init(options) as InitAcmeState).MoveTo<BeginCertificateCreationAcmeState>();
+        return state.CreateCertificateAsync(cancellationToken);
     }
 }

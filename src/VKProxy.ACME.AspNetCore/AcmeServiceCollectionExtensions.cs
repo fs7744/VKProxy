@@ -32,20 +32,20 @@ public static class AcmeServiceCollectionExtensions
         services.TryAddSingleton<IHttpChallengeResponseStore, InMemoryHttpChallengeResponseStore>();
         services.TryAddSingleton<IDnsChallengeStore, NothingDnsChallengeStore>();
         services.TryAddSingleton<ITlsAlpnChallengeStore, TlsAlpnChallengeStore>();
+        services.AddSingleton<IStartupFilter, HttpChallengeStartupFilter>()
+            .AddSingleton<HttpChallengeResponseMiddleware>();
+        services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelOptionsSetup>();
         return services;
     }
 
     public static IServiceCollection AddAcmeChallenge(this IServiceCollection services, Action<AcmeChallengeOptions> action, Action<AcmeOptions> config = null)
     {
-        services.AddTransient<IConfigureOptions<KestrelServerOptions>, KestrelOptionsSetup>();
         services.AddAcmeChallengeCore(op =>
         {
             action?.Invoke(op);
             op.Check();
         }, config);
         services.AddSingleton<IHostedService, AcmeLoader>();
-        services.AddSingleton<IStartupFilter, HttpChallengeStartupFilter>()
-            .AddSingleton<HttpChallengeResponseMiddleware>();
         return services;
     }
 
