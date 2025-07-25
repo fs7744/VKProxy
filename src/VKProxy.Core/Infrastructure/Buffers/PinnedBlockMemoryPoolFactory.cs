@@ -5,10 +5,14 @@ using System.Diagnostics.Metrics;
 
 namespace VKProxy.Core.Buffers;
 
-public interface IMemoryPoolSizeFactory<T>
+/// todo remove when net10
+public interface IMemoryPoolFactory<T>
 {
     MemoryPool<T> Create();
+}
 
+public interface IMemoryPoolSizeFactory<T> : IMemoryPoolFactory<T>
+{
     MemoryPool<T> Create(int blockSize);
 }
 

@@ -38,6 +38,7 @@ public static class HostBuilderExtensions
     public static IServiceCollection UseVKProxyCore(this IServiceCollection services)
     {
         services.AddSingleton<IMemoryPoolSizeFactory<byte>, PinnedBlockMemoryPoolFactory>();
+        services.AddSingleton<IMemoryPoolFactory<byte>>(i => i.GetRequiredService<IMemoryPoolSizeFactory<byte>>());
         services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();
         services.AddSingleton<IConnectionListenerFactory, UdpTransportFactory>();
         services.AddSingleton<GeneralLogger>();
