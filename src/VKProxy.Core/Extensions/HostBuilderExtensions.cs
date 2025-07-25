@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using VKProxy.Core.Adapters;
+using VKProxy.Core.Buffers;
 using VKProxy.Core.Config;
 using VKProxy.Core.Hosting;
 using VKProxy.Core.Infrastructure;
@@ -36,6 +37,7 @@ public static class HostBuilderExtensions
 
     public static IServiceCollection UseVKProxyCore(this IServiceCollection services)
     {
+        services.AddSingleton<IMemoryPoolSizeFactory<byte>, PinnedBlockMemoryPoolFactory>();
         services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();
         services.AddSingleton<IConnectionListenerFactory, UdpTransportFactory>();
         services.AddSingleton<GeneralLogger>();

@@ -15,10 +15,10 @@ public class UdpConnectionFactory : IUdpConnectionFactory
     private readonly UdpSenderPool socketSenderPool;
     private readonly UdpReceiverPool socketReceiverPool;
 
-    public UdpConnectionFactory(IOptions<SocketTransportOptions> options, IOptions<UdpSocketTransportOptions> udpOptions)
+    public UdpConnectionFactory(IOptions<SocketTransportOptions> options, IOptions<UdpSocketTransportOptions> udpOptions, IMemoryPoolSizeFactory<byte> factory)
     {
         var op = udpOptions.Value;
-        pool = PinnedBlockMemoryPoolFactory.Create(op.UdpMaxSize);
+        pool = factory.Create(op.UdpMaxSize);
 
         pipeScheduler = options.Value.UnsafePreferInlineScheduling ? PipeScheduler.Inline : PipeScheduler.ThreadPool;
         socketReceiverPool = new UdpReceiverPool(pipeScheduler, op.UdpPoolSize);
