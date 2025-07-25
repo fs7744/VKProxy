@@ -45,10 +45,8 @@ public class TlsAlpn01DomainValidator : DomainOwnershipValidator
         }
     }
 
-    public X509Certificate2 PrepareChallengeCert(string domainName, string keyAuthorization)
+    public static X509Certificate2 PrepareChallengeCert(string domainName, string keyAuthorization)
     {
-        logger.LogDebug("Creating ALPN self-signed cert for {domainName} and key authz {keyAuth}",
-            domainName, keyAuthorization);
         var key = RSA.Create(2048);
         var csr = new CertificateRequest(
             "CN=" + domainName,

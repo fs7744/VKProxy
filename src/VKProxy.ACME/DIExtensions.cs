@@ -378,4 +378,9 @@ public static class DIExtensions
         }
         return null;
     }
+
+    public static IOrderContext Order(this IAcmeContext context, Uri orderLocation)
+    {
+        return new OrderContext(context, orderLocation);
+    }
 }
