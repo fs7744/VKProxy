@@ -51,6 +51,6 @@ public class OrderCommandOptions : AccountCommandOptions
         {
             return command.Args.Order != null;
         }));
-        ACMECommandOptions.AddCommonArgs(command);
+        AccountCommandOptions.AddCommonArgs(command);
     }
 }

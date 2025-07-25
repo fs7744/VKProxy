@@ -75,7 +75,7 @@ public class AuthzOrderCommandOptions : OrderCommandOptions
 {
     public string Domain { get; set; }
 
-    public ChallengeType Challenge { get; set; }
+    public ChallengeType Challenge { get; set; } = ChallengeType.Http01;
 
     public static void AddCommonArgs<T>(ArgsCommand<T> command) where T : AuthzOrderCommandOptions, new()
     {

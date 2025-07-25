@@ -47,14 +47,17 @@ internal class FinalizeOrderCommand : ArgsCommand<FinalizeOrderCommandOptions>
         }
         var pfx = pfxBuilder.Build("HTTPS Cert - " + Args.Domain, string.Empty);
         var r = X509CertificateLoader.LoadPkcs12(pfx, string.Empty, X509KeyStorageFlags.Exportable);
+        var path = $"{Args.Output}.{Args.Format}";
         if ("pfx".Equals(Args.Format, StringComparison.OrdinalIgnoreCase))
         {
-            await File.WriteAllBytesAsync($"{Args.Output}.{Args.Format}", r.Export(X509ContentType.Pfx), token);
+            await File.WriteAllBytesAsync(path, r.Export(X509ContentType.Pfx), token);
         }
         else
         {
-            await File.WriteAllTextAsync($"{Args.Output}.{Args.Format}", r.ExportPem(), token);
+            await File.WriteAllTextAsync(path, r.ExportPem(), token);
         }
+        Console.WriteLine(path);
+        Console.WriteLine(r.ExportPem());
     }
 }
 

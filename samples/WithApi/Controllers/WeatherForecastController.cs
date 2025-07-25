@@ -30,3 +30,15 @@ public class WeatherForecastController : ControllerBase
         .ToArray();
     }
 }
+
+[ApiController]
+[Route(".well-known")]
+public class TestController : ControllerBase
+{
+    [HttpGet("acme-challenge/{t}")]
+    public string Get([FromRoute] string t)
+    {
+        Response.Headers["x-t"] = t;
+        return "s";
+    }
+}

@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using VKProxy;
 using VKProxy.ACME.Crypto;
+using static VKProxy.Core.Adapters.HttpApplication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,7 +67,18 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
+//app.Map("/.well-known/acme-challenge", mapped =>
+//{
+//    mapped.Use(async (HttpContext c, Func<Task> next) =>
+//    {
+//        c.Response.Headers["x-t"] = c.Request.Path.ToString();
+//        string value = "OxLEhsbjf_jwx5Fene7qfG0n1lQkuviTCtjjh4r0B-k.9_-g5-nescxcCXvzZznEsYeARbnGIHFX0LTCXiwqGAA";
+//        c.Response.ContentLength = value?.Length ?? 0;
+//        c.Response.ContentType = "application/octet-stream";
+//        await c.Response.WriteAsync(value);
+//        await c.Response.CompleteAsync();
+//    });
+//});
 app.UseAuthorization();
 
 app.MapControllers();
