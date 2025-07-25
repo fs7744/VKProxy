@@ -83,10 +83,6 @@ public class TlsAlpn01DomainValidator : DomainOwnershipValidator
 
         // This cert is ephemeral and does not need to be stored for reuse later
         var cert = csr.CreateSelfSigned(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddDays(1));
-        if (OperatingSystem.IsWindows())
-        {
-            return CertificateLoader.PersistKey(cert);
-        }
         return cert;
     }
 }

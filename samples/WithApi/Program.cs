@@ -13,6 +13,14 @@ builder.Services.AddOpenApi();
 //builder.Services.Configure<ReverseProxyOptions>(o => o.Section = "ReverseProxy2");
 //builder.Services.UseReverseProxy().UseSocks5();
 
+//builder.Services.AddAcmeChallengeCore(config: c =>
+//{
+//    c.HttpClientConfig = new VKProxy.Config.HttpClientConfig()
+//    {
+//        DangerousAcceptAnyServerCertificate = true
+//    };
+//});
+
 builder.Services.AddAcmeChallenge(o =>
 {
     o.AllowedChallengeTypes = VKProxy.ACME.AspNetCore.ChallengeType.TlsAlpn01;

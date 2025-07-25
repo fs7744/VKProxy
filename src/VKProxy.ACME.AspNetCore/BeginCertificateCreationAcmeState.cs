@@ -2,7 +2,6 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using VKProxy.ACME.Resource;
-using VKProxy.Core.Config;
 
 namespace VKProxy.ACME.AspNetCore;
 
@@ -110,10 +109,6 @@ public class BeginCertificateCreationAcmeState : AcmeState
         }
         var pfx = pfxBuilder.Build("HTTPS Cert - " + context.Options.DomainNames, string.Empty);
         var r = X509CertificateLoader.LoadPkcs12(pfx, string.Empty, X509KeyStorageFlags.Exportable);
-        if (OperatingSystem.IsWindows())
-        {
-            return CertificateLoader.PersistKey(r);
-        }
         return r;
     }
 

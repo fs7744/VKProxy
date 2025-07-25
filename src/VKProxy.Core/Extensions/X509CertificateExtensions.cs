@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace VKProxy.Core.Extensions;
 
@@ -102,5 +103,25 @@ public static class X509CertificateExtensions
                 }
             }
         }
+    }
+
+    public static string ExportPem(this X509Certificate2 cert)
+    {
+        var certificatePem = cert.ExportCertificatePem();
+
+        if (cert.HasPrivateKey)
+        {
+            AsymmetricAlgorithm key = cert.GetRSAPrivateKey();
+            key ??= cert.GetECDsaPrivateKey();
+            key ??= cert.GetDSAPrivateKey();
+            key ??= cert.GetECDiffieHellmanPrivateKey();
+            if (key != null)
+            {
+                string pubKeyPem = key.ExportSubjectPublicKeyInfoPem();
+                string privKeyPem = key.ExportPkcs8PrivateKeyPem();
+                return $"{certificatePem}{Environment.NewLine}{pubKeyPem}{Environment.NewLine}{privKeyPem}";
+            }
+        }
+        return certificatePem;
     }
 }

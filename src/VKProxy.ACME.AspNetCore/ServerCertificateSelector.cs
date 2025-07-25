@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using VKProxy.Core.Config;
 using VKProxy.Core.Extensions;
 
 namespace VKProxy.ACME.AspNetCore;
@@ -60,6 +61,10 @@ public class ServerCertificateSelector : IServerCertificateSelector
 
     public void Add(X509Certificate2 certificate)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            certificate = CertificateLoader.PersistKey(certificate);
+        }
         foreach (var dnsName in certificate.GetAllDnsNames())
         {
             AddWithDomainName(certs, dnsName, certificate);
@@ -69,6 +74,10 @@ public class ServerCertificateSelector : IServerCertificateSelector
 
     public void AddChallengeCert(X509Certificate2 certificate)
     {
+        if (OperatingSystem.IsWindows())
+        {
+            certificate = CertificateLoader.PersistKey(certificate);
+        }
         foreach (var dnsName in certificate.GetAllDnsNames())
         {
             AddWithDomainName(challengeCerts, dnsName, certificate);
