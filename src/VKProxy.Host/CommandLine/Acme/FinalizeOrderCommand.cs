@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using VKProxy.ACME;
 using VKProxy.Core.Extensions;
 
@@ -23,6 +24,7 @@ internal class FinalizeOrderCommand : ArgsCommand<FinalizeOrderCommandOptions>
                 throw new ArgumentException("key-size", "must be int");
             Args.KeySize = i;
         }));
+        AddArg(new CommandArg("additional-issuer", null, null, "additional issuer", s => Args.AdditionalIssuer = s));
     }
 
     protected override async Task ExecAsync()
@@ -39,6 +41,10 @@ internal class FinalizeOrderCommand : ArgsCommand<FinalizeOrderCommandOptions>
         Key privateKey = Args.Algorithm.NewKey(Args.KeySize);
         var acmeCert = await order.GenerateAsync(csrInfo, privateKey, cancellationToken: token);
         var pfxBuilder = acmeCert.ToPfx(privateKey);
+        if (!string.IsNullOrWhiteSpace(Args.AdditionalIssuer) && File.Exists(Args.AdditionalIssuer))
+        {
+            pfxBuilder.AddIssuer(File.ReadAllBytes(Args.AdditionalIssuer));
+        }
         var pfx = pfxBuilder.Build("HTTPS Cert - " + Args.Domain, string.Empty);
         var r = X509CertificateLoader.LoadPkcs12(pfx, string.Empty, X509KeyStorageFlags.Exportable);
         if ("pfx".Equals(Args.Format, StringComparison.OrdinalIgnoreCase))
@@ -57,5 +63,6 @@ public class FinalizeOrderCommandOptions : AuthzOrderCommandOptions
     public int? KeySize { get; set; }
     public string Output { get; set; } = "cert";
     public string Format { get; set; } = "pem";
+    public string AdditionalIssuer { get; set; }
     public KeyAlgorithm Algorithm { get; set; } = KeyAlgorithm.RS256;
 }
