@@ -38,7 +38,7 @@ internal class AuthzOrderCommand : ArgsCommand<AuthzOrderCommandOptions>
 
             case ChallengeType.TlsAlpn01:
                 {
-                    var c = await auth.DnsAsync(token);
+                    var c = await auth.TlsAlpnAsync(token);
                     var cert = TlsAlpn01DomainValidator.PrepareChallengeCert(Args.Domain, c.KeyAuthz);
                     output = new
                     {
