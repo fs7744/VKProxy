@@ -18,7 +18,7 @@ public class UdpConnectionFactory : IUdpConnectionFactory
     public UdpConnectionFactory(IOptions<SocketTransportOptions> options, IOptions<UdpSocketTransportOptions> udpOptions, IMemoryPoolSizeFactory<byte> factory)
     {
         var op = udpOptions.Value;
-        pool = factory.Create(op.UdpMaxSize);
+        pool = op.UdpMaxSize == 4096 ? factory.Create() : factory.Create(op.UdpMaxSize);
 
         pipeScheduler = options.Value.UnsafePreferInlineScheduling ? PipeScheduler.Inline : PipeScheduler.ThreadPool;
         socketReceiverPool = new UdpReceiverPool(pipeScheduler, op.UdpPoolSize);

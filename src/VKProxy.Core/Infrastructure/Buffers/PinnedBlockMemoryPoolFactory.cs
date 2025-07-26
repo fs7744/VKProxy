@@ -23,12 +23,14 @@ public class PinnedBlockMemoryPoolFactory : IMemoryPoolSizeFactory<byte>, IAsync
     private readonly PeriodicTimer _timer;
     private readonly Task _timerTask;
     private readonly ILogger? _logger;
+    private readonly MemoryPool<byte> shared;
 
     public PinnedBlockMemoryPoolFactory(IMeterFactory? meterFactory = null, ILogger<PinnedBlockMemoryPoolFactory>? logger = null)
     {
         _meterFactory = meterFactory;
         _logger = logger;
         _timer = new PeriodicTimer(PinnedBlockMemoryPool.DefaultEvictionDelay);
+        shared = Create(4096);
         _timerTask = Task.Run(async () =>
         {
             try
@@ -50,7 +52,7 @@ public class PinnedBlockMemoryPoolFactory : IMemoryPoolSizeFactory<byte>, IAsync
 
     public MemoryPool<byte> Create()
     {
-        return Create(4096);
+        return shared;
     }
 
     public MemoryPool<byte> Create(int blockSize)
