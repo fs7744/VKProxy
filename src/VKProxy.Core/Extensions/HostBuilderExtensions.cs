@@ -1,6 +1,11 @@
 ﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
+using System.Buffers;
+using System.Reflection;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Buffers;
 using VKProxy.Core.Config;
@@ -47,6 +52,30 @@ public static class HostBuilderExtensions
         services.AddSingleton<ICertificateLoader, CertificateLoader>();
         services.AddSingleton<IRandomFactory, RandomFactory>();
 
+#if NET9_0
+        services.AddTransient<IConfigureOptions<SocketTransportOptions>, SocketTransportOptionsSetup>();
         return services;
     }
+
+    internal sealed class SocketTransportOptionsSetup : IConfigureOptions<SocketTransportOptions>
+    {
+        private readonly IMemoryPoolFactory<byte> factory;
+
+        public SocketTransportOptionsSetup(IMemoryPoolFactory<byte> factory)
+        {
+            this.factory = factory;
+        }
+
+        public void Configure(SocketTransportOptions options)
+        {
+            SetSocketTransportOptionsMemoryPool(options, () => factory.Create());
+        }
+    }
+
+    internal static readonly Action<SocketTransportOptions, Func<MemoryPool<byte>>> SetSocketTransportOptionsMemoryPool = typeof(SocketTransportOptions).GetTypeInfo().DeclaredProperties.First(i => i.Name == "MemoryPoolFactory").SetMethod.CreateDelegate<Action<SocketTransportOptions, Func<MemoryPool<byte>>>>();
+
+# else
+        return services;
+    }
+#endif
 }
