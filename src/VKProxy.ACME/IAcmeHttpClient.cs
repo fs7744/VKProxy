@@ -147,9 +147,9 @@ public class DefaultAcmeHttpClient : IAcmeHttpClient
             }
             else if (IsJson(resp.Content?.Headers?.ContentType?.MediaType))
             {
-                var s = await resp.Content.ReadAsStringAsync(cancellationToken);
-                result = JsonSerializer.Deserialize<T>(s, JsonSerializerOptions);
-                //result = await resp.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken);
+                //var s = await resp.Content.ReadAsStringAsync(cancellationToken);
+                //result = JsonSerializer.Deserialize<T>(s, JsonSerializerOptions);
+                result = await resp.Content.ReadFromJsonAsync<T>(JsonSerializerOptions, cancellationToken);
             }
         }
         else
