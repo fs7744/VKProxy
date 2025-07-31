@@ -9,7 +9,7 @@ public static partial class HttpRoutingStatementParser
 {
     private static readonly FrozenDictionary<string, Func<HttpContext, object>> fields = new Dictionary<string, Func<HttpContext, object>>()
     {
-        { "Path", c => c.Request.Path.ToString()},
+        { "Path", c => c.Request.Path.Value},
         { "Method", c => c.Request.Method},
         { "Scheme", c => c.Request.Scheme},
         { "IsHttps", c => c.Request.IsHttps},

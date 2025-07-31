@@ -146,7 +146,7 @@ public static class ReverseProxyHostBuilderExtensions
             app.Use(async (c, next) =>
             {
                 var req = c.Request;
-                var path = req.Path.ToString();
+                var path = req.Path.Value;
                 var host = req.Host.ToString();
                 var sw = System.Diagnostics.Stopwatch.StartNew();
                 try

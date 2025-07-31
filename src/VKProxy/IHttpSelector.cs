@@ -102,7 +102,7 @@ public class HttpSelector : IHttpSelector
     public async ValueTask<RouteConfig> MatchAsync(HttpContext context)
     {
         var req = context.Request;
-        var path = req.Path.ToString();
+        var path = req.Path.Value;
         var host = req.Host.ToString();
 #if DEBUG
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -169,7 +169,7 @@ public class HttpSelector : IHttpSelector
     public RouteConfig Match(HttpContext context)
     {
         var req = context.Request;
-        var path = req.Path.ToString();
+        var path = req.Path.Value;
         var host = req.Host.ToString();
         var r = route.Match(host.Reverse(), path, context, MatchHttp);
         if (r is null)

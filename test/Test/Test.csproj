@@ -11,4 +11,8 @@
     <ProjectReference Include="..\..\src\VKProxy\VKProxy.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
+  </ItemGroup>
+
 </Project>

@@ -1,13 +1,8 @@
-﻿using DotNext.Runtime.Caching;
-using VKProxy.Config;
+﻿using BenchmarkDotNet.Running;
 
-//var cache = new RandomAccessCache<string, RouteConfig>(10000);
-var a = new Dictionary<string, RouteConfig>(10000);
+var a = new Path_HttpRoutingStatementParserBenchmarks();
+a.PathRegxString();
+a.PathRegx();
+a.PathRegxV2();
 
-while (true)
-{
-    //cache.Dispose();
-    //cache = new RandomAccessCache<string, RouteConfig>(10000);
-    a = new Dictionary<string, RouteConfig>(10000);
-    await Task.Delay(1000);
-}
+var summary = BenchmarkRunner.Run<Path_HttpRoutingStatementParserBenchmarks>();
