@@ -287,7 +287,7 @@ public class OperaterStatementParser : IStatementParser
                     return true;
                 }
             }
-            else if (t.Type == TokenType.String)
+            else if (t.Type == TokenType.String || t.Type == TokenType.Null)
             {
                 if (ConvertStringArrary(context, t, out var op))
                 {
@@ -309,7 +309,7 @@ public class OperaterStatementParser : IStatementParser
 
     private static bool ConvertBoolArrary(StatementParserContext context, Token t, out ArrayValueStatement o)
     {
-        var op = new BooleanArrayValueStatement() { Value = new List<bool>() { t.Type == TokenType.True } };
+        var op = new BooleanArrayValueStatement() { Value = new List<bool?>() { t.Type == TokenType.True } };
         o = op;
         var hasEnd = false;
         while (context.MoveNext())
@@ -331,6 +331,21 @@ public class OperaterStatementParser : IStatementParser
                         else if (t.Type == TokenType.False)
                         {
                             op.Value.Add(false);
+                            continue;
+                        }
+                        else if (t.Type == TokenType.Null)
+                        {
+                            op.Value.Add(null);
+                            continue;
+                        }
+                        else if (t.Type == TokenType.Number && bool.TryParse(t.GetValue().ToString(), out var b))
+                        {
+                            op.Value.Add(b);
+                            continue;
+                        }
+                        else if (t.Type == TokenType.String && bool.TryParse(t.GetValue().ToString(), out b))
+                        {
+                            op.Value.Add(b);
                             continue;
                         }
                     }
@@ -365,9 +380,24 @@ public class OperaterStatementParser : IStatementParser
                     if (context.MoveNext())
                     {
                         t = context.Current;
-                        if (t.Type == TokenType.String)
+                        if (t.Type == TokenType.String || t.Type == TokenType.Number)
                         {
                             op.Value.Add(t.GetValue().ToString());
+                            continue;
+                        }
+                        else if (t.Type == TokenType.Null)
+                        {
+                            op.Value.Add(null);
+                            continue;
+                        }
+                        else if (t.Type == TokenType.True)
+                        {
+                            op.Value.Add(true.ToString());
+                            continue;
+                        }
+                        else if (t.Type == TokenType.False)
+                        {
+                            op.Value.Add(false.ToString());
                             continue;
                         }
                     }
@@ -388,7 +418,7 @@ public class OperaterStatementParser : IStatementParser
 
     private static bool ConvertNumberArrary(StatementParserContext context, Token t, out ArrayValueStatement o)
     {
-        var op = new NumberArrayValueStatement() { Value = new List<decimal>() { decimal.Parse(t.GetValue()) } };
+        var op = new NumberArrayValueStatement() { Value = new List<decimal?>() { decimal.Parse(t.GetValue()) } };
         o = op;
         var hasEnd = false;
         while (context.MoveNext())
@@ -405,6 +435,26 @@ public class OperaterStatementParser : IStatementParser
                         if (t.Type == TokenType.Number)
                         {
                             op.Value.Add(decimal.Parse(t.GetValue()));
+                            continue;
+                        }
+                        else if (t.Type == TokenType.Null)
+                        {
+                            op.Value.Add(null);
+                            continue;
+                        }
+                        else if (t.Type == TokenType.True)
+                        {
+                            op.Value.Add(Convert.ToDecimal(true));
+                            continue;
+                        }
+                        else if (t.Type == TokenType.False)
+                        {
+                            op.Value.Add(Convert.ToDecimal(false));
+                            continue;
+                        }
+                        else if (t.Type == TokenType.String && decimal.TryParse(t.GetValue().ToString(), out var n))
+                        {
+                            op.Value.Add(n);
                             continue;
                         }
                     }

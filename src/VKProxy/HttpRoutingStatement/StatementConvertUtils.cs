@@ -20,6 +20,10 @@ public static class StatementConvertUtils
         {
             return bvs.Value.ToString();
         }
+        else if (value is NullValueStatement)
+        {
+            return null;
+        }
 
         return null;
     }
@@ -55,6 +59,10 @@ public static class StatementConvertUtils
         {
             return bvs.Value;
         }
+        else if (value is NullValueStatement)
+        {
+            return null;
+        }
 
         return null;
     }
@@ -63,15 +71,15 @@ public static class StatementConvertUtils
     {
         if (value is StringArrayValueStatement svs && svs.Value != null)
         {
-            return svs.Value.Select(static i => Convert.ToBoolean(i)).Distinct().ToFrozenSet();
+            return svs.Value.Where(static i => i != null).Select(static i => Convert.ToBoolean(i)).Distinct().ToFrozenSet();
         }
         else if (value is BooleanArrayValueStatement b && b.Value != null)
         {
-            return b.Value.Distinct().ToFrozenSet();
+            return b.Value.Where(static i => i.HasValue).Select(static i => i.Value).Distinct().ToFrozenSet();
         }
         else if (value is NumberArrayValueStatement n && n.Value != null)
         {
-            return n.Value.Select(static i => Convert.ToBoolean(i)).Distinct().ToFrozenSet();
+            return n.Value.Where(static i => i.HasValue).Select(static i => i.Value).Select(static i => Convert.ToBoolean(i)).Distinct().ToFrozenSet();
         }
         return null;
     }

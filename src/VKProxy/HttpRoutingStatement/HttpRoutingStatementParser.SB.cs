@@ -65,9 +65,17 @@ public static partial class HttpRoutingStatementParser
                 if (i > 0)
                     sb.Append(',');
 
-                sb.Append("'");
-                sb.Append(s.Value[i].Replace("'", "\\'"));
-                sb.Append("'");
+                var bb = s.Value[i];
+                if (bb == null)
+                {
+                    sb.Append("null");
+                }
+                else
+                {
+                    sb.Append("'");
+                    sb.Append(bb.Replace("'", "\\'"));
+                    sb.Append("'");
+                }
             }
         }
         else if (array is BooleanArrayValueStatement b)
@@ -77,7 +85,7 @@ public static partial class HttpRoutingStatementParser
                 var bb = b.Value[i];
                 if (i > 0)
                     sb.Append(',');
-                sb.Append(bb ? "true" : "false");
+                sb.Append(bb.HasValue ? (bb.Value ? "true" : "false") : "null");
             }
         }
         else if (array is NumberArrayValueStatement n)
@@ -87,7 +95,7 @@ public static partial class HttpRoutingStatementParser
                 var bb = n.Value[i];
                 if (i > 0)
                     sb.Append(',');
-                sb.Append(bb);
+                sb.Append(bb.HasValue ? bb : "null");
             }
         }
     }
@@ -141,6 +149,10 @@ public static partial class HttpRoutingStatementParser
         else if (v is NumberValueStatement n)
         {
             sb.Append(n.Value.ToString());
+        }
+        else if (v is NullValueStatement)
+        {
+            sb.Append("null");
         }
     }
 }

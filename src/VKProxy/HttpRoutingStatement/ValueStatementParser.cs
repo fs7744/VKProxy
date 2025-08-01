@@ -17,12 +17,17 @@ public class ValueStatementParser : IStatementParser
                     return true;
 
                 case TokenType.True:
-                    context.Stack.Push(new BooleanValueStatement() { Value = true });
+                    context.Stack.Push(BooleanValueStatement.True);
                     context.MoveNext();
                     return true;
 
                 case TokenType.False:
-                    context.Stack.Push(new BooleanValueStatement() { Value = false });
+                    context.Stack.Push(BooleanValueStatement.False);
+                    context.MoveNext();
+                    return true;
+
+                case TokenType.Null:
+                    context.Stack.Push(NullValueStatement.Null);
                     context.MoveNext();
                     return true;
 

@@ -8,4 +8,5 @@ public enum TokenType
     String,
     True,
     False,
+    Null,
 }

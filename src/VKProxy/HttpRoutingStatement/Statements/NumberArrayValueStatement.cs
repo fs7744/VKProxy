@@ -2,5 +2,5 @@
 
 public class NumberArrayValueStatement : ArrayValueStatement
 {
-    public List<decimal> Value { get; set; }
+    public List<decimal?> Value { get; set; }
 }

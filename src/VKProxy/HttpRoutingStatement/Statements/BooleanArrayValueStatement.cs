@@ -2,5 +2,5 @@
 
 public class BooleanArrayValueStatement : ArrayValueStatement
 {
-    public List<bool> Value { get; set; }
+    public List<bool?> Value { get; set; }
 }

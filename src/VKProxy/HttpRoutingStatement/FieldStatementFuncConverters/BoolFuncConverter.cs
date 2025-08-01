@@ -20,7 +20,7 @@ internal abstract class BoolFuncConverter : IStaticFieldStatementFuncConverter
             case "!=":
                 {
                     var v = StatementConvertUtils.ConvertToBool(value);
-                    if (!v.HasValue) return null;
+                    if (v.HasValue) return null;
                     return CreateNotEqualsFunc(v.Value);
                 }
             case "in":

@@ -47,6 +47,10 @@ public class WordTokenParser : ITokenParser
             {
                 t.Type = TokenType.False;
             }
+            else if (v.Equals("null", StringComparison.OrdinalIgnoreCase))
+            {
+                t.Type = TokenType.Null;
+            }
         }
         return r;
     }
