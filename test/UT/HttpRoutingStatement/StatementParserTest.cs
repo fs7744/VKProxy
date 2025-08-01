@@ -136,16 +136,35 @@ public class StatementParserTest
     [InlineData("Path ~= '[/]test77.*'", false)]
     public void Equal(string test, bool expected)
     {
-        var func = HttpRoutingStatementParser.ConvertToFunc(test);
+        var func = HttpRoutingStatementParser.ConvertToFunction(test);
         Assert.NotNull(func);
 
         var context = new Mock<HttpContext>();
         context.Setup(r => r.Request.Path).Returns("/testp");
         context.Setup(r => r.Request.ContentLength).Returns(9);
-        context.Setup(r => r.Request.Headers.Keys).Returns(new string[] { "x-c" });
-        context.Setup(r => r.Request.Headers.Values).Returns(new StringValues[] { "a" });
-        context.Setup(r => r.Request.Headers["x-c"]).Returns("a");
+        var h = new HeaderDictionary();
+        h["x-c"] = "a";
+        context.Setup(r => r.Request.Headers).Returns(h);
+        //context.Setup(r => r.Request.Headers.Keys).Returns(new string[] { "x-c" });
+        //context.Setup(r => r.Request.Headers.Values).Returns(new StringValues[] { "a" });
+        //context.Setup(r => r.Request.Headers["x-c"]).Returns("a");
+        var c = new Mock<IRequestCookieCollection>();
+        c.Setup(r => r.TryGetValue(It.IsAny<string>(), out It.Ref<string>.IsAny)).Returns((string k, out string v) =>
+        {
+            v = "ddd";
+            return k == "x-c";
+        });
+        c.SetupGet(i => i.Count).Returns(1);
+        context.Setup(r => r.Request.Cookies).Returns(c.Object);
         context.Setup(r => r.Request.Cookies["x-c"]).Returns("ddd");
+        var q = new Mock<IQueryCollection>();
+        q.Setup(r => r.TryGetValue(It.IsAny<string>(), out It.Ref<StringValues>.IsAny)).Returns((string k, out StringValues v) =>
+        {
+            v = "xxx";
+            return k == "x-c";
+        });
+        q.SetupGet(i => i.Count).Returns(1);
+        context.Setup(r => r.Request.Query).Returns(q.Object);
         context.Setup(r => r.Request.Query["x-c"]).Returns("xxx");
 
         Assert.Equal(expected, func(context.Object));

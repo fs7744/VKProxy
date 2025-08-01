@@ -41,23 +41,23 @@ public class Path_HttpRoutingStatementParserBenchmarks
 
         queryRegx = new Regex(@"s[=].*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         regx = new Regex(@"^[/]testp.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        _PathRegx = HttpRoutingStatementParser.ConvertToFunc("Path ~= '^[/]testp.*'");
+        _PathRegx = StatementParser.ConvertToFunc("Path ~= '^[/]testp.*'");
         _PathRegxV2 = HttpRoutingStatementParser.ConvertToFunction("Path ~= '^[/]testp.*'");
-        _PathEqual = HttpRoutingStatementParser.ConvertToFunc("Path = '/testp'");
+        _PathEqual = StatementParser.ConvertToFunc("Path = '/testp'");
         _PathEqualV2 = HttpRoutingStatementParser.ConvertToFunction("Path = '/testp'");
-        _PathEqualTrue = HttpRoutingStatementParser.ConvertToFunc("Path = '/testp/DSD/fsdfx/fadasd3/中'");
+        _PathEqualTrue = StatementParser.ConvertToFunc("Path = '/testp/DSD/fsdfx/fadasd3/中'");
         _PathEqualTrueV2 = HttpRoutingStatementParser.ConvertToFunction("Path = '/testp/DSD/fsdfx/fadasd3/中'");
 
-        _PathIn = HttpRoutingStatementParser.ConvertToFunc("Path in ('/testp','/testp/DSD/fsdfx/fadasd3/中')");
+        _PathIn = StatementParser.ConvertToFunc("Path in ('/testp','/testp/DSD/fsdfx/fadasd3/中')");
         _PathInV2 = HttpRoutingStatementParser.ConvertToFunction("Path in ('/testp','/testp/DSD/fsdfx/fadasd3/中')");
         set = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "/testp", "/testp/DSD/fsdfx/fadasd3/中" };
 
         var w = "IsHttps = true and Path = '/testp/DSD/fsdfx/fadasd3/中' AND Method = \"GET\" AND Host = \"x.com\" AND Scheme = \"https\" AND Protocol = \"HTTP/1.1\" AND ContentType = \"json\" AND QueryString ~= 's[=].*' and not(Scheme = \"http\")";
-        _PathComplex = HttpRoutingStatementParser.ConvertToFunc(w);
+        _PathComplex = StatementParser.ConvertToFunc(w);
         _PathComplexV2 = HttpRoutingStatementParser.ConvertToFunction(w);
 
         w = "IsHttps = true";
-        _IsHttps = HttpRoutingStatementParser.ConvertToFunc(w);
+        _IsHttps = StatementParser.ConvertToFunc(w);
         _IsHttpsV2 = HttpRoutingStatementParser.ConvertToFunction(w);
     }
 

@@ -7,6 +7,11 @@ internal class QueryStringFuncConverter : StringFuncConverter
 {
     public override string Field => "QueryString";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.QueryString.Value;
+    }
+
     protected override Func<HttpContext, bool> CreateRegexFunc(Regex reg)
     {
         return c =>

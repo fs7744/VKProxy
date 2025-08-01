@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.ObjectPool;
+using Microsoft.Extensions.Primitives;
 using Moq;
 using VKProxy.HttpRoutingStatement;
 using VKProxy.TemplateStatement;
@@ -36,9 +37,27 @@ public class TemplateStatementTokenParserTest
         var context = new Mock<HttpContext>();
         context.Setup(r => r.Request.Path).Returns("/testp");
         context.Setup(r => r.Request.ContentLength).Returns(9);
-        context.Setup(r => r.Request.Headers["x-c"]).Returns("a");
+        var h = new HeaderDictionary();
+        h["x-c"] = "a";
+        context.Setup(r => r.Request.Headers).Returns(h);
         context.Setup(r => r.Request.Cookies["x-c"]).Returns("ddd");
         context.Setup(r => r.Request.Query["x-c"]).Returns("xxx");
+        var c = new Mock<IRequestCookieCollection>();
+        c.Setup(r => r.TryGetValue(It.IsAny<string>(), out It.Ref<string>.IsAny)).Returns((string k, out string v) =>
+        {
+            v = "ddd";
+            return k == "x-c";
+        });
+        c.SetupGet(i => i.Count).Returns(1);
+        context.Setup(r => r.Request.Cookies).Returns(c.Object);
+        var q = new Mock<IQueryCollection>();
+        q.Setup(r => r.TryGetValue(It.IsAny<string>(), out It.Ref<StringValues>.IsAny)).Returns((string k, out StringValues v) =>
+        {
+            v = "xxx";
+            return k == "x-c";
+        });
+        q.SetupGet(i => i.Count).Returns(1);
+        context.Setup(r => r.Request.Query).Returns(q.Object);
         var a = f.Convert(test);
         Assert.Equal(expected.ToUpperInvariant(), a(context.Object));
     }

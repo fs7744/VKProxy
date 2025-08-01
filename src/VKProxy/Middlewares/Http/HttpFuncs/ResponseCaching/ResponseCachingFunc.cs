@@ -611,7 +611,7 @@ public class ResponseCachingFunc : IHttpFunc
         {
             try
             {
-                whenFunc = HttpRoutingStatementParser.ConvertToFunc(when);
+                whenFunc = HttpRoutingStatementParser.ConvertToFunction(when);
             }
             catch (Exception ex)
             {

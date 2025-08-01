@@ -7,6 +7,11 @@ internal class ProtocolFuncConverter : StringFuncConverter
 {
     public override string Field => "Protocol";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.Protocol;
+    }
+
     protected override Func<HttpContext, bool> CreateRegexFunc(Regex reg)
     {
         return c =>

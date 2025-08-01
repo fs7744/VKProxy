@@ -6,6 +6,11 @@ internal class HasFormContentTypeFuncConverter : BoolFuncConverter
 {
     public override string Field => "HasFormContentType";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.HasFormContentType.ToString();
+    }
+
     protected override Func<HttpContext, bool> CreateSetContainsFunc(System.Collections.Frozen.FrozenSet<bool> set)
     {
         return c =>

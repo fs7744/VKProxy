@@ -1,4 +1,7 @@
-﻿using System.Text;
+﻿using Microsoft.AspNetCore.Http;
+using System.Collections.Frozen;
+using System.Text;
+using VKProxy.HttpRoutingStatement.FieldStatementFuncConverters;
 using VKProxy.HttpRoutingStatement.Statements;
 
 namespace VKProxy.HttpRoutingStatement;
@@ -45,6 +48,69 @@ public static partial class HttpRoutingStatementParser
                 sb.Append(") ");
             }
         }
+    }
+
+    internal static Func<HttpContext, string> ConvertToStringFunc(ValueStatement statement)
+    {
+        if (statement is StringValueStatement s)
+        {
+            var vv = s.Value;
+            return c => vv.ToString();
+        }
+        else if (statement is BooleanValueStatement b)
+        {
+            var vv = b.Value;
+            return c => vv.ToString();
+        }
+        else if (statement is NumberValueStatement n)
+        {
+            var vv = n.Value;
+            return c => vv.ToString();
+        }
+        else if (statement is NullValueStatement)
+        {
+            return c => null;
+        }
+        else if (statement is ArrayValueStatement value)
+        {
+            string ss = null;
+            if (value is StringArrayValueStatement svs && svs.Value != null)
+            {
+                ss = string.Join(",", svs.Value);
+                return c => ss;
+            }
+            else if (value is BooleanArrayValueStatement bb && bb.Value != null)
+            {
+                ss = string.Join(",", bb.Value);
+                return c => ss;
+            }
+            else if (value is NumberArrayValueStatement nn && nn.Value != null)
+            {
+                ss = string.Join(",", nn.Value);
+                return c => ss;
+            }
+            return null;
+        }
+        else if (statement is FieldStatement f)
+        {
+            if (f is DynamicFieldStatement d && !string.IsNullOrWhiteSpace(d.Key))
+            {
+                if (fieldConverters.TryGetValue($"{d.Field}{d.Key}", out var converter) && converter is IStaticFieldStatementFuncConverter c)
+                {
+                    return c.ConvertToString();
+                }
+                else if (fieldConverters.TryGetValue(d.Field, out converter) && converter is IDynamicFieldStatementFuncConverter dc)
+                {
+                    return dc.ConvertToString(d.Key);
+                }
+            }
+            else if (fieldConverters.TryGetValue(f.Field, out var converter) && converter is IStaticFieldStatementFuncConverter c)
+            {
+                return c.ConvertToString();
+            }
+        }
+
+        return null;
     }
 
     private static void DoConvertToString(StringBuilder sb, InOperaterStatement io)

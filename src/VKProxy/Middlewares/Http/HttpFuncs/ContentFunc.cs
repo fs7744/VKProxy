@@ -55,7 +55,7 @@ public class ContentFunc : IHttpFunc
                     c.ContentType = "text/plain";
                 if (config.Metadata.TryGetValue($"{k}When", out var when))
                 {
-                    c.Func = HttpRoutingStatementParser.ConvertToFunc(when);
+                    c.Func = HttpRoutingStatementParser.ConvertToFunction(when);
                 }
                 else
                     c.Func = static context => true;

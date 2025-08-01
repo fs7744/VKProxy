@@ -11,9 +11,13 @@ public interface IFieldStatementFuncConverter
 public interface IStaticFieldStatementFuncConverter : IFieldStatementFuncConverter
 {
     Func<HttpContext, bool> Convert(ValueStatement value, string operater);
+
+    Func<HttpContext, string> ConvertToString();
 }
 
 public interface IDynamicFieldStatementFuncConverter : IFieldStatementFuncConverter
 {
     Func<HttpContext, bool> Convert(ValueStatement value, string operater, string key);
+
+    Func<HttpContext, string> ConvertToString(string key);
 }

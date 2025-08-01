@@ -7,6 +7,11 @@ internal class ContentTypeFuncConverter : StringFuncConverter
 {
     public override string Field => "ContentType";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.ContentType;
+    }
+
     protected override Func<HttpContext, bool> CreateRegexFunc(Regex reg)
     {
         return c =>

@@ -7,6 +7,11 @@ internal class PathFuncConverter : StringFuncConverter
 {
     public override string Field => "Path";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.Path.Value;
+    }
+
     protected override Func<HttpContext, bool> CreateSetContainsFunc(System.Collections.Frozen.FrozenSet<string> set)
     {
         return c =>

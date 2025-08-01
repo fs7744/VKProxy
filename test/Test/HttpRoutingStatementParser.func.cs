@@ -5,8 +5,23 @@ using VKProxy.HttpRoutingStatement.Statements;
 
 namespace VKProxy.HttpRoutingStatement;
 
-public static partial class HttpRoutingStatementParser
+public static partial class StatementParser
 {
+    public static Func<HttpContext, bool> ConvertToFunc(string statement)
+    {
+        var statements = HttpRoutingStatementParser.ParseStatements(statement);
+        if (statements.Count > 1)
+        {
+            throw new ParserExecption($"statements must be only one");
+        }
+        var f = ConvertToFunc(statements.Pop());
+        if (f == null)
+        {
+            throw new ParserExecption($"Can't parse {statement}");
+        }
+        return f;
+    }
+
     private static readonly FrozenDictionary<string, Func<HttpContext, object>> fields = new Dictionary<string, Func<HttpContext, object>>()
     {
         { "Path", c => c.Request.Path.Value},

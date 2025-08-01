@@ -36,11 +36,11 @@ public static class StatementConvertUtils
         }
         else if (value is BooleanArrayValueStatement b && b.Value != null)
         {
-            return b.Value.Distinct().Select(static i => i.ToString()).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+            return b.Value.Select(static i => i.HasValue ? i.Value.ToString() : null).Distinct(StringComparer.OrdinalIgnoreCase).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
         }
         else if (value is NumberArrayValueStatement n && n.Value != null)
         {
-            return n.Value.Distinct().Select(static i => i.ToString()).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+            return n.Value.Select(static i => i.HasValue ? i.Value.ToString() : null).Distinct(StringComparer.OrdinalIgnoreCase).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
         }
         return null;
     }
@@ -82,5 +82,61 @@ public static class StatementConvertUtils
             return n.Value.Where(static i => i.HasValue).Select(static i => i.Value).Select(static i => Convert.ToBoolean(i)).Distinct().ToFrozenSet();
         }
         return null;
+    }
+
+    public static long? ConvertToInt64(ValueStatement value)
+    {
+        if (value is StringValueStatement svs)
+        {
+            return Convert.ToInt64(svs.Value);
+        }
+        else if (value is NumberValueStatement nvs)
+        {
+            return Convert.ToInt64(nvs.Value);
+        }
+        else if (value is BooleanValueStatement bvs)
+        {
+            return Convert.ToInt64(bvs.Value);
+        }
+        else if (value is NullValueStatement)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    public static FrozenSet<long> ConvertToInt64(ArrayValueStatement value)
+    {
+        if (value is StringArrayValueStatement svs && svs.Value != null)
+        {
+            return svs.Value.Where(static i => i != null).Select(static i => Convert.ToInt64(i)).Distinct().ToFrozenSet();
+        }
+        else if (value is BooleanArrayValueStatement b && b.Value != null)
+        {
+            return b.Value.Where(static i => i.HasValue).Select(static i => i.Value).Select(static i => Convert.ToInt64(i)).Distinct().ToFrozenSet();
+        }
+        else if (value is NumberArrayValueStatement n && n.Value != null)
+        {
+            return n.Value.Where(static i => i.HasValue).Select(static i => i.Value).Select(static i => Convert.ToInt64(i)).Distinct().ToFrozenSet();
+        }
+        return null;
+    }
+
+    public static bool AnyNull(ArrayValueStatement value)
+    {
+        if (value is StringArrayValueStatement svs && svs.Value != null)
+        {
+            return svs.Value.Any(static i => i == null);
+        }
+        else if (value is BooleanArrayValueStatement b && b.Value != null)
+        {
+            return b.Value.Any(static i => !i.HasValue);
+        }
+        else if (value is NumberArrayValueStatement n && n.Value != null)
+        {
+            return n.Value.Any(static i => !i.HasValue);
+        }
+        return false;
     }
 }

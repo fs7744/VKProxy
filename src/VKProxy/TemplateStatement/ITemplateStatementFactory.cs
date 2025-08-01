@@ -122,7 +122,7 @@ public class TemplateStatementFactory : ITemplateStatementFactory
                 var statements = HttpRoutingStatementParser.ParseStatements(c.GetValue().ToString());
                 if (statements.Count == 1 && statements.First() is ValueStatement statement)
                 {
-                    var f = HttpRoutingStatementParser.ConvertToField(statement);
+                    var f = HttpRoutingStatementParser.ConvertToStringFunc(statement);
                     if (f != null)
                     {
                         Func<HttpContext, string> cc = c => f(c)?.ToString()?.ToUpperInvariant();

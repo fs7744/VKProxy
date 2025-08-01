@@ -18,6 +18,23 @@ public static partial class HttpRoutingStatementParser
         new ProtocolFuncConverter(),
         new IsHttpsFuncConverter(),
         new HasFormContentTypeFuncConverter(),
+        new ContentLengthFuncConverter(),
+        new HeaderAllKeysFuncConverter(),
+        new HeaderAllValuesFuncConverter(),
+        new HeaderAllKVSFuncConverter(),
+        new QueryAllKeysFuncConverter(),
+        new QueryAllValuesFuncConverter(),
+        new QueryAllKVSFuncConverter(),
+        new CookieAllKeysFuncConverter(),
+        new CookieAllValuesFuncConverter(),
+        new CookieAllKVSFuncConverter(),
+        new FormAllKeysFuncConverter(),
+        new FormAllValuesFuncConverter(),
+        new FormAllKVSFuncConverter(),
+        new DynamicHeaderFuncConverter(),
+        new DynamicQueryFuncConverter(),
+        new DynamicCookieFuncConverter(),
+        new DynamicFormFuncConverter(),
     }.ToFrozenDictionary(i => i.Field, StringComparer.OrdinalIgnoreCase);
 
     public static Func<HttpContext, bool> ConvertToFunction(string statement)

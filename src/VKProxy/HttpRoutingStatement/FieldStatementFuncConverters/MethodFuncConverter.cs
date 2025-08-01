@@ -7,6 +7,11 @@ internal class MethodFuncConverter : PathFuncConverter
 {
     public override string Field => "Method";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.Method;
+    }
+
     protected override Func<HttpContext, bool> CreateRegexFunc(Regex reg)
     {
         return c =>

@@ -43,4 +43,6 @@ internal abstract class BoolFuncConverter : IStaticFieldStatementFuncConverter
     protected abstract Func<HttpContext, bool> CreateNotEqualsFunc(bool vv);
 
     protected abstract Func<HttpContext, bool> CreateEqualsFunc(bool vv);
+
+    public abstract Func<HttpContext, string> ConvertToString();
 }

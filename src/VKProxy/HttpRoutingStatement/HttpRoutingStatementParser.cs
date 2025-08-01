@@ -13,21 +13,6 @@ public static partial class HttpRoutingStatementParser
         tokenParsers = new ITokenParser[] { new IngoreTokenParser(), new StringTokenParser(), new NumberTokenParser(), new WordTokenParser(), new SignTokenParser() };
     }
 
-    public static Func<HttpContext, bool> ConvertToFunc(string statement)
-    {
-        var statements = ParseStatements(statement);
-        if (statements.Count > 1)
-        {
-            throw new ParserExecption($"statements must be only one");
-        }
-        var f = ConvertToFunc(statements.Pop());
-        if (f == null)
-        {
-            throw new ParserExecption($"Can't parse {statement}");
-        }
-        return f;
-    }
-
     public static Stack<Statement> ParseStatements(string statement)
     {
         var context = new StatementParserContext(Tokenize(statement).ToArray(), ParseStatements);

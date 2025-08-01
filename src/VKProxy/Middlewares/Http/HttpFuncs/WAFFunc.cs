@@ -47,7 +47,7 @@ public class WAFFunc : IHttpFunc
             {
                 try
                 {
-                    var f = HttpRoutingStatementParser.ConvertToFunc(v);
+                    var f = HttpRoutingStatementParser.ConvertToFunction(v);
                     list.Add(new KeyValuePair<string, Func<HttpContext, bool>>(k, f));
                 }
                 catch (Exception ex)

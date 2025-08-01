@@ -7,6 +7,11 @@ internal class HostFuncConverter : StringFuncConverter
 {
     public override string Field => "Host";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.Host.ToString();
+    }
+
     protected override Func<HttpContext, bool> CreateRegexFunc(Regex reg)
     {
         return c =>

@@ -7,6 +7,11 @@ internal class SchemeFuncConverter : StringFuncConverter
 {
     public override string Field => "Scheme";
 
+    public override Func<HttpContext, string> ConvertToString()
+    {
+        return static c => c.Request.Scheme;
+    }
+
     protected override Func<HttpContext, bool> CreateRegexFunc(Regex reg)
     {
         return c =>
