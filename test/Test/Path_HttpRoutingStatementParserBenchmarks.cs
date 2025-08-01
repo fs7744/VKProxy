@@ -2,13 +2,15 @@
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Order;
 using Microsoft.AspNetCore.Http;
-using System.Linq;
+using Microsoft.Extensions.ObjectPool;
 using System.Text.RegularExpressions;
 using VKProxy.HttpRoutingStatement;
+using VKProxy.TemplateStatement;
 
 [MemoryDiagnoser, Orderer(summaryOrderPolicy: SummaryOrderPolicy.FastestToSlowest), GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory), CategoriesColumn]
 public class Path_HttpRoutingStatementParserBenchmarks
 {
+    private TemplateStatementFactory f = new TemplateStatementFactory(new DefaultObjectPoolProvider());
     private DefaultHttpContext HttpContext;
     private Func<HttpContext, bool> _PathEqual;
     private Func<HttpContext, bool> _PathEqualV2;
@@ -22,6 +24,10 @@ public class Path_HttpRoutingStatementParserBenchmarks
     private readonly Func<HttpContext, bool> _PathComplexV2;
     private readonly Func<HttpContext, bool> _IsHttps;
     private readonly Func<HttpContext, bool> _IsHttpsV2;
+    private readonly Regex headersRegex;
+    private readonly Func<HttpContext, bool> _headersRegex;
+    private readonly Func<HttpContext, bool> _headersRegexV2;
+    private readonly Func<HttpContext, string> _t;
     private Regex regx;
     private Func<HttpContext, bool> _PathRegx;
     private Func<HttpContext, bool> _PathRegxV2;
@@ -38,6 +44,10 @@ public class Path_HttpRoutingStatementParserBenchmarks
         req.ContentType = "json";
         req.QueryString = new QueryString("?s=123&d=456&f=789");
         req.IsHttps = true;
+        for (int i = 0; i < 10; i++)
+        {
+            req.Headers.Add($"x-{i}", $"v-{i}");
+        }
 
         queryRegx = new Regex(@"s[=].*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         regx = new Regex(@"^[/]testp.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -59,6 +69,12 @@ public class Path_HttpRoutingStatementParserBenchmarks
         w = "IsHttps = true";
         _IsHttps = StatementParser.ConvertToFunc(w);
         _IsHttpsV2 = HttpRoutingStatementParser.ConvertToFunction(w);
+
+        headersRegex = new Regex(@"xx[-].*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        w = "header('#kvs') ~= 'xx[-].*'";
+        _headersRegex = StatementParser.ConvertToFunc(w);
+        _headersRegexV2 = HttpRoutingStatementParser.ConvertToFunction(w);
+        _t = f.Convert("{Path}#{{}}{Cookie('x-c')}");
     }
 
     [Benchmark(Baseline = true), BenchmarkCategory("PathEqual")]
@@ -161,5 +177,37 @@ public class Path_HttpRoutingStatementParserBenchmarks
     public void ComplexpV2()
     {
         var b = _PathComplexV2(HttpContext);
+    }
+
+    [Benchmark(Baseline = true), BenchmarkCategory("HeadersRegex")]
+    public void HeadersRegex()
+    {
+        var req = HttpContext.Request;
+        var b = req.Headers.Any(i => headersRegex.IsMatch(i.Key) || headersRegex.IsMatch(i.Value.ToString()));
+    }
+
+    [Benchmark, BenchmarkCategory("HeadersRegex")]
+    public void HeadersRegexp()
+    {
+        var b = _headersRegex(HttpContext);
+    }
+
+    [Benchmark, BenchmarkCategory("HeadersRegex")]
+    public void HeadersRegexpV2()
+    {
+        var b = _headersRegexV2(HttpContext);
+    }
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Template")]
+    public void Template()
+    {
+        var req = HttpContext.Request;
+        var b = $"{req.Path}#{{}}{req.Cookies["x-c"]}".ToUpper();
+    }
+
+    [Benchmark, BenchmarkCategory("Template")]
+    public void TemplateF()
+    {
+        var b = _t(HttpContext);
     }
 }
