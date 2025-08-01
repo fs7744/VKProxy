@@ -27,7 +27,7 @@ internal class DynamicHeaderFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             if (headers.TryGetValue(key, out var values))
             {
                 foreach (var value in values)
@@ -47,7 +47,7 @@ internal class DynamicHeaderFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             if (headers.TryGetValue(key, out var values))
             {
                 foreach (var value in values)
@@ -67,7 +67,7 @@ internal class DynamicHeaderFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             if (headers.TryGetValue(key, out var values))
             {
                 foreach (var value in values)
@@ -87,7 +87,7 @@ internal class DynamicHeaderFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             if (headers.TryGetValue(key, out var values))
             {
                 foreach (var value in values)

@@ -29,7 +29,7 @@ internal class DynamicFormFuncConverter : DynamicStringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var value))
             {
                 if (string.Equals(value, str, StringComparison.OrdinalIgnoreCase))
@@ -47,7 +47,7 @@ internal class DynamicFormFuncConverter : DynamicStringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var value))
             {
                 if (string.Equals(value, str, StringComparison.OrdinalIgnoreCase))
@@ -65,7 +65,7 @@ internal class DynamicFormFuncConverter : DynamicStringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var value))
             {
                 if (reg.IsMatch(value))
@@ -83,7 +83,7 @@ internal class DynamicFormFuncConverter : DynamicStringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var value))
             {
                 if (set.Contains(value))

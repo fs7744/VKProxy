@@ -27,7 +27,7 @@ internal class DynamicQueryFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var h = c.Request.Query;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var values))
             {
                 foreach (var value in values)
@@ -47,7 +47,7 @@ internal class DynamicQueryFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var h = c.Request.Query;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var values))
             {
                 foreach (var value in values)
@@ -67,7 +67,7 @@ internal class DynamicQueryFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var h = c.Request.Query;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var values))
             {
                 foreach (var value in values)
@@ -87,7 +87,7 @@ internal class DynamicQueryFuncConverter : DynamicStringFuncConverter
         return c =>
         {
             var h = c.Request.Query;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             if (h.TryGetValue(key, out var values))
             {
                 foreach (var value in values)

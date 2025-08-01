@@ -12,7 +12,7 @@ internal class CookieAllKeysFuncConverter : StringFuncConverter
         return static c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return null;
+            if (h == null) return null;
             return string.Join(',', h.Keys);
         };
     }
@@ -22,7 +22,7 @@ internal class CookieAllKeysFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => reg.IsMatch(i.Key));
         };
     }
@@ -32,7 +32,7 @@ internal class CookieAllKeysFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return !h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -42,7 +42,7 @@ internal class CookieAllKeysFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -52,7 +52,7 @@ internal class CookieAllKeysFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => set.Contains(i.Key));
         };
     }
@@ -67,7 +67,7 @@ internal class CookieAllValuesFuncConverter : StringFuncConverter
         return static c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return null;
+            if (h == null) return null;
             return string.Join(',', h.Select(static i => i.Value));
         };
     }
@@ -77,7 +77,7 @@ internal class CookieAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => reg.IsMatch(i.Value));
         };
     }
@@ -87,7 +87,7 @@ internal class CookieAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return !h.Any(i => string.Equals(i.Value, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -97,7 +97,7 @@ internal class CookieAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => string.Equals(i.Value, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -107,7 +107,7 @@ internal class CookieAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => set.Contains(i.Value));
         };
     }
@@ -122,7 +122,7 @@ internal class CookieAllKVSFuncConverter : StringFuncConverter
         return static c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return null;
+            if (h == null) return null;
             return string.Join(',', h.Select(static i => i.ToString()));
         };
     }
@@ -132,7 +132,7 @@ internal class CookieAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => reg.IsMatch(i.Key) || reg.IsMatch(i.Value));
         };
     }
@@ -142,7 +142,7 @@ internal class CookieAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return !h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase) || string.Equals(i.Value, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -152,7 +152,7 @@ internal class CookieAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase) || string.Equals(i.Value, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -162,7 +162,7 @@ internal class CookieAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var h = c.Request.Cookies;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => set.Contains(i.Key) || set.Contains(i.Value));
         };
     }

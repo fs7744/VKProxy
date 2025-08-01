@@ -23,7 +23,7 @@ internal class FormAllKeysFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => reg.IsMatch(i.Key));
         };
     }
@@ -34,7 +34,7 @@ internal class FormAllKeysFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return !h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -45,7 +45,7 @@ internal class FormAllKeysFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase));
         };
     }
@@ -56,7 +56,7 @@ internal class FormAllKeysFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => set.Contains(i.Key));
         };
     }
@@ -82,7 +82,7 @@ internal class FormAllValuesFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => i.Value.Any(reg.IsMatch));
         };
     }
@@ -93,7 +93,7 @@ internal class FormAllValuesFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return !h.Any(i => i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -104,7 +104,7 @@ internal class FormAllValuesFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -115,7 +115,7 @@ internal class FormAllValuesFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => i.Value.Any(j => set.Contains(j)));
         };
     }
@@ -141,7 +141,7 @@ internal class FormAllKVSFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => reg.IsMatch(i.Key) || i.Value.Any(reg.IsMatch));
         };
     }
@@ -152,7 +152,7 @@ internal class FormAllKVSFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return !h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase) || i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -163,7 +163,7 @@ internal class FormAllKVSFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase) || i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -174,7 +174,7 @@ internal class FormAllKVSFuncConverter : StringFuncConverter
         {
             if (!c.Request.HasFormContentType) return false;
             var h = c.Request.Form;
-            if (h == null || h.Count == 0) return false;
+            if (h == null) return false;
             return h.Any(i => set.Contains(i.Key) || i.Value.Any(j => set.Contains(j)));
         };
     }

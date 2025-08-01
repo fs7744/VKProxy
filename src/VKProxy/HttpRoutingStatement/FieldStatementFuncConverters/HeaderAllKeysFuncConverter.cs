@@ -67,7 +67,7 @@ internal class HeaderAllValuesFuncConverter : StringFuncConverter
         return static c =>
         {
             var h = c.Request.Headers;
-            if (h == null || h.Count == 0) return null;
+            if (h == null) return null;
             return string.Join(',', h.Select(static i => i.Value));
         };
     }
@@ -77,7 +77,7 @@ internal class HeaderAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return headers.Any(i => i.Value.Any(reg.IsMatch));
         };
     }
@@ -87,7 +87,7 @@ internal class HeaderAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return !headers.Any(i => i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -97,7 +97,7 @@ internal class HeaderAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return headers.Any(i => i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -107,7 +107,7 @@ internal class HeaderAllValuesFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return headers.Any(i => i.Value.Any(j => set.Contains(j)));
         };
     }
@@ -122,7 +122,7 @@ internal class HeaderAllKVSFuncConverter : StringFuncConverter
         return static c =>
         {
             var h = c.Request.Headers;
-            if (h == null || h.Count == 0) return null;
+            if (h == null) return null;
             return string.Join(',', h.Select(static i => i.ToString()));
         };
     }
@@ -132,7 +132,7 @@ internal class HeaderAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return headers.Any(i => reg.IsMatch(i.Key) || i.Value.Any(reg.IsMatch));
         };
     }
@@ -142,7 +142,7 @@ internal class HeaderAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return !headers.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase) || i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -152,7 +152,7 @@ internal class HeaderAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return headers.Any(i => string.Equals(i.Key, str, StringComparison.OrdinalIgnoreCase) || i.Value.Any(j => string.Equals(j, str, StringComparison.OrdinalIgnoreCase)));
         };
     }
@@ -162,7 +162,7 @@ internal class HeaderAllKVSFuncConverter : StringFuncConverter
         return c =>
         {
             var headers = c.Request.Headers;
-            if (headers == null || headers.Count == 0) return false;
+            if (headers == null) return false;
             return headers.Any(i => set.Contains(i.Key) || i.Value.Any(j => set.Contains(j)));
         };
     }

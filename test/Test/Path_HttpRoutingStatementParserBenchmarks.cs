@@ -46,7 +46,7 @@ public class Path_HttpRoutingStatementParserBenchmarks
         req.IsHttps = true;
         for (int i = 0; i < 10; i++)
         {
-            req.Headers.Add($"x-{i}", $"v-{i}");
+            req.Headers.Add($"x-{i}", new string[] { $"v-{i}", $"x-{i}", $"s-{i}" });
         }
 
         queryRegx = new Regex(@"s[=].*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
