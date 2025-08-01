@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace VKProxy.HttpRoutingStatement.FieldStatementFuncConverters;
 
-internal class ContentTypeFuncConverter : PathFuncConverter
+internal class ContentTypeFuncConverter : StringFuncConverter
 {
     public override string Field => "ContentType";
 

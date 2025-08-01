@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace VKProxy.HttpRoutingStatement.FieldStatementFuncConverters;
 
-internal class SchemeFuncConverter : PathFuncConverter
+internal class SchemeFuncConverter : StringFuncConverter
 {
     public override string Field => "Scheme";
 

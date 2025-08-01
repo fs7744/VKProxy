@@ -16,6 +16,8 @@ public static partial class HttpRoutingStatementParser
         new HostFuncConverter(),
         new QueryStringFuncConverter(),
         new ProtocolFuncConverter(),
+        new IsHttpsFuncConverter(),
+        new HasFormContentTypeFuncConverter(),
     }.ToFrozenDictionary(i => i.Field, StringComparer.OrdinalIgnoreCase);
 
     public static Func<HttpContext, bool> ConvertToFunction(string statement)
@@ -101,17 +103,18 @@ public static partial class HttpRoutingStatementParser
     {
         if (field is DynamicFieldStatement d && !string.IsNullOrWhiteSpace(d.Key))
         {
-            if (fieldConverters.TryGetValue($"{d.Field}{d.Key}", out var converter))
+            if (fieldConverters.TryGetValue($"{d.Field}{d.Key}", out var converter) && converter is IStaticFieldStatementFuncConverter c)
             {
-                return converter.Convert(value, operater);
+                return c.Convert(value, operater);
             }
-            //else if ()
-            //{
-            //}
+            else if (fieldConverters.TryGetValue(field.Field, out converter) && converter is IDynamicFieldStatementFuncConverter dc)
+            {
+                return dc.Convert(value, operater, d.Key);
+            }
         }
-        else if (fieldConverters.TryGetValue(field.Field, out var converter))
+        else if (fieldConverters.TryGetValue(field.Field, out var converter) && converter is IStaticFieldStatementFuncConverter c)
         {
-            return converter.Convert(value, operater);
+            return c.Convert(value, operater);
         }
 
         return null;

@@ -2,6 +2,7 @@
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Order;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
 using System.Text.RegularExpressions;
 using VKProxy.HttpRoutingStatement;
 
@@ -19,6 +20,8 @@ public class Path_HttpRoutingStatementParserBenchmarks
     private readonly Regex queryRegx;
     private readonly Func<HttpContext, bool> _PathComplex;
     private readonly Func<HttpContext, bool> _PathComplexV2;
+    private readonly Func<HttpContext, bool> _IsHttps;
+    private readonly Func<HttpContext, bool> _IsHttpsV2;
     private Regex regx;
     private Func<HttpContext, bool> _PathRegx;
     private Func<HttpContext, bool> _PathRegxV2;
@@ -34,6 +37,7 @@ public class Path_HttpRoutingStatementParserBenchmarks
         req.Protocol = "HTTP/1.1";
         req.ContentType = "json";
         req.QueryString = new QueryString("?s=123&d=456&f=789");
+        req.IsHttps = true;
 
         queryRegx = new Regex(@"s[=].*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         regx = new Regex(@"^[/]testp.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -48,9 +52,13 @@ public class Path_HttpRoutingStatementParserBenchmarks
         _PathInV2 = HttpRoutingStatementParser.ConvertToFunction("Path in ('/testp','/testp/DSD/fsdfx/fadasd3/中')");
         set = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "/testp", "/testp/DSD/fsdfx/fadasd3/中" };
 
-        var w = "Path = '/testp/DSD/fsdfx/fadasd3/中' AND Method = \"GET\" AND Host = \"x.com\" AND Scheme = \"https\" AND Protocol = \"HTTP/1.1\" AND ContentType = \"json\" AND QueryString ~= 's[=].*' and not(Scheme = \"http\")";
+        var w = "IsHttps = true and Path = '/testp/DSD/fsdfx/fadasd3/中' AND Method = \"GET\" AND Host = \"x.com\" AND Scheme = \"https\" AND Protocol = \"HTTP/1.1\" AND ContentType = \"json\" AND QueryString ~= 's[=].*' and not(Scheme = \"http\")";
         _PathComplex = HttpRoutingStatementParser.ConvertToFunc(w);
         _PathComplexV2 = HttpRoutingStatementParser.ConvertToFunction(w);
+
+        w = "IsHttps = true";
+        _IsHttps = HttpRoutingStatementParser.ConvertToFunc(w);
+        _IsHttpsV2 = HttpRoutingStatementParser.ConvertToFunction(w);
     }
 
     [Benchmark(Baseline = true), BenchmarkCategory("PathEqual")]
@@ -110,11 +118,30 @@ public class Path_HttpRoutingStatementParserBenchmarks
         var b = _PathInV2(HttpContext);
     }
 
+    [Benchmark(Baseline = true), BenchmarkCategory("bool")]
+    public void IsHttps()
+    {
+        var b = HttpContext.Request.IsHttps == true;
+    }
+
+    [Benchmark, BenchmarkCategory("bool")]
+    public void IsHttpsp()
+    {
+        var b = _IsHttps(HttpContext);
+    }
+
+    [Benchmark, BenchmarkCategory("bool")]
+    public void IsHttpspV2()
+    {
+        var b = _IsHttpsV2(HttpContext);
+    }
+
     [Benchmark(Baseline = true), BenchmarkCategory("Complex")]
     public void Complex()
     {
         var req = HttpContext.Request;
-        var b = req.Path.Value.Equals("/testp/DSD/fsdfx/fadasd3/中", StringComparison.OrdinalIgnoreCase)
+        var b = req.IsHttps == true
+            && req.Path.Value.Equals("/testp/DSD/fsdfx/fadasd3/中", StringComparison.OrdinalIgnoreCase)
             && req.Method == "GET"
             && req.Host.ToString() == "x.com"
             && req.Scheme == "https"

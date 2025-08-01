@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace VKProxy.HttpRoutingStatement.FieldStatementFuncConverters;
 
-internal class ProtocolFuncConverter : PathFuncConverter
+internal class ProtocolFuncConverter : StringFuncConverter
 {
     public override string Field => "Protocol";
 
