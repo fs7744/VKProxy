@@ -6,7 +6,7 @@ namespace VKProxy.HttpRoutingStatement.FieldStatementFuncConverters;
 
 internal class PathFuncConverter : IFieldStatementFuncConverter
 {
-    public string Field => "Path";
+    public virtual string Field => "Path";
 
     public Func<HttpContext, bool> Convert(ValueStatement value, string operater)
     {
@@ -14,55 +14,69 @@ internal class PathFuncConverter : IFieldStatementFuncConverter
         {
             case "=":
                 {
-                    var str = ConvertToString(value);
-                    return c =>
-                    {
-                        var path = c.Request.Path.Value;
-                        return string.Equals(path, str, StringComparison.OrdinalIgnoreCase);
-                    };
+                    var str = StatementConvertUtils.ConvertToString(value);
+                    return CreateEqualsFunc(str);
                 }
             case "!=":
                 {
-                    var str = ConvertToString(value);
-                    return c =>
-                    {
-                        var path = c.Request.Path.Value;
-                        return !string.Equals(path, str, StringComparison.OrdinalIgnoreCase);
-                    };
+                    var str = StatementConvertUtils.ConvertToString(value);
+                    return CreateNotEqualsFunc(str);
                 }
             case "~=":
                 {
-                    var str = ConvertToString(value);
+                    var str = StatementConvertUtils.ConvertToString(value);
                     if (string.IsNullOrWhiteSpace(str)) return null;
                     var reg = new Regex(str, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    return c =>
-                    {
-                        var path = c.Request.Path.Value;
-                        return reg.IsMatch(path);
-                    };
+                    return CreateRegexFunc(reg);
                 }
+            case "in":
+                if (value is ArrayValueStatement avs)
+                {
+                    var set = StatementConvertUtils.ConvertToString(avs);
+                    if (set == null) return null;
+                    return CreateSetContainsFunc(set);
+                }
+                else
+                    return null;
+
             default:
                 return null;
         }
     }
 
-    private static string ConvertToString(ValueStatement value)
+    protected virtual Func<HttpContext, bool> CreateSetContainsFunc(System.Collections.Frozen.FrozenSet<string> set)
     {
-        if (value is StringValueStatement svs)
+        return c =>
         {
-            return svs.Value;
-        }
-        else if (value is NumberValueStatement nvs)
+            var path = c.Request.Path.Value;
+            return set.Contains(path);
+        };
+    }
+
+    protected virtual Func<HttpContext, bool> CreateRegexFunc(Regex reg)
+    {
+        return c =>
         {
-            return nvs.Value.ToString();
-        }
-        else if (value is BooleanValueStatement bvs)
+            var path = c.Request.Path.Value;
+            return reg.IsMatch(path);
+        };
+    }
+
+    protected virtual Func<HttpContext, bool> CreateNotEqualsFunc(string str)
+    {
+        return c =>
         {
-            return bvs.Value.ToString();
-        }
-        else
+            var path = c.Request.Path.Value;
+            return !string.Equals(path, str, StringComparison.OrdinalIgnoreCase);
+        };
+    }
+
+    protected virtual Func<HttpContext, bool> CreateEqualsFunc(string str)
+    {
+        return c =>
         {
-            throw new NotSupportedException($"Path Unsupported value type: {value.GetType().Name}");
-        }
+            var path = c.Request.Path.Value;
+            return string.Equals(path, str, StringComparison.OrdinalIgnoreCase);
+        };
     }
 }

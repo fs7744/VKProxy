@@ -13,6 +13,12 @@ public class Path_HttpRoutingStatementParserBenchmarks
     private Func<HttpContext, bool> _PathEqualV2;
     private Func<HttpContext, bool> _PathEqualTrue;
     private Func<HttpContext, bool> _PathEqualTrueV2;
+    private readonly Func<HttpContext, bool> _PathIn;
+    private readonly Func<HttpContext, bool> _PathInV2;
+    private readonly HashSet<string> set;
+    private readonly Regex queryRegx;
+    private readonly Func<HttpContext, bool> _PathComplex;
+    private readonly Func<HttpContext, bool> _PathComplexV2;
     private Regex regx;
     private Func<HttpContext, bool> _PathRegx;
     private Func<HttpContext, bool> _PathRegxV2;
@@ -22,7 +28,14 @@ public class Path_HttpRoutingStatementParserBenchmarks
         this.HttpContext = new DefaultHttpContext();
         var req = HttpContext.Request;
         req.Path = "/testp/dsd/fsdfx/fadasd3/中";
+        req.Method = "GET";
+        req.Host = new HostString("x.com");
+        req.Scheme = "https";
+        req.Protocol = "HTTP/1.1";
+        req.ContentType = "json";
+        req.QueryString = new QueryString("?s=123&d=456&f=789");
 
+        queryRegx = new Regex(@"s[=].*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         regx = new Regex(@"^[/]testp.*", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         _PathRegx = HttpRoutingStatementParser.ConvertToFunc("Path ~= '^[/]testp.*'");
         _PathRegxV2 = HttpRoutingStatementParser.ConvertToFunction("Path ~= '^[/]testp.*'");
@@ -30,6 +43,14 @@ public class Path_HttpRoutingStatementParserBenchmarks
         _PathEqualV2 = HttpRoutingStatementParser.ConvertToFunction("Path = '/testp'");
         _PathEqualTrue = HttpRoutingStatementParser.ConvertToFunc("Path = '/testp/DSD/fsdfx/fadasd3/中'");
         _PathEqualTrueV2 = HttpRoutingStatementParser.ConvertToFunction("Path = '/testp/DSD/fsdfx/fadasd3/中'");
+
+        _PathIn = HttpRoutingStatementParser.ConvertToFunc("Path in ('/testp','/testp/DSD/fsdfx/fadasd3/中')");
+        _PathInV2 = HttpRoutingStatementParser.ConvertToFunction("Path in ('/testp','/testp/DSD/fsdfx/fadasd3/中')");
+        set = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "/testp", "/testp/DSD/fsdfx/fadasd3/中" };
+
+        var w = "Path = '/testp/DSD/fsdfx/fadasd3/中' AND Method = \"GET\" AND Host = \"x.com\" AND Scheme = \"https\" AND Protocol = \"HTTP/1.1\" AND ContentType = \"json\" AND QueryString ~= 's[=].*' and not(Scheme = \"http\")";
+        _PathComplex = HttpRoutingStatementParser.ConvertToFunc(w);
+        _PathComplexV2 = HttpRoutingStatementParser.ConvertToFunction(w);
     }
 
     [Benchmark(Baseline = true), BenchmarkCategory("PathEqual")]
@@ -69,5 +90,49 @@ public class Path_HttpRoutingStatementParserBenchmarks
     public void PathRegxV2()
     {
         var b = _PathRegxV2(HttpContext);
+    }
+
+    [Benchmark(Baseline = true), BenchmarkCategory("In")]
+    public void PathInString()
+    {
+        var b = set.Contains(HttpContext.Request.Path.Value);
+    }
+
+    [Benchmark, BenchmarkCategory("In")]
+    public void PathIn()
+    {
+        var b = _PathIn(HttpContext);
+    }
+
+    [Benchmark, BenchmarkCategory("In")]
+    public void PathInV2()
+    {
+        var b = _PathInV2(HttpContext);
+    }
+
+    [Benchmark(Baseline = true), BenchmarkCategory("Complex")]
+    public void Complex()
+    {
+        var req = HttpContext.Request;
+        var b = req.Path.Value.Equals("/testp/DSD/fsdfx/fadasd3/中", StringComparison.OrdinalIgnoreCase)
+            && req.Method == "GET"
+            && req.Host.ToString() == "x.com"
+            && req.Scheme == "https"
+            && req.Protocol == "HTTP/1.1"
+            && req.ContentType == "json"
+            && queryRegx.IsMatch(req.QueryString.ToString())
+            && !(req.Scheme == "http");
+    }
+
+    [Benchmark, BenchmarkCategory("Complex")]
+    public void Complexp()
+    {
+        var b = _PathComplex(HttpContext);
+    }
+
+    [Benchmark, BenchmarkCategory("Complex")]
+    public void ComplexpV2()
+    {
+        var b = _PathComplexV2(HttpContext);
     }
 }

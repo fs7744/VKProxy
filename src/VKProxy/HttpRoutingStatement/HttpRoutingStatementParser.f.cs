@@ -10,6 +10,12 @@ public static partial class HttpRoutingStatementParser
     private static readonly FrozenDictionary<string, IFieldStatementFuncConverter> fieldConverters = new IFieldStatementFuncConverter[]
     {
         new PathFuncConverter(),
+        new MethodFuncConverter(),
+        new SchemeFuncConverter(),
+        new ContentTypeFuncConverter(),
+        new HostFuncConverter(),
+        new QueryStringFuncConverter(),
+        new ProtocolFuncConverter(),
     }.ToFrozenDictionary(i => i.Field, StringComparer.OrdinalIgnoreCase);
 
     public static Func<HttpContext, bool> ConvertToFunction(string statement)
@@ -68,18 +74,27 @@ public static partial class HttpRoutingStatementParser
 
     private static Func<HttpContext, bool> DoConvertToFunction(OperaterStatement os)
     {
-        //var en = ConvertToFieldEnumerable(os.Left);
-        //if (en != null)
-        //    return DoConvertToFunc(en, os, os.Right);
-        //en = ConvertToFieldEnumerable(os.Right);
-        //if (en != null)
-        //    return DoConvertToFunc(en, os, os.Left);
-
         if (os.Left is FieldStatement field && os.Right is not FieldStatement)
         {
             return DoConvertToFunction(field, os.Right, os.Operater);
         }
+        else if (os.Right is FieldStatement f && os.Left is not FieldStatement)
+        {
+            return DoConvertToFunction(f, os.Left, Negate(os.Operater));
+        }
         return null;
+    }
+
+    private static string Negate(string operater)
+    {
+        return operater switch
+        {
+            "<" => ">=",
+            "<=" => ">",
+            ">" => "<=",
+            ">=" => "<",
+            _ => operater,
+        };
     }
 
     private static Func<HttpContext, bool> DoConvertToFunction(FieldStatement field, ValueStatement value, string operater)
@@ -104,11 +119,20 @@ public static partial class HttpRoutingStatementParser
 
     private static Func<HttpContext, bool> DoConvertToFunction(UnaryOperaterStatement uo)
     {
-        throw new NotImplementedException();
+        if (uo.Operater.Equals("not", StringComparison.OrdinalIgnoreCase))
+        {
+            var o = ConvertToFunction(uo.Right);
+            return o == null ? null : c => !o(c);
+        }
+        return null;
     }
 
     private static Func<HttpContext, bool> DoConvertToFunction(InOperaterStatement io)
     {
-        throw new NotImplementedException();
+        if (io.Left is FieldStatement field)
+        {
+            return DoConvertToFunction(field, io.Right, io.Operater);
+        }
+        return null;
     }
 }
