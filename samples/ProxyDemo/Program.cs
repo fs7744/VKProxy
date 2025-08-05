@@ -28,7 +28,14 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
              .AddMeter("Microsoft.AspNetCore.Routing")
              .AddMeter("Microsoft.AspNetCore.Diagnostics")
              .AddMeter("Microsoft.AspNetCore.RateLimiting")
+             .AddMeter("Microsoft.AspNetCore.MemoryPool")
              .AddPrometheusExporter());
+
+        i.ConfigureOpenTelemetryMeterProvider(j =>
+        {
+            j.AddView("kestrel.connection.duration", MetricStreamConfiguration.Drop);
+            j.AddView("kestrel.tls_handshake.duration", MetricStreamConfiguration.Drop);
+        });
         i.AddSingleton<IHttpFunc, PrometheusFunc>();
         //i.Configure<ReverseProxyOptions>(o => o.Section = "TextSection");
         //i.UseUdpMiddleware<EchoUdpProxyMiddleware>();
