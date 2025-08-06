@@ -26,13 +26,15 @@ public class ListenConfig : IDisposable
     internal List<ListenEndPointOptions> ListenEndPointOptions { get; set; }
     private HttpsConnectionAdapterOptions httpsConnectionAdapterOptions;
 
+    private static readonly HttpsConnectionAdapterOptions DefaultHttpsConnectionAdapterOptions = new HttpsConnectionAdapterOptions() { HandshakeTimeout = SniConfig.DefaultHandshakeTimeout };
+
     internal HttpsConnectionAdapterOptions GetHttpsOptions()
     {
         if (UseSni)
         {
             if (httpsConnectionAdapterOptions is null)
             {
-                httpsConnectionAdapterOptions = SniConfig?.GenerateHttps() ?? new HttpsConnectionAdapterOptions() { HandshakeTimeout = SniConfig.DefaultHandshakeTimeout };
+                httpsConnectionAdapterOptions = SniConfig?.GenerateHttps() ?? DefaultHttpsConnectionAdapterOptions;
             }
             return httpsConnectionAdapterOptions;
         }
