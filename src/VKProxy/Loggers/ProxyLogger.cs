@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Net;
 using VKProxy.Config;
 using VKProxy.Core.Http;
+using VKProxy.Features;
 using VKProxy.Middlewares.Http;
 
 namespace VKProxy.Core.Loggers;
@@ -11,10 +15,24 @@ namespace VKProxy.Core.Loggers;
 public partial class ProxyLogger : ILogger
 {
     internal readonly ILogger generalLogger;
+    private readonly Meter? metrics;
+    private readonly Counter<long>? requestsCounter;
+    private readonly Histogram<double>? requestDuration;
 
-    public ProxyLogger(ILoggerFactory loggerFactory)
+    public ProxyLogger(ILoggerFactory loggerFactory, IServiceProvider serviceProvider)
     {
         generalLogger = loggerFactory.CreateLogger("VKProxy.Server.ReverseProxy");
+        var f = serviceProvider.GetService<IMeterFactory>();
+        metrics = f == null ? null : f.Create("VKProxy.ReverseProxy");
+        if (metrics != null)
+        {
+            requestsCounter = metrics.CreateCounter<long>("vkproxy.reverseproxy.requests", unit: "{request}", "Total number of (HTTP/tcp/udp) requests processed by the reverse proxy.");
+            requestDuration = metrics.CreateHistogram(
+            "vkproxy.reverseproxy.request.duration",
+            unit: "s",
+            description: "Proxy handle duration of (HTTP/tcp/udp) requests.",
+            advice: new InstrumentAdvice<double> { HistogramBucketBoundaries = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300] });
+        }
     }
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
@@ -69,14 +87,38 @@ public partial class ProxyLogger : ILogger
         GeneralLog.ProxyTimeout(generalLogger, routeId, time);
     }
 
-    public void ProxyBegin(string routeId)
+    public void ProxyBegin(IReverseProxyFeature feature)
     {
+        string routeId = GetRouteId(feature);
         GeneralLog.ProxyBegin(generalLogger, routeId);
+        if (requestsCounter != null)
+        {
+            var tags = new TagList
+            {
+                { "route", routeId }
+            };
+            requestsCounter.Add(1, in tags);
+        }
     }
 
-    public void ProxyEnd(string routeId)
+    private static string GetRouteId(IReverseProxyFeature feature)
     {
+        return feature.Route == null ? "(null)" : feature.Route.Key;
+    }
+
+    public void ProxyEnd(IReverseProxyFeature feature)
+    {
+        string routeId = GetRouteId(feature);
         GeneralLog.ProxyEnd(generalLogger, routeId);
+        if (requestDuration != null)
+        {
+            var endTimestamp = Stopwatch.GetTimestamp();
+            var tags = new TagList
+            {
+                { "route", routeId }
+            };
+            requestDuration.Record(Stopwatch.GetElapsedTime(feature.StartTimestamp, endTimestamp).TotalSeconds, in tags);
+        }
     }
 
     public void NotFoundRouteSni(string host)

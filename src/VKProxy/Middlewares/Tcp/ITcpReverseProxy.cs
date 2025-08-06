@@ -75,11 +75,10 @@ internal class TcpReverseProxy : ITcpReverseProxy
 
     private async Task TcpProxyAsync(ConnectionContext context, IL4ReverseProxyFeature feature)
     {
+        logger.ProxyBegin(feature);
         var route = feature.Route;
         if (route is null) return;
-        logger.ProxyBegin(route.Key);
         await DoTcpProxyAsync(context, feature, route);
-        logger.ProxyEnd(route.Key);
     }
 
     private async Task DoTcpProxyAsync(ConnectionContext context, IL4ReverseProxyFeature feature, RouteConfig? route)
@@ -128,13 +127,17 @@ internal class TcpReverseProxy : ITcpReverseProxy
         using var cts = CancellationTokenSourcePool.Default.Rent(options.ConnectionTimeout);
         var token = cts.Token;
         await init(context, token);
-        if (feature.IsDone) return;
+        if (feature.IsDone)
+        {
+            logger.ProxyBegin(feature);
+            return;
+        }
         var (sni, r) = await sniSelector.MatchSNIAsync(context, token);
+        logger.ProxyBegin(feature);
         if (sni is null) return;
         var route = sni.RouteConfig;
         if (route is null) return;
         feature.Route = route;
-        logger.ProxyBegin(route.Key);
         if (sni.Passthrough)
         {
             await DoPassthroughAsync(context, route, r, feature);
@@ -143,8 +146,6 @@ internal class TcpReverseProxy : ITcpReverseProxy
         {
             await DoSslAsync(context, sni, r, feature);
         }
-
-        logger.ProxyEnd(route.Key);
     }
 
     private async Task DoPassthroughAsync(ConnectionContext context, RouteConfig? route, ReadResult r, IL4ReverseProxyFeature feature)

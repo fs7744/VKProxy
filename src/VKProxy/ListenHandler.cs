@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading.RateLimiting;
 using VKProxy.Config;
@@ -15,7 +16,6 @@ using VKProxy.Core.Infrastructure;
 using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
-using VKProxy.Features.Limits;
 using VKProxy.Middlewares;
 
 namespace VKProxy;
@@ -122,49 +122,67 @@ internal class ListenHandler : ListenHandlerBase
 
     private async Task DoHttp(HttpContext context, ListenEndPointOptions? options)
     {
-        using var proxyFeature = new L7ReverseProxyFeature() { Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context), Http = context };
+        var startTimestamp = Stopwatch.GetTimestamp();
+        using var proxyFeature = new L7ReverseProxyFeature() { Http = context, StartTimestamp = startTimestamp };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
-        var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
-        if (limiter == null)
-            await http(context);
-        else
+        try
         {
-            var activityCancellationSource = ActivityCancellationTokenSource.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout, context.RequestAborted);
-            using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, activityCancellationSource.Token);
-            if (lease.IsAcquired)
-            {
+            proxyFeature.Route = options?.RouteConfig ?? await httpSelector.MatchAsync(context);
+            logger.ProxyBegin(proxyFeature);
+            var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
+            if (limiter == null)
                 await http(context);
-                return;
-            }
-
-            logger.ConnectionRejected(context.Connection.Id);
-            if (lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+            else
             {
-                context.Response.Headers["Retry-After"] = ((int)retryAfter.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
+                var activityCancellationSource = ActivityCancellationTokenSource.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout, context.RequestAborted);
+                using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, activityCancellationSource.Token);
+                if (lease.IsAcquired)
+                {
+                    await http(context);
+                    return;
+                }
+
+                logger.ConnectionRejected(context.Connection.Id);
+                if (lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+                {
+                    context.Response.Headers["Retry-After"] = ((int)retryAfter.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
+                }
+                context.Response.StatusCode = 429;
             }
-            context.Response.StatusCode = 429;
+        }
+        finally
+        {
+            logger.ProxyEnd(proxyFeature);
         }
     }
 
     private async Task DoTcp(ConnectionContext connection, ListenEndPointOptions? options)
     {
-        using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig, Connection = connection };
+        var startTimestamp = Stopwatch.GetTimestamp();
+        using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig, Connection = connection, StartTimestamp = startTimestamp };
         connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
-        var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
-        if (limiter == null)
-            await tcp.Proxy(connection, proxyFeature);
-        else
+        try
         {
-            using var s = CancellationTokenSourcePool.Default.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout);
-            using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, s.Token);
-            if (lease.IsAcquired)
-            {
+            var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
+            if (limiter == null)
                 await tcp.Proxy(connection, proxyFeature);
-                return;
-            }
+            else
+            {
+                using var s = CancellationTokenSourcePool.Default.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout);
+                using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, s.Token);
+                if (lease.IsAcquired)
+                {
+                    await tcp.Proxy(connection, proxyFeature);
+                    return;
+                }
 
-            logger.ConnectionRejected(connection.ConnectionId);
-            await connection.DisposeAsync();
+                logger.ConnectionRejected(connection.ConnectionId);
+                await connection.DisposeAsync();
+            }
+        }
+        finally
+        {
+            logger.ProxyEnd(proxyFeature);
         }
     }
 
@@ -172,23 +190,32 @@ internal class ListenHandler : ListenHandlerBase
     {
         if (connection is UdpConnectionContext context)
         {
-            using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, Connection = connection };
+            var startTimestamp = Stopwatch.GetTimestamp();
+            using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, Connection = connection, StartTimestamp = startTimestamp };
             context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
-            var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
-            if (limiter == null)
-                await udp.Proxy(context, proxyFeature);
-            else
+            logger.ProxyBegin(proxyFeature);
+            try
             {
-                using var s = CancellationTokenSourcePool.Default.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout);
-                using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, s.Token);
-                if (lease.IsAcquired)
-                {
+                var limiter = proxyFeature.Route?.ConnectionLimiter?.GetLimiter(proxyFeature);
+                if (limiter == null)
                     await udp.Proxy(context, proxyFeature);
-                    return;
-                }
+                else
+                {
+                    using var s = CancellationTokenSourcePool.Default.Rent(proxyFeature.Route?.Timeout ?? this.options.ConnectionTimeout);
+                    using RateLimitLease lease = await limiter.AcquireAsync(permitCount: 1, s.Token);
+                    if (lease.IsAcquired)
+                    {
+                        await udp.Proxy(context, proxyFeature);
+                        return;
+                    }
 
-                logger.ConnectionRejected(connection.ConnectionId);
-                await connection.DisposeAsync();
+                    logger.ConnectionRejected(connection.ConnectionId);
+                    await connection.DisposeAsync();
+                }
+            }
+            finally
+            {
+                logger.ProxyEnd(proxyFeature);
             }
         }
         else

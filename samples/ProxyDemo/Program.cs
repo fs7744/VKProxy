@@ -20,21 +20,24 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
         i.AddOpenTelemetry()
     //.ConfigureResource(resource => resource.AddHostDetector().AddOperatingSystemDetector().AddContainerDetector())
     .WithMetrics(builder => builder.AddMeter("System.Runtime")
-    .AddMeter("Microsoft.AspNetCore.Hosting")
+    //.AddMeter("Microsoft.AspNetCore.Hosting")
     .AddMeter("System.Net.Http")
             .AddMeter("System.Net.NameResolution")
              .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-             .AddMeter("Microsoft.AspNetCore.Http.Connections")
-             .AddMeter("Microsoft.AspNetCore.Routing")
-             .AddMeter("Microsoft.AspNetCore.Diagnostics")
+             .AddMeter("Microsoft.AspNetCore.Server.Kestrel.Udp")
+             //.AddMeter("Microsoft.AspNetCore.Http.Connections")
+             //.AddMeter("Microsoft.AspNetCore.Routing")
+             //.AddMeter("Microsoft.AspNetCore.Diagnostics")
              .AddMeter("Microsoft.AspNetCore.RateLimiting")
              .AddMeter("Microsoft.AspNetCore.MemoryPool")
+             .AddMeter("VKProxy.ReverseProxy")
              .AddPrometheusExporter());
 
         i.ConfigureOpenTelemetryMeterProvider(j =>
         {
-            j.AddView("kestrel.connection.duration", MetricStreamConfiguration.Drop);
-            j.AddView("kestrel.tls_handshake.duration", MetricStreamConfiguration.Drop);
+            //j.AddView("kestrel.connection.duration", MetricStreamConfiguration.Drop);
+            //j.AddView("kestrel.tls_handshake.duration", MetricStreamConfiguration.Drop);
+            //j.AddView("aspnetcore.memory_pool.total_allocated", MetricStreamConfiguration.Drop);
         });
         i.AddSingleton<IHttpFunc, PrometheusFunc>();
         //i.Configure<ReverseProxyOptions>(o => o.Section = "TextSection");

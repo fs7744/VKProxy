@@ -15,6 +15,7 @@ public interface IReverseProxyFeature
 {
     public RouteConfig Route { get; set; }
     public DestinationState? SelectedDestination { get; set; }
+    public long StartTimestamp { get; set; }
 }
 
 public interface IL7ReverseProxyFeature : IReverseProxyFeature
@@ -31,6 +32,7 @@ public class L4ReverseProxyFeature : IL4ReverseProxyFeature, IDisposable
     public bool IsSni { get; set; }
     public SniConfig? SelectedSni { get; set; }
     public ConnectionContext Connection { get; set; }
+    public long StartTimestamp { get; set; }
 
     public void Dispose()
     {
@@ -45,6 +47,7 @@ public class L7ReverseProxyFeature : IL7ReverseProxyFeature, IDisposable
     public RouteConfig Route { get; set; }
     public DestinationState? SelectedDestination { get; set; }
     public HttpContext Http { get; set; }
+    public long StartTimestamp { get; set; }
 
     public void Dispose()
     {

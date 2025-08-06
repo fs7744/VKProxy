@@ -32,9 +32,9 @@ public class ListenConfig : IDisposable
         {
             if (httpsConnectionAdapterOptions is null)
             {
-                httpsConnectionAdapterOptions = SniConfig?.GenerateHttps();
-                return httpsConnectionAdapterOptions;
+                httpsConnectionAdapterOptions = SniConfig?.GenerateHttps() ?? new HttpsConnectionAdapterOptions() { HandshakeTimeout = SniConfig.DefaultHandshakeTimeout };
             }
+            return httpsConnectionAdapterOptions;
         }
         return null;
     }

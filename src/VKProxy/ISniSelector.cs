@@ -76,7 +76,7 @@ public class SniSelector : ISniSelector
     public X509Certificate2? ServerCertificateSelector(ConnectionContext? context, string? host)
     {
         if (string.IsNullOrWhiteSpace(host)) return null;
-        var s = route.Match<SniConfig>(hosts.GetOrAdd(host, static host => host.Reverse()), null, static (c, r) => true);
+        var s = route.Match<SniConfig>(hosts.GetOrAdd(host, static host => host.Reverse()), null, static (c, r) => c.X509Certificate2 != null);
         return s?.X509Certificate2;
     }
 
