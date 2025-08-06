@@ -79,4 +79,9 @@ public class ConnectionByKeyLimiter : IConnectionLimiter
         }
         return r;
     }
+
+    public IEnumerable<KeyValuePair<string, RateLimiter>> GetAllLimiter()
+    {
+        return rateLimiters;
+    }
 }

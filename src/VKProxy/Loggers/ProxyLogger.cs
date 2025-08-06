@@ -4,7 +4,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Linq;
 using System.Net;
+using System.Threading.RateLimiting;
 using VKProxy.Config;
 using VKProxy.Core.Http;
 using VKProxy.Features;
@@ -26,13 +28,49 @@ public partial class ProxyLogger : ILogger
         metrics = f == null ? null : f.Create("VKProxy.ReverseProxy");
         if (metrics != null)
         {
-            requestsCounter = metrics.CreateCounter<long>("vkproxy.reverseproxy.requests", unit: "{request}", "Total number of (HTTP/tcp/udp) requests processed by the reverse proxy.");
+            requestsCounter = metrics.CreateCounter<long>("vkproxy.requests", unit: "{request}", "Total number of (HTTP/tcp/udp) requests processed by the reverse proxy.");
             requestDuration = metrics.CreateHistogram(
             "vkproxy.reverseproxy.request.duration",
             unit: "s",
             description: "Proxy handle duration of (HTTP/tcp/udp) requests.",
             advice: new InstrumentAdvice<double> { HistogramBucketBoundaries = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300] });
+            metrics.CreateObservableUpDownCounter<long>("vkproxy.rate_limit.current_available_permits", GetRateLimitMeasurements(serviceProvider, static s => s.CurrentAvailablePermits)
+                , unit: "{request}", "Number of permits currently available for the ratelimiting");
+            metrics.CreateObservableUpDownCounter<long>("vkproxy.rate_limit.current_queued_count", GetRateLimitMeasurements(serviceProvider, static s => s.CurrentQueuedCount)
+                , unit: "{request}", "Number of queued permits for the ratelimiting");
+            metrics.CreateObservableUpDownCounter<long>("vkproxy.rate_limit.total_failed_leases", GetRateLimitMeasurements(serviceProvider, static s => s.TotalFailedLeases)
+                , unit: "{request}", "Total number of failed for the ratelimiting");
+            metrics.CreateObservableUpDownCounter<long>("vkproxy.rate_limit.total_successful_leases", GetRateLimitMeasurements(serviceProvider, static s => s.TotalSuccessfulLeases)
+                , unit: "{request}", "Total number of successful for the ratelimiting");
         }
+    }
+
+    private static Func<IEnumerable<Measurement<long>>> GetRateLimitMeasurements(IServiceProvider serviceProvider, Func<RateLimiterStatistics, long> func)
+    {
+        return () => serviceProvider.GetRequiredService<IConfigSource<IProxyConfig>>().CurrentSnapshot.Routes.Values.Where(static i => i.ConnectionLimiter != null)
+                            .SelectMany(i =>
+                            {
+                                return i.ConnectionLimiter.GetAllLimiter().Select(j =>
+                                {
+                                    Measurement<long>? r;
+                                    var s = j.Value.GetStatistics();
+                                    if (s == null)
+                                    {
+                                        r = null;
+                                    }
+                                    else
+                                    {
+                                        var tags = new TagList
+                                        {
+                                    { "route", i.Key },
+                                    { "key", j.Key}
+                                        };
+                                        return new Measurement<long>(func(s), in tags);
+                                    }
+
+                                    return r;
+                                }).Where(static i => i.HasValue).Select(static i => i.Value);
+                            });
     }
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)

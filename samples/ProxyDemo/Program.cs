@@ -28,7 +28,6 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
              //.AddMeter("Microsoft.AspNetCore.Http.Connections")
              //.AddMeter("Microsoft.AspNetCore.Routing")
              //.AddMeter("Microsoft.AspNetCore.Diagnostics")
-             .AddMeter("Microsoft.AspNetCore.RateLimiting")
              .AddMeter("Microsoft.AspNetCore.MemoryPool")
              .AddMeter("VKProxy.ReverseProxy")
              .AddPrometheusExporter());

@@ -52,4 +52,9 @@ public class RedisIncrConnectionLimiter : IConnectionLimiter
 
         return new RedisIncrRateLimiter(key, pool, 1, logger);
     }
+
+    public IEnumerable<KeyValuePair<string, RateLimiter>> GetAllLimiter()
+    {
+        return Array.Empty<KeyValuePair<string, RateLimiter>>();
+    }
 }
