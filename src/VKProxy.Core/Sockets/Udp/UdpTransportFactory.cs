@@ -9,18 +9,20 @@ public sealed class UdpTransportFactory : IConnectionListenerFactory, IConnectio
 {
     private readonly GeneralLogger logger;
     private readonly IUdpConnectionFactory connectionFactory;
+    private readonly IServiceProvider serviceProvider;
 
     public UdpTransportFactory(
         GeneralLogger logger,
-        IUdpConnectionFactory connectionFactory)
+        IUdpConnectionFactory connectionFactory, IServiceProvider serviceProvider)
     {
         this.logger = logger;
         this.connectionFactory = connectionFactory;
+        this.serviceProvider = serviceProvider;
     }
 
     public ValueTask<IConnectionListener> BindAsync(EndPoint endpoint, CancellationToken cancellationToken = default)
     {
-        var transport = new UdpConnectionListener(endpoint, logger, connectionFactory);
+        var transport = new UdpConnectionListener(endpoint, logger, connectionFactory, serviceProvider);
         transport.Bind();
         return new ValueTask<IConnectionListener>(transport);
     }

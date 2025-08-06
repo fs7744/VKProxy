@@ -1,5 +1,6 @@
 ﻿using DotNext;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -13,14 +14,16 @@ internal sealed class UdpConnectionListener : IConnectionListener
     private EndPoint? udpEndPoint;
     private GeneralLogger logger;
     private readonly IUdpConnectionFactory connectionFactory;
+    private readonly UdpMetrics? metrics;
     private Socket? listenSocket;
     private string localEndPointString;
 
-    public UdpConnectionListener(EndPoint? udpEndPoint, GeneralLogger logger, IUdpConnectionFactory connectionFactory)
+    public UdpConnectionListener(EndPoint? udpEndPoint, GeneralLogger logger, IUdpConnectionFactory connectionFactory, IServiceProvider serviceProvider)
     {
         this.udpEndPoint = udpEndPoint;
         this.logger = logger;
         this.connectionFactory = connectionFactory;
+        this.metrics = serviceProvider.GetService<UdpMetrics>();
     }
 
     public EndPoint EndPoint => udpEndPoint;
@@ -70,6 +73,7 @@ internal sealed class UdpConnectionListener : IConnectionListener
             {
                 Debug.Assert(listenSocket != null, "Bind must be called first.");
                 var r = await connectionFactory.ReceiveAsync(listenSocket, cancellationToken);
+                metrics?.RecordUdpReceiveBytes(r.ReceivedBytesCount);
                 return new UdpConnectionContext(listenSocket, r) { LocalEndPointString = localEndPointString };
             }
             catch (ObjectDisposedException)

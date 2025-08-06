@@ -46,6 +46,7 @@ public static class HostBuilderExtensions
         services.AddSingleton<IMemoryPoolFactory<byte>>(i => i.GetRequiredService<IMemoryPoolSizeFactory<byte>>());
         services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();
         services.AddSingleton<IConnectionListenerFactory, UdpTransportFactory>();
+        services.AddSingleton<UdpMetrics>();
         services.AddSingleton<GeneralLogger>();
         services.AddSingleton<IHostedService, VKHostedService>();
         services.TryAddSingleton<IServer, VKServer>();
