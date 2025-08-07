@@ -231,6 +231,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
             {
                 return null;
             }
+            logger.Proxying(route);
             using var cts = CancellationTokenSourcePool.Default.Rent(options.ConnectionTimeout);
             var c = await tcp.ConnectAsync(selectedDestination.EndPoint, cts.Token);
             selectedDestination.ReportSuccessed();
@@ -238,8 +239,20 @@ internal class TcpReverseProxy : ITcpReverseProxy
         }
         catch
         {
-            selectedDestination?.ReportFailed();
+            if (selectedDestination != null)
+            {
+                selectedDestination.ReportFailed();
+                logger.ReportFailed(route);
+            }
+
             throw;
+        }
+        finally
+        {
+            if (selectedDestination != null)
+            {
+                logger.ProxyingEnd(feature, route.ClusterConfig);
+            }
         }
     }
 }

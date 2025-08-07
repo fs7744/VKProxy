@@ -44,7 +44,7 @@ public class HttpForwarder : IHttpForwarder
         var activityCancellationSource = ActivityCancellationTokenSource.Rent(route.Timeout, context.RequestAborted);
         var requestConfig = cluster.HttpRequest ?? ForwarderRequestConfig.Empty;
         var httpClient = cluster.HttpMessageHandler ?? throw new ArgumentNullException("httpClient");
-
+        var hasSend = false;
         try
         {
             var isClientHttp2OrGreater = ProtocolHelper.IsHttp2OrGreater(context.Request.Protocol);
@@ -71,10 +71,10 @@ public class HttpForwarder : IHttpForwarder
                     return ForwarderError.None;
                 }
 
-                logger.Proxying(destinationRequest, isStreamingRequest);
+                hasSend = true;
+                logger.Proxying(destinationRequest, isStreamingRequest, proxyFeature, cluster);
 
                 // :: Step 4: Send the outgoing request using HttpClient
-                //ForwarderTelemetry.Log.ForwarderStage(ForwarderStage.SendAsyncStart);
 
                 try
                 {
@@ -267,6 +267,8 @@ public class HttpForwarder : IHttpForwarder
         finally
         {
             activityCancellationSource.Return();
+            if (hasSend)
+                logger.ProxyingEnd(proxyFeature, cluster);
             //ForwarderTelemetry.Log.ForwarderStop(context.Response.StatusCode);
         }
 
@@ -605,7 +607,7 @@ public class HttpForwarder : IHttpForwarder
     private void ReportProxyError(HttpContext context, ForwarderError error, Exception ex)
     {
         context.Features.Set<IForwarderErrorFeature>(new ForwarderErrorFeature(error, ex));
-        logger.ErrorProxying(error, ex);
+        logger.ErrorProxying(error, ex, context);
         //ForwarderTelemetry.Log.ForwarderFailed(error);
     }
 

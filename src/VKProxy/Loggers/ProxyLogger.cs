@@ -18,6 +18,8 @@ public partial class ProxyLogger : ILogger
 {
     internal readonly ILogger generalLogger;
     private readonly Meter? metrics;
+    private readonly Counter<long> clusterFailedCounter;
+    private readonly Counter<long> clusterActiveCounter;
     private readonly Counter<long>? requestsCounter;
     private readonly Histogram<double>? requestDuration;
 
@@ -28,9 +30,11 @@ public partial class ProxyLogger : ILogger
         metrics = f == null ? null : f.Create("VKProxy.ReverseProxy");
         if (metrics != null)
         {
+            clusterFailedCounter = metrics.CreateCounter<long>("vkproxy.cluster.failed", description: "Number of proxy requests that have failed");
+            clusterActiveCounter = metrics.CreateCounter<long>("vkproxy.cluster.active", description: "Number of requests that are currently active through the proxy");
             requestsCounter = metrics.CreateCounter<long>("vkproxy.requests", unit: "{request}", "Total number of (HTTP/tcp/udp) requests processed by the reverse proxy.");
             requestDuration = metrics.CreateHistogram(
-            "vkproxy.reverseproxy.request.duration",
+            "vkproxy.request.duration",
             unit: "s",
             description: "Proxy handle duration of (HTTP/tcp/udp) requests.",
             advice: new InstrumentAdvice<double> { HistogramBucketBoundaries = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 30, 60, 120, 300] });
@@ -129,7 +133,7 @@ public partial class ProxyLogger : ILogger
     {
         string routeId = GetRouteId(feature);
         GeneralLog.ProxyBegin(generalLogger, routeId);
-        if (requestsCounter != null)
+        if (requestsCounter != null && requestsCounter.Enabled)
         {
             var tags = new TagList
             {
@@ -148,7 +152,7 @@ public partial class ProxyLogger : ILogger
     {
         string routeId = GetRouteId(feature);
         GeneralLog.ProxyEnd(generalLogger, routeId);
-        if (requestDuration != null)
+        if (requestDuration != null && requestDuration.Enabled)
         {
             var endTimestamp = Stopwatch.GetTimestamp();
             var tags = new TagList
@@ -174,7 +178,7 @@ public partial class ProxyLogger : ILogger
         GeneralLog.NotProxying(generalLogger, statusCode);
     }
 
-    public void Proxying(HttpRequestMessage msg, bool isStreamingRequest)
+    public void Proxying(HttpRequestMessage msg, bool isStreamingRequest, IReverseProxyFeature proxyFeature, ClusterConfig cluster)
     {
         // Avoid computing the AbsoluteUri unless logging is enabled
         if (generalLogger.IsEnabled(LogLevel.Information))
@@ -183,6 +187,15 @@ public partial class ProxyLogger : ILogger
             var version = HttpProtocol.GetHttpProtocol(msg.Version);
             var versionPolicy = ProtocolHelper.GetVersionPolicy(msg.VersionPolicy);
             GeneralLog.Proxying(generalLogger, msg.RequestUri!.AbsoluteUri, version, versionPolicy, streaming);
+        }
+        if (clusterActiveCounter != null && clusterActiveCounter.Enabled)
+        {
+            var tags = new TagList
+            {
+                { "route", proxyFeature.Route.Key },
+                { "cluster", cluster.Key }
+            };
+            clusterActiveCounter.Add(1, in tags);
         }
     }
 
@@ -201,7 +214,7 @@ public partial class ProxyLogger : ILogger
         GeneralLog.ResponseReceived(generalLogger, msg.Version, msg.StatusCode);
     }
 
-    public void ErrorProxying(ForwarderError error, Exception ex)
+    public void ErrorProxying(ForwarderError error, Exception ex, HttpContext context)
     {
         var message = GetMessage(error);
 
@@ -219,6 +232,16 @@ public partial class ProxyLogger : ILogger
         else
         {
             GeneralLog.ProxyError(generalLogger, error, message, ex);
+        }
+        if (clusterFailedCounter != null && clusterFailedCounter.Enabled)
+        {
+            var f = context.Features.Get<IReverseProxyFeature>();
+            var tags = new TagList
+            {
+                { "route", f.Route.Key },
+                { "cluster", f.Route.Key }
+            };
+            clusterFailedCounter.Add(1, in tags);
         }
     }
 
@@ -258,6 +281,45 @@ public partial class ProxyLogger : ILogger
     public void ConnectionRejected(string connectionId)
     {
         GeneralLog.ConnectionRejected(generalLogger, connectionId);
+    }
+
+    internal void ReportFailed(RouteConfig route)
+    {
+        if (clusterFailedCounter != null && clusterFailedCounter.Enabled)
+        {
+            var tags = new TagList
+            {
+                { "route", route.Key },
+                { "cluster", route.ClusterConfig.Key }
+            };
+            clusterFailedCounter.Add(1, in tags);
+        }
+    }
+
+    internal void ProxyingEnd(IReverseProxyFeature proxyFeature, ClusterConfig cluster)
+    {
+        if (clusterActiveCounter != null && clusterActiveCounter.Enabled)
+        {
+            var tags = new TagList
+            {
+                { "route", proxyFeature.Route.Key },
+                { "cluster", cluster.Key }
+            };
+            clusterActiveCounter.Add(-1, in tags);
+        }
+    }
+
+    internal void Proxying(RouteConfig route)
+    {
+        if (clusterActiveCounter != null && clusterActiveCounter.Enabled)
+        {
+            var tags = new TagList
+            {
+                { "route", route.Key },
+                { "cluster", route.ClusterConfig.Key }
+            };
+            clusterActiveCounter.Add(1, in tags);
+        }
     }
 }
 

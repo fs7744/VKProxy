@@ -105,6 +105,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
             {
                 return null;
             }
+            logger.Proxying(route);
             var e = selectedDestination.EndPoint;
             if (socket == null || socket.AddressFamily != e.AddressFamily)
             {
@@ -121,8 +122,19 @@ internal class UdpReverseProxy : IUdpReverseProxy
         }
         catch (Exception ex)
         {
-            selectedDestination?.ReportFailed();
+            if (selectedDestination != null)
+            {
+                selectedDestination.ReportFailed();
+                logger.ReportFailed(route);
+            }
             throw;
+        }
+        finally
+        {
+            if (selectedDestination != null)
+            {
+                logger.ProxyingEnd(feature, route.ClusterConfig);
+            }
         }
     }
 }
