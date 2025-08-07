@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using System.Diagnostics;
 using VKProxy.Config;
 
 namespace VKProxy.Features;
@@ -16,6 +17,7 @@ public interface IReverseProxyFeature
     public RouteConfig Route { get; set; }
     public DestinationState? SelectedDestination { get; set; }
     public long StartTimestamp { get; set; }
+    public Activity? Activity { get; set; }
 }
 
 public interface IL7ReverseProxyFeature : IReverseProxyFeature
@@ -33,6 +35,7 @@ public class L4ReverseProxyFeature : IL4ReverseProxyFeature, IDisposable
     public SniConfig? SelectedSni { get; set; }
     public ConnectionContext Connection { get; set; }
     public long StartTimestamp { get; set; }
+    public Activity? Activity { get; set; }
 
     public void Dispose()
     {
@@ -48,6 +51,7 @@ public class L7ReverseProxyFeature : IL7ReverseProxyFeature, IDisposable
     public DestinationState? SelectedDestination { get; set; }
     public HttpContext Http { get; set; }
     public long StartTimestamp { get; set; }
+    public Activity? Activity { get; set; }
 
     public void Dispose()
     {

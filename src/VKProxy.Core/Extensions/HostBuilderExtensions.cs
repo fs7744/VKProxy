@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using System.Buffers;
+using System.Diagnostics;
 using System.Reflection;
 using VKProxy.Core.Adapters;
 using VKProxy.Core.Buffers;
@@ -42,6 +43,8 @@ public static class HostBuilderExtensions
 
     public static IServiceCollection UseVKProxyCore(this IServiceCollection services)
     {
+        services.TryAddSingleton(sp => new ActivitySource("VKProxy"));
+        services.TryAddSingleton(DistributedContextPropagator.Current);
         services.AddSingleton<IMemoryPoolSizeFactory<byte>, PinnedBlockMemoryPoolFactory>();
         services.AddSingleton<IMemoryPoolFactory<byte>>(i => i.GetRequiredService<IMemoryPoolSizeFactory<byte>>());
         services.AddSingleton<IUdpConnectionFactory, UdpConnectionFactory>();

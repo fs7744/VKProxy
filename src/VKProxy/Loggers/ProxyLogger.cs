@@ -141,6 +141,7 @@ public partial class ProxyLogger : ILogger
             };
             requestsCounter.Add(1, in tags);
         }
+        feature.Activity?.AddTag("proxy.route", routeId);
     }
 
     private static string GetRouteId(IReverseProxyFeature feature)
@@ -153,13 +154,23 @@ public partial class ProxyLogger : ILogger
         string routeId = GetRouteId(feature);
         GeneralLog.ProxyEnd(generalLogger, routeId);
         if (requestDuration != null && requestDuration.Enabled)
+        //|| feature.Activity != null)
         {
             var endTimestamp = Stopwatch.GetTimestamp();
+            var t = Stopwatch.GetElapsedTime(feature.StartTimestamp, endTimestamp);
+            //if (requestDuration != null && requestDuration.Enabled)
+            //{
             var tags = new TagList
-            {
-                { "route", routeId }
-            };
-            requestDuration.Record(Stopwatch.GetElapsedTime(feature.StartTimestamp, endTimestamp).TotalSeconds, in tags);
+                {
+                    { "route", routeId }
+                };
+            requestDuration.Record(t.TotalSeconds, in tags);
+            //}
+            //if (feature.Activity != null)
+            //{
+            //    feature.Activity?.SetTag("proxy.start", feature.StartTimestamp);
+            //    feature.Activity?.SetTag("proxy.duration", t.TotalMilliseconds);
+            //}
         }
     }
 
@@ -196,6 +207,15 @@ public partial class ProxyLogger : ILogger
                 { "cluster", cluster.Key }
             };
             clusterActiveCounter.Add(1, in tags);
+        }
+        var a = proxyFeature.Activity;
+        if (a != null)
+        {
+            a.SetTag("proxy.cluster", cluster.Key);
+            if (proxyFeature.SelectedDestination != null)
+            {
+                a.SetTag("proxy.destination", proxyFeature.SelectedDestination.Address);
+            }
         }
     }
 

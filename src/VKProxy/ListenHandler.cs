@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net.Http;
 using System.Threading.RateLimiting;
 using VKProxy.Config;
 using VKProxy.Core.Adapters;
@@ -22,6 +24,7 @@ namespace VKProxy;
 
 internal class ListenHandler : ListenHandlerBase
 {
+    internal const string ActivityName = "VKProxy.ReverseProxy";
     private readonly IConfigSource<IProxyConfig> configSource;
     private readonly ProxyLogger logger;
     private readonly IHttpSelector httpSelector;
@@ -29,11 +32,14 @@ internal class ListenHandler : ListenHandlerBase
     private readonly IUdpReverseProxy udp;
     private readonly ITcpReverseProxy tcp;
     private readonly IServiceProvider provider;
+    private readonly DistributedContextPropagator propagator;
+    private readonly ActivitySource activitySource;
     private readonly ReverseProxyOptions options;
     private readonly RequestDelegate http;
 
     public ListenHandler(IConfigSource<IProxyConfig> configSource, ProxyLogger logger, IHttpSelector httpSelector,
-        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IServiceProvider provider, IOptions<ReverseProxyOptions> options)
+        ISniSelector sniSelector, IUdpReverseProxy udp, ITcpReverseProxy tcp, IApplicationBuilder applicationBuilder, IServiceProvider provider, IOptions<ReverseProxyOptions> options,
+        DistributedContextPropagator propagator, ActivitySource activitySource)
     {
         this.configSource = configSource;
         this.logger = logger;
@@ -42,6 +48,8 @@ internal class ListenHandler : ListenHandlerBase
         this.udp = udp;
         this.tcp = tcp;
         this.provider = provider;
+        this.propagator = propagator;
+        this.activitySource = activitySource;
         this.options = options.Value;
         this.http = applicationBuilder.Build();
     }
@@ -123,6 +131,42 @@ internal class ListenHandler : ListenHandlerBase
     private async Task DoHttp(HttpContext context, ListenEndPointOptions? options)
     {
         var startTimestamp = Stopwatch.GetTimestamp();
+        //var diagnosticListenerEnabled = diagnosticSource.IsEnabled();
+        //var diagnosticListenerActivityCreationEnabled = (diagnosticListenerEnabled && diagnosticSource.IsEnabled(ActivityName, context));
+        Activity activity;
+        if (activitySource.HasListeners())
+        {
+            var headers = context.Request.Headers;
+            activity = ActivityCreator.CreateFromRemote(activitySource, propagator, headers,
+                static (object? carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
+            {
+                fieldValues = default;
+                var headers = (IHeaderDictionary)carrier!;
+                fieldValue = headers[fieldName];
+            },
+            ActivityName,
+            ActivityKind.Server,
+            tags: null,
+            links: null, false);
+        }
+        else
+        {
+            activity = null;
+        }
+
+        if (activity != null)
+        {
+            activity.Start();
+            context.Features.Set<IHttpActivityFeature>(new HttpActivityFeature(activity));
+            context.Features.Set<IHttpMetricsTagsFeature>(new HttpMetricsTagsFeature()
+            {
+                Method = context.Request.Method,
+                Protocol = context.Request.Protocol,
+                Scheme = context.Request.Scheme,
+                MetricsDisabled = true,
+            });
+        }
+
         using var proxyFeature = new L7ReverseProxyFeature() { Http = context, StartTimestamp = startTimestamp };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
         try
@@ -152,6 +196,7 @@ internal class ListenHandler : ListenHandlerBase
         }
         finally
         {
+            activity?.Stop();
             logger.ProxyEnd(proxyFeature);
         }
     }
