@@ -19,8 +19,6 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
     {
         o.UseSocks5 = true;
         o.Sampler = VKProxy.Sampler.Random;
-    })
-    .ConfigureServices(i =>
         //o.Meters = new string[] { "System.Net.Http", "System.Net.NameResolution", "System.Runtime", "Microsoft.AspNetCore.Server.Kestrel", "Microsoft.AspNetCore.Server.Kestrel.Udp", "Microsoft.AspNetCore.MemoryPool", "VKProxy.ReverseProxy" };
     }, j =>
     {
