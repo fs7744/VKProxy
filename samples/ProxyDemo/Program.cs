@@ -1,10 +1,15 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using ProxyDemo;
 using ProxyDemo.IDestinationResolvers;
 using ProxyDemo.Transforms;
+using System.Diagnostics;
+using System.Xml.Linq;
 using VKProxy;
 using VKProxy.Middlewares.Http;
 using VKProxy.Middlewares.Http.Transforms;
@@ -13,12 +18,28 @@ using VKProxy.ServiceDiscovery;
 var app = VKProxyHost.CreateBuilder(args, (_, o) =>
     {
         o.UseSocks5 = true;
-        o.Sampler = Sampler.Random;
+        o.Sampler = VKProxy.Sampler.Random;
     })
     .ConfigureServices(i =>
     {
         i.AddOpenTelemetry()
-    //.ConfigureResource(resource => resource.AddHostDetector().AddOperatingSystemDetector().AddContainerDetector())
+        .WithTracing(i =>
+        {
+            if (i is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
+            {
+                deferredTracerProviderBuilder.Configure((sp, builder) =>
+                {
+                    var activitySourceService = sp.GetService<ActivitySource>();
+                    if (activitySourceService != null)
+                    {
+                        builder.AddSource(activitySourceService.Name);
+                    }
+                });
+            }
+            i.AddConsoleExporter();
+        })
+        .WithLogging(i => i.AddConsoleExporter())
+    .ConfigureResource(resource => resource.AddHostDetector().AddOperatingSystemDetector().AddContainerDetector())
     .WithMetrics(builder => builder.AddMeter("System.Runtime")
     //.AddMeter("Microsoft.AspNetCore.Hosting")
     .AddMeter("System.Net.Http")

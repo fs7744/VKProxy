@@ -19,6 +19,7 @@ using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
 using VKProxy.Middlewares;
+using static VKProxy.Core.Adapters.HttpApplication;
 
 namespace VKProxy;
 
@@ -131,13 +132,11 @@ internal class ListenHandler : ListenHandlerBase
     private async Task DoHttp(HttpContext context, ListenEndPointOptions? options)
     {
         var startTimestamp = Stopwatch.GetTimestamp();
-        //var diagnosticListenerEnabled = diagnosticSource.IsEnabled();
-        //var diagnosticListenerActivityCreationEnabled = (diagnosticListenerEnabled && diagnosticSource.IsEnabled(ActivityName, context));
         Activity activity;
         if (activitySource.HasListeners())
         {
             var headers = context.Request.Headers;
-            activity = ActivityCreator.CreateFromRemote(activitySource, propagator, headers,
+            Activity.Current = activity = ActivityCreator.CreateFromRemote(activitySource, propagator, headers,
                 static (object? carrier, string fieldName, out string? fieldValue, out IEnumerable<string>? fieldValues) =>
             {
                 fieldValues = default;
@@ -165,9 +164,19 @@ internal class ListenHandler : ListenHandlerBase
                 Scheme = context.Request.Scheme,
                 MetricsDisabled = true,
             });
+            activity.SetTag("Method", context.Request.Method);
+            activity.SetTag("Protocol", context.Request.Protocol);
+            activity.SetTag("Scheme", context.Request.Scheme);
+            activity.SetTag("Path", context.Request.Path);
+            activity.SetTag("QueryString", context.Request.QueryString);
+            activity.SetTag("Host", context.Request.Host);
+            activity.SetTag("ContentType", context.Request.ContentType);
+            var l = context.Request.ContentLength;
+            if (l.HasValue)
+                activity.SetTag("ContentLength", l.Value);
         }
 
-        using var proxyFeature = new L7ReverseProxyFeature() { Http = context, StartTimestamp = startTimestamp };
+        using var proxyFeature = new L7ReverseProxyFeature() { Http = context, StartTimestamp = startTimestamp, Activity = activity };
         context.Features.Set<IReverseProxyFeature>(proxyFeature);
         try
         {
@@ -197,6 +206,7 @@ internal class ListenHandler : ListenHandlerBase
         finally
         {
             activity?.Stop();
+            Activity.Current = null;
             logger.ProxyEnd(proxyFeature);
         }
     }
@@ -204,6 +214,21 @@ internal class ListenHandler : ListenHandlerBase
     private async Task DoTcp(ConnectionContext connection, ListenEndPointOptions? options)
     {
         var startTimestamp = Stopwatch.GetTimestamp();
+        Activity activity;
+        if (activitySource.HasListeners())
+        {
+            Activity.Current = activity = ActivityCreator.CreateFromRemote(activitySource, propagator, null, null,
+            ActivityName,
+            ActivityKind.Server,
+            tags: null,
+            links: null, false);
+            activity?.SetTag("Protocol", "Tcp");
+        }
+        else
+        {
+            activity = null;
+        }
+        activity?.Start();
         using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, IsSni = options?.UseSni ?? false, SelectedSni = options?.SniConfig, Connection = connection, StartTimestamp = startTimestamp };
         connection.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
         try
@@ -227,6 +252,8 @@ internal class ListenHandler : ListenHandlerBase
         }
         finally
         {
+            activity?.Stop();
+            Activity.Current = null;
             logger.ProxyEnd(proxyFeature);
         }
     }
@@ -236,7 +263,22 @@ internal class ListenHandler : ListenHandlerBase
         if (connection is UdpConnectionContext context)
         {
             var startTimestamp = Stopwatch.GetTimestamp();
-            using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, Connection = connection, StartTimestamp = startTimestamp };
+            Activity activity;
+            if (activitySource.HasListeners())
+            {
+                Activity.Current = activity = ActivityCreator.CreateFromRemote(activitySource, propagator, null, null,
+                ActivityName,
+                ActivityKind.Server,
+                tags: null,
+                links: null, false);
+                activity?.SetTag("Protocol", "Udp");
+            }
+            else
+            {
+                activity = null;
+            }
+            activity?.Start();
+            using var proxyFeature = new L4ReverseProxyFeature() { Route = options?.RouteConfig, Connection = connection, StartTimestamp = startTimestamp, Activity = activity };
             context.Features.Set<IL4ReverseProxyFeature>(proxyFeature);
             logger.ProxyBegin(proxyFeature);
             try
@@ -260,6 +302,8 @@ internal class ListenHandler : ListenHandlerBase
             }
             finally
             {
+                activity?.Stop();
+                Activity.Current = null;
                 logger.ProxyEnd(proxyFeature);
             }
         }
