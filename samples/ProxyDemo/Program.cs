@@ -25,7 +25,6 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
     }, j =>
     {
         j.WithTracing(i =>
-        .WithTracing(i =>
         {
             i.AddConsoleExporter();
         })
