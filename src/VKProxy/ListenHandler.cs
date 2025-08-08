@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using System.Diagnostics;
 using System.Globalization;
-using System.Net.Http;
 using System.Threading.RateLimiting;
 using VKProxy.Config;
 using VKProxy.Core.Adapters;
@@ -19,7 +18,6 @@ using VKProxy.Core.Loggers;
 using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features;
 using VKProxy.Middlewares;
-using static VKProxy.Core.Adapters.HttpApplication;
 
 namespace VKProxy;
 
