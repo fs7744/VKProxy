@@ -162,16 +162,21 @@ internal class ListenHandler : ListenHandlerBase
                 Scheme = context.Request.Scheme,
                 MetricsDisabled = true,
             });
-            activity.SetTag("Method", context.Request.Method);
-            activity.SetTag("Protocol", context.Request.Protocol);
-            activity.SetTag("Scheme", context.Request.Scheme);
-            activity.SetTag("Path", context.Request.Path);
-            activity.SetTag("QueryString", context.Request.QueryString);
-            activity.SetTag("Host", context.Request.Host);
-            activity.SetTag("ContentType", context.Request.ContentType);
+            activity.DisplayName = $"{context.Request.Method} {context.Request.Path.Value}";
+            activity.SetTag("http.request.method", context.Request.Method);
+            activity.SetTag("network.protocol.name", "http");
+            activity.SetTag("url.scheme", context.Request.Scheme);
+            activity.SetTag("url.path", context.Request.Path.Value);
+            activity.SetTag("url.query", context.Request.QueryString.Value);
+            if (ProtocolHelper.TryGetHttpVersion(context.Request.Protocol, out var httpVersion))
+            {
+                activity.SetTag("network.protocol.version", httpVersion);
+            }
+            activity.SetTag("http.request.host", context.Request.Host);
+            activity.SetTag("http.request.content_type", context.Request.ContentType);
             var l = context.Request.ContentLength;
             if (l.HasValue)
-                activity.SetTag("ContentLength", l.Value);
+                activity.SetTag("http.request.content_length", l.Value);
         }
 
         using var proxyFeature = new L7ReverseProxyFeature() { Http = context, StartTimestamp = startTimestamp, Activity = activity };
@@ -203,8 +208,14 @@ internal class ListenHandler : ListenHandlerBase
         }
         finally
         {
-            activity?.Stop();
-            Activity.Current = null;
+            if (activity != null)
+            {
+                var statusCode = context.Response.StatusCode;
+                activity.SetTag("http.response.status_code", statusCode);
+                activity.Stop();
+                Activity.Current = null;
+            }
+
             logger.ProxyEnd(proxyFeature);
         }
     }
@@ -220,7 +231,7 @@ internal class ListenHandler : ListenHandlerBase
             ActivityKind.Server,
             tags: null,
             links: null, false);
-            activity?.SetTag("Protocol", "Tcp");
+            activity?.SetTag("network.protocol.name", "tcp");
         }
         else
         {
@@ -269,7 +280,7 @@ internal class ListenHandler : ListenHandlerBase
                 ActivityKind.Server,
                 tags: null,
                 links: null, false);
-                activity?.SetTag("Protocol", "Udp");
+                activity?.SetTag("network.protocol.name", "udp");
             }
             else
             {

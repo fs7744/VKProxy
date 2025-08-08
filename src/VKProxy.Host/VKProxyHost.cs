@@ -132,7 +132,7 @@ public static class VKProxyHost
                 {
                     i.AddSingleton<IHttpFunc, PrometheusFunc>();
                     var tb = i.AddOpenTelemetry()
-                    .ConfigureResource(resource => resource.AddHostDetector().AddOperatingSystemDetector().AddContainerDetector())
+                    .ConfigureResource(resource => resource.AddContainerDetector())
                     .WithTracing(i =>
                     {
                         if (i is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)

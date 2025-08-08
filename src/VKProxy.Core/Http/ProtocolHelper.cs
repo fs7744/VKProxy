@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Net.Http.Headers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -81,5 +82,38 @@ public static class ProtocolHelper
 
         // Return the security key + accept value
         return accept;
+    }
+
+    public static bool TryGetHttpVersion(string protocol, [NotNullWhen(true)] out string? version)
+    {
+        if (HttpProtocol.IsHttp11(protocol))
+        {
+            version = "1.1";
+            return true;
+        }
+        if (HttpProtocol.IsHttp2(protocol))
+        {
+            // HTTP/2 only has one version.
+            version = "2";
+            return true;
+        }
+        if (HttpProtocol.IsHttp3(protocol))
+        {
+            // HTTP/3 only has one version.
+            version = "3";
+            return true;
+        }
+        if (HttpProtocol.IsHttp10(protocol))
+        {
+            version = "1.0";
+            return true;
+        }
+        if (HttpProtocol.IsHttp09(protocol))
+        {
+            version = "0.9";
+            return true;
+        }
+        version = null;
+        return false;
     }
 }
