@@ -3,7 +3,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using System.Diagnostics;
 using VKProxy.CommandLine;
+using VKProxy.Middlewares.Http;
+using VKProxy.Middlewares.Http.HttpFuncs;
 using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 using VKProxy.StackExchangeRedis;
 using VKProxy.Storages.Etcd;
@@ -44,7 +51,7 @@ public static class VKProxyHost
         return parser.Parse(args);
     }
 
-    public static IHostBuilder CreateBuilder(string[] args, Action<IHostBuilder, VKProxyHostOptions> action = null)
+    public static IHostBuilder CreateBuilder(string[] args, Action<IHostBuilder, VKProxyHostOptions> action = null, Action<OpenTelemetryBuilder> configOpenTelemetry = null)
     {
         var cmd = new ProxyCommand(false);
         var parser = new CommandParser();
@@ -54,10 +61,10 @@ public static class VKProxyHost
         return CreateBuilder(options, b =>
         {
             action?.Invoke(b, options);
-        });
+        }, configOpenTelemetry);
     }
 
-    internal static IHostBuilder CreateBuilder(VKProxyHostOptions options, Action<IHostBuilder> action = null)
+    internal static IHostBuilder CreateBuilder(VKProxyHostOptions options, Action<IHostBuilder> action = null, Action<OpenTelemetryBuilder> configOpenTelemetry = null)
     {
         var b = Host.CreateDefaultBuilder();
         action?.Invoke(b);
@@ -118,6 +125,43 @@ public static class VKProxyHost
                     if (!string.IsNullOrWhiteSpace(options.RedisDataProtection))
                     {
                         i.PersistKeysToStackExchangeRedis(pool, options.RedisDataProtection);
+                    }
+                }
+
+                if (options.Telemetry)
+                {
+                    i.AddSingleton<IHttpFunc, PrometheusFunc>();
+                    var tb = i.AddOpenTelemetry()
+                    .ConfigureResource(resource => resource.AddHostDetector().AddOperatingSystemDetector().AddContainerDetector())
+                    .WithTracing(i =>
+                    {
+                        if (i is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
+                        {
+                            deferredTracerProviderBuilder.Configure((sp, builder) =>
+                            {
+                                var activitySourceService = sp.GetService<ActivitySource>();
+                                if (activitySourceService != null)
+                                {
+                                    builder.AddSource(activitySourceService.Name);
+                                }
+                            });
+                        }
+                    })
+                    .WithMetrics(builder =>
+                    {
+                        builder.AddMeter(options.Meters);
+                        builder.AddPrometheusExporter();
+                    });
+                    configOpenTelemetry?.Invoke(tb);
+                    if (!options.DropInstruments.IsNullOrEmpty())
+                    {
+                        i.ConfigureOpenTelemetryMeterProvider(j =>
+                        {
+                            foreach (var drop in options.DropInstruments)
+                            {
+                                j.AddView(drop, MetricStreamConfiguration.Drop);
+                            }
+                        });
                     }
                 }
             })

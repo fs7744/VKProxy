@@ -2,11 +2,10 @@
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using VKProxy.Config;
-using VKProxy.Middlewares.Http;
 
-namespace ProxyDemo.Transforms;
+namespace VKProxy.Middlewares.Http.HttpFuncs;
 
-internal class PrometheusFunc : IHttpFunc
+public class PrometheusFunc : IHttpFunc
 {
     private readonly object o;
     private readonly RequestDelegate func;

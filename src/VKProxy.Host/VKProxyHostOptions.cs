@@ -16,4 +16,7 @@ public class VKProxyHostOptions
     public int? RedisPoolSize { get; set; } = 10;
     public string? RedisDataProtection { get; set; }
     public DiskCacheOptions DiskCache { get; private set; } = new DiskCacheOptions();
+    public bool Telemetry { get; set; } = true;
+    public string[] Meters { get; set; } = new string[] { "System.Runtime", "Microsoft.AspNetCore.Server.Kestrel", "Microsoft.AspNetCore.Server.Kestrel.Udp", "Microsoft.AspNetCore.MemoryPool", "VKProxy.ReverseProxy" };
+    public string[] DropInstruments { get; set; } = new string[] { "kestrel.connection.duration", "kestrel.tls_handshake.duration" };
 }

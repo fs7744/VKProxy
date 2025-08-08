@@ -12,6 +12,12 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Extensions.Telemetry" Version="9.7.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.12.0-beta.1" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
+		<PackageReference Include="OpenTelemetry.Resources.Container" Version="1.12.0-beta.1" />
+		<PackageReference Include="OpenTelemetry.Resources.Host" Version="1.12.0-beta.1" />
+		<PackageReference Include="OpenTelemetry.Resources.OperatingSystem" Version="1.12.0-beta.1" />
 	</ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VKProxy.ACME.AspNetCore\VKProxy.ACME.AspNetCore.csproj" />

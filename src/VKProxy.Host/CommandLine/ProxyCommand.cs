@@ -94,6 +94,22 @@ public class ProxyCommand : ArgsCommand<VKProxyHostOptions>
                 throw new CommandParseException("Must large than 0");
             Args.RedisPoolSize = v;
         }));
+        AddArg(new CommandArg("telemetry", null, "VKPROXY_TELEMETRY", "Allow export telemetry data (metrics, logs, and traces) to help you analyze your software’s performance and behavior.", s =>
+        {
+            Args.Telemetry = bool.Parse(s);
+        }));
+        AddArg(new CommandArg("meter", null, "VKPROXY_TELEMETRY_METER", "Subscribe meters, default is System.Runtime,Microsoft.AspNetCore.Server.Kestrel,Microsoft.AspNetCore.Server.Kestrel.Udp,Microsoft.AspNetCore.MemoryPool,VKProxy.ReverseProxy", s =>
+        {
+            if (string.IsNullOrWhiteSpace(s)) return;
+            var ss = s.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ss.IsNullOrEmpty()) return;
+            Args.Meters = ss;
+        }));
+        AddArg(new CommandArg("drop_instrument", null, "VKPROXY_TELEMETRY_DROP_INSTRUMENT", "Drop instruments", s =>
+        {
+            if (s == null) return;
+            Args.DropInstruments = s.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        }));
         this.isRun = isRun;
     }
 
