@@ -110,6 +110,11 @@ public class ProxyCommand : ArgsCommand<VKProxyHostOptions>
             if (s == null) return;
             Args.DropInstruments = s.Split(',', StringSplitOptions.RemoveEmptyEntries);
         }));
+        AddArg(new CommandArg("exporter", null, "VKPROXY_TELEMETRY_EXPORTER", "How to export telemetry data (metrics, logs, and traces), support prometheus,console,otlp , default is otlp, please set env like `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317/` ", s =>
+        {
+            if (s == null) return;
+            Args.Exporter = s;
+        }));
         this.isRun = isRun;
     }
 
