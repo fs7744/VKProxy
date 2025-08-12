@@ -9,6 +9,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using System.Diagnostics;
+using System.Reflection;
 using VKProxy.CommandLine;
 using VKProxy.Middlewares.Http;
 using VKProxy.Middlewares.Http.HttpFuncs;
@@ -136,7 +137,7 @@ public static class VKProxyHost
                     if (hasPrometheus)
                         i.AddSingleton<IHttpFunc, PrometheusFunc>();
                     var tb = i.AddOpenTelemetry()
-                    .ConfigureResource(resource => resource.AddService("VKProxy", "").AddContainerDetector())
+                    .ConfigureResource(resource => resource.AddService("VKProxy", "", Assembly.GetExecutingAssembly().GetName().Version.ToString()).AddContainerDetector())
                     .WithTracing(i =>
                     {
                         if (i is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
