@@ -19,15 +19,20 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
     {
         o.UseSocks5 = true;
         o.Sampler = VKProxy.Sampler.Random;
+        o.Exporter = "prometheus,otlp";
         //o.Meters = new string[] { "System.Net.Http", "System.Net.NameResolution", "System.Runtime", "Microsoft.AspNetCore.Server.Kestrel", "Microsoft.AspNetCore.Server.Kestrel.Udp", "Microsoft.AspNetCore.MemoryPool", "VKProxy.ReverseProxy" };
-    }, j =>
-    {
-        j.WithTracing(i =>
-        {
-            i.AddConsoleExporter();
-        });
-        j.WithLogging(i => i.AddConsoleExporter());
-    })
+    }
+    //, j =>
+    //{
+    //    //j.UseOtlpExporter();
+
+    //    j.WithTracing(i =>
+    //    {
+    //        i.AddConsoleExporter();
+    //    });
+    //    //j.WithLogging(i => i.AddConsoleExporter());
+    //}
+    )
     .ConfigureServices(i =>
         {
         //i.Configure<ReverseProxyOptions>(o => o.Section = "TextSection");

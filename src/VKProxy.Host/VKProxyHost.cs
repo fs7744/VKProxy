@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -130,9 +131,12 @@ public static class VKProxyHost
 
                 if (options.Telemetry)
                 {
-                    i.AddSingleton<IHttpFunc, PrometheusFunc>();
+                    var hasPrometheus = options.Exporter != null && options.Exporter.Contains("prometheus", StringComparison.OrdinalIgnoreCase);
+                    var hasConsole = options.Exporter != null && options.Exporter.Contains("console", StringComparison.OrdinalIgnoreCase);
+                    if (hasPrometheus)
+                        i.AddSingleton<IHttpFunc, PrometheusFunc>();
                     var tb = i.AddOpenTelemetry()
-                    .ConfigureResource(resource => resource.AddContainerDetector())
+                    .ConfigureResource(resource => resource.AddService("VKProxy", "").AddContainerDetector())
                     .WithTracing(i =>
                     {
                         if (i is IDeferredTracerProviderBuilder deferredTracerProviderBuilder)
@@ -146,11 +150,17 @@ public static class VKProxyHost
                                 }
                             });
                         }
+
+                        if (hasConsole)
+                            i.AddConsoleExporter();
                     })
                     .WithMetrics(builder =>
                     {
                         builder.AddMeter(options.Meters);
-                        builder.AddPrometheusExporter();
+                        if (hasPrometheus)
+                            builder.AddPrometheusExporter();
+                        if (hasConsole)
+                            builder.AddConsoleExporter();
                     });
                     configOpenTelemetry?.Invoke(tb);
                     if (!options.DropInstruments.IsNullOrEmpty())
@@ -163,6 +173,11 @@ public static class VKProxyHost
                             }
                         });
                     }
+                    if (options.Exporter != null && options.Exporter.Contains("otlp", StringComparison.OrdinalIgnoreCase))
+                        tb.UseOtlpExporter();
+
+                    if (hasConsole)
+                        tb.WithLogging(x => x.AddConsoleExporter());
                 }
             })
             .UseReverseProxy();

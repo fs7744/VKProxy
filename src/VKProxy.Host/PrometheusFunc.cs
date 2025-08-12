@@ -16,7 +16,8 @@ public class PrometheusFunc : IHttpFunc
     {
         RequestDelegate next = c => Task.CompletedTask;
         var t = typeof(PrometheusAspNetCoreOptions).Assembly.GetTypes().FirstOrDefault(t => t.Name == "PrometheusExporterMiddleware");
-        this.o = t.GetConstructors().First().Invoke(new object[] { meterProvider, next });
+        var i = t.GetConstructor(new Type[] { typeof(MeterProvider), typeof(Microsoft.AspNetCore.Http.RequestDelegate) });
+        this.o = i.Invoke(new object[] { meterProvider, next });
         var func = t.GetMethods().First(i => i.Name == "InvokeAsync").CreateDelegate<Func<HttpContext, Task>>(o);
         this.func = c => func(c);
     }
