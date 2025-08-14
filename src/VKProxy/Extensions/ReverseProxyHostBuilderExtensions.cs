@@ -134,6 +134,7 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<IHttpFunc, WAFFunc>();
         services.AddSingleton<IHttpFunc, OnlyHttpsFunc>();
         services.AddSingleton<IHttpFunc, ContentFunc>();
+        services.AddSingleton<IHttpFunc, JwtCheckFunc>();
 
         services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
         services.TryAddSingleton<ITemplateStatementFactory, TemplateStatementFactory>();
@@ -142,24 +143,6 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<IApplicationBuilder>(i =>
         {
             var app = new ApplicationBuilder(i);
-#if DEBUG
-            app.Use(async (c, next) =>
-            {
-                var req = c.Request;
-                var path = req.Path.Value;
-                var host = req.Host.ToString();
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-                try
-                {
-                    await next(c);
-                }
-                finally
-                {
-                    sw.Stop();
-                    c.RequestServices.GetRequiredService<ILogger<HttpReverseProxy>>().LogInformation($"{req.Protocol} {host} {path} end used: {sw.Elapsed}");
-                }
-            });
-#endif
             foreach (var item in i.GetServices<Action<IApplicationBuilder>>())
             {
                 item(app);

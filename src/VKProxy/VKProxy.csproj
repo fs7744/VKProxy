@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="DotNext.Threading" Version="5.23.0" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.1" />
     <PackageReference Include="System.Threading.RateLimiting" Version="9.0.8" />
   </ItemGroup>
 
