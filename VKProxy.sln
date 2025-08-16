@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.ACME", "src\VKProxy
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.ACME.AspNetCore", "src\VKProxy.ACME.AspNetCore\VKProxy.ACME.AspNetCore.csproj", "{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.Kubernetes.Controller", "src\VKProxy.Kubernetes.Controller\VKProxy.Kubernetes.Controller.csproj", "{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,6 +119,10 @@ Global
 		{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -138,6 +144,7 @@ Global
 		{BBE93DDC-62AF-4BBD-A4AB-E04C03539450} = {FCC0894D-C703-4E70-9B2B-30C0B69A2B1E}
 		{B2D3D6CF-35CD-42C1-B8F4-89FC080A668B} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 		{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
+		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {439F8011-EF6B-4E36-862B-E912231F4FB2}

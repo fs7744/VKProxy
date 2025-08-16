@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="../../ProjectCommon.targets" />
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageId>VKProxy.Kubernetes.Controller</PackageId>
+		<Title>Kubernetes Controller for VKProxy</Title>
+		<Description>Kubernetes Controller for VKProxy</Description>
+	</PropertyGroup>
+	<ItemGroup>
+	  <PackageReference Include="KubernetesClient" Version="17.0.4" />
+	  <PackageReference Include="YamlDotNet" Version="16.3.0" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\VKProxy\VKProxy.csproj" />
+	</ItemGroup>
+
+</Project>
