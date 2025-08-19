@@ -2,7 +2,7 @@
 
 namespace VKProxy.Kubernetes.Controller.Converters;
 
-internal sealed class VKProxyIngressContext
+public sealed class VKProxyIngressContext
 {
     public VKProxyIngressContext(IngressData ingress, List<ServiceData> services, List<Endpoints> endpoints)
     {

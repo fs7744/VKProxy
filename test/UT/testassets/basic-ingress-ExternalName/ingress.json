@@ -1,0 +1,22 @@
+{
+  "Sni": {
+  },
+  "Routes": {
+    "frontend.default:80": {
+      "Destinations": [
+        {
+          "Address": "my.database.example.com"
+        }
+      ]
+    }
+  },
+  "Clusters": {
+    "minimal-ingress.default:/foo": {
+      "Match": {
+        "Hosts": [ "*" ],
+        "Paths": [ "/foo*" ]
+      },
+      "ClusterId": "frontend.default:80"
+    }
+  }
+}

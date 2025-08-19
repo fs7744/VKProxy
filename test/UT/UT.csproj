@@ -24,11 +24,17 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\VKProxy.ACME\VKProxy.ACME.csproj" />
     <ProjectReference Include="..\..\src\VKProxy.Host\VKProxy.Host.csproj" />
+    <ProjectReference Include="..\..\src\VKProxy.Kubernetes.Controller\VKProxy.Kubernetes.Controller.csproj" />
     <ProjectReference Include="..\..\src\VKProxy\VKProxy.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+
+	<ItemGroup>
+		<Content Include="testassets\**\*" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
 
 </Project>
