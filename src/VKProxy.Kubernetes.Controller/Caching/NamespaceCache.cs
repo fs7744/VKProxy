@@ -150,7 +150,7 @@ public class NamespaceCache
         }
     }
 
-    public ImmutableList<string> Update(WatchEventType eventType, V1Endpoints endpoints)
+    public ImmutableList<string> Update(WatchEventType eventType, V1EndpointSlice endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 

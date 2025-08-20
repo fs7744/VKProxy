@@ -13,7 +13,7 @@ public interface ICache
 
     ImmutableList<string> Update(WatchEventType eventType, V1Service service);
 
-    ImmutableList<string> Update(WatchEventType eventType, V1Endpoints endpoints);
+    ImmutableList<string> Update(WatchEventType eventType, V1EndpointSlice endpoints);
 
     void Update(WatchEventType eventType, V1Secret secret);
 

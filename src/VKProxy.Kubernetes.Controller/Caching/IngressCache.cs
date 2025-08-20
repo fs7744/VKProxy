@@ -81,7 +81,7 @@ public class IngressCache : ICache
         return Namespace(service.Namespace()).Update(eventType, service);
     }
 
-    public ImmutableList<string> Update(WatchEventType eventType, V1Endpoints endpoints)
+    public ImmutableList<string> Update(WatchEventType eventType, V1EndpointSlice endpoints)
     {
         return Namespace(endpoints.Namespace()).Update(eventType, endpoints);
     }

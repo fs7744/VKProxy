@@ -19,21 +19,11 @@ public class IngressConversionTests
 {
     [Theory]
     [InlineData("basic-ingress-ExternalName")]
+    [InlineData("https")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);
-        var cache = await GetKubernetesInfo(name, ingressClass);
-        var configContext = new VKProxyConfigContext();
-        var ingresses = cache.GetIngresses().ToArray();
-
-        foreach (var ingress in ingresses)
-        {
-            if (cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
-            {
-                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList);
-                VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
-            }
-        }
+        var configContext = await GetKubernetesInfo(name, ingressClass);
         var options = new JsonSerializerOptions { Converters = { new JsonStringEnumConverter() } };
         VerifyJson(System.Text.Json.JsonSerializer.Serialize(configContext, options), name, "ingress.json");
     }
@@ -75,8 +65,9 @@ public class IngressConversionTests
         return sb.ToString();
     }
 
-    private async Task<ICache> GetKubernetesInfo(string name, V1IngressClass ingressClass)
+    private async Task<VKProxyConfigContext> GetKubernetesInfo(string name, V1IngressClass ingressClass)
     {
+        var r = new VKProxyConfigContext();
         var mockLogger = new Mock<ILogger<IngressCache>>();
         var mockOptions = new Mock<IOptions<K8sOptions>>();
         var certificateSelector = new Mock<IServerCertificateSelector>();
@@ -85,35 +76,36 @@ public class IngressConversionTests
 
         mockOptions.SetupGet(o => o.Value).Returns(new K8sOptions { ControllerClass = "vkproxy/ingress" });
 
-        var cache = new IngressCache(mockOptions.Object, certificateSelector.Object, certificateHelper, mockLogger.Object);
+        //var cache = new IngressCache(mockOptions.Object, certificateSelector.Object, certificateHelper, mockLogger.Object);
 
         var typeMap = new Dictionary<string, Type>();
         typeMap.Add("networking.k8s.io/v1/Ingress", typeof(V1Ingress));
         typeMap.Add("v1/Service", typeof(V1Service));
         typeMap.Add("v1/Endpoints", typeof(V1Endpoints));
 
-        if (ingressClass is not null)
-        {
-            cache.Update(WatchEventType.Added, ingressClass);
-        }
+        //if (ingressClass is not null)
+        //{
+        //    cache.Update(WatchEventType.Added, ingressClass);
+        //}
 
         var kubeObjects = await KubernetesYaml.LoadAllFromFileAsync(Path.Combine("testassets", name, "ingress.yaml"), typeMap).ConfigureAwait(false);
-        foreach (var obj in kubeObjects)
-        {
-            if (obj is V1Ingress ingress)
-            {
-                cache.Update(WatchEventType.Added, ingress);
-            }
-            else if (obj is V1Service service)
-            {
-                cache.Update(WatchEventType.Added, service);
-            }
-            else if (obj is V1Endpoints endpoints)
-            {
-                cache.Update(WatchEventType.Added, endpoints);
-            }
-        }
 
-        return cache;
+        //foreach (var obj in kubeObjects)
+        //{
+        //    if (obj is V1Ingress ingress)
+        //    {
+        //        cache.Update(WatchEventType.Added, ingress);
+        //    }
+        //    else if (obj is V1Service service)
+        //    {
+        //        cache.Update(WatchEventType.Added, service);
+        //    }
+        //    else if (obj is V1Endpoints endpoints)
+        //    {
+        //        cache.Update(WatchEventType.Added, endpoints);
+        //    }
+        //}
+
+        return r;
     }
 }

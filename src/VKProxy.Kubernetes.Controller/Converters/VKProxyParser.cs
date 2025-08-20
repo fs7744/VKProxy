@@ -22,10 +22,10 @@ public static class VKProxyParser
         var defaultService = defaultBackend?.Service;
         IList<V1EndpointSubset> defaultSubsets = default;
 
-        if (!string.IsNullOrEmpty(defaultService?.Name))
-        {
-            defaultSubsets = ingressContext.Endpoints.SingleOrDefault(x => x.Name == defaultService?.Name).Subsets;
-        }
+        //if (!string.IsNullOrEmpty(defaultService?.Name))
+        //{
+        //    defaultSubsets = ingressContext.Endpoints.SingleOrDefault(x => x.Name == defaultService?.Name).Subsets;
+        //}
 
         HandleAnnotations(ingressContext, ingressContext.Ingress.Metadata);
 

@@ -1,30 +1,42 @@
 ﻿using k8s;
 using k8s.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using VKProxy.Core.Hosting;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Client;
-using VKProxy.Kubernetes.Controller.Queues;
 
 namespace VKProxy.Kubernetes.Controller.Services;
+
+public interface IK8SChange
+{
+    WatchEventType WatchEventType { get; }
+}
+
+public class K8SChange<T> : IK8SChange
+{
+    public WatchEventType WatchEventType { get; set; }
+    public T Data { get; set; }
+}
 
 public class IngressController : BackgroundHostedService
 {
     private readonly IReadOnlyList<IResourceInformerRegistration> _registrations;
-    private readonly ICache _cache;
     private readonly IReconciler _reconciler;
+    private readonly Lock _lock = new Lock();
+    private Queue<IK8SChange> _pendingChanges;
+    private readonly Dictionary<string, IngressClassData> _ingressClassData = new Dictionary<string, IngressClassData>();
+    private readonly K8sOptions _options;
+    private bool _isDefaultController;
+    private readonly Lock _sync = new();
 
-    private bool _registrationsReady;
-    private readonly WorkQueue<QueueItem> _queue;
-    private readonly QueueItem _ingressChangeQueueItem;
-
-    public IngressController(ICache cache,
+    public IngressController(
         IReconciler reconciler,
+        IServiceProvider provider,
         IResourceInformer<V1Ingress> ingressInformer,
         IResourceInformer<V1Service> serviceInformer,
-        IResourceInformer<V1Endpoints> endpointsInformer,
         IResourceInformer<V1IngressClass> ingressClassInformer,
         IResourceInformer<V1Secret> secretInformer,
         IOptions<K8sOptions> options,
@@ -32,29 +44,38 @@ public class IngressController : BackgroundHostedService
     {
         ArgumentNullException.ThrowIfNull(ingressInformer, nameof(ingressInformer));
         ArgumentNullException.ThrowIfNull(serviceInformer, nameof(serviceInformer));
-        ArgumentNullException.ThrowIfNull(endpointsInformer, nameof(endpointsInformer));
         ArgumentNullException.ThrowIfNull(ingressClassInformer, nameof(ingressClassInformer));
         ArgumentNullException.ThrowIfNull(secretInformer, nameof(secretInformer));
         ArgumentNullException.ThrowIfNull(options, nameof(options));
+        _options = options.Value;
         var watchSecrets = options.Value.ServerCertificates;
 
         var registrations = new List<IResourceInformerRegistration>()
         {
             serviceInformer.Register(Notification),
-            endpointsInformer.Register(Notification),
             ingressClassInformer.Register(Notification),
-            ingressInformer.Register(Notification)
+            ingressInformer.Register(Notification),
         };
+        var oldEnd = provider.GetService<IResourceInformer<V1Endpoints>>();
+        if (oldEnd != null)
+        {
+            registrations.Add(oldEnd.Register(Notification));
+        }
+        var newEnd = provider.GetService<IResourceInformer<V1EndpointSlice>>();
+        if (newEnd != null)
+        {
+            registrations.Add(newEnd.Register(Notification));
+        }
         if (watchSecrets)
         {
             registrations.Add(secretInformer.Register(Notification));
         }
 
         _registrations = registrations;
-
-        _registrationsReady = false;
+        ChangePenndingQueue();
         serviceInformer.StartWatching();
-        endpointsInformer.StartWatching();
+        oldEnd?.StartWatching();
+        newEnd?.StartWatching();
         ingressClassInformer.StartWatching();
         ingressInformer.StartWatching();
         if (watchSecrets)
@@ -62,15 +83,25 @@ public class IngressController : BackgroundHostedService
             secretInformer.StartWatching();
         }
 
-        _queue = new ProcessingRateLimitedQueue<QueueItem>(perSecond: 0.5, burst: 1);
+        this._reconciler = reconciler;
+    }
 
-        ArgumentNullException.ThrowIfNull(cache);
-        ArgumentNullException.ThrowIfNull(reconciler);
+    private Queue<IK8SChange> ChangePenndingQueue()
+    {
+        lock (_lock)
+        {
+            var r = _pendingChanges;
+            _pendingChanges = new Queue<IK8SChange>();
+            return r;
+        }
+    }
 
-        _cache = cache;
-        _reconciler = reconciler;
-
-        _ingressChangeQueueItem = new QueueItem("Ingress Change");
+    private void AddPennding(IK8SChange change)
+    {
+        lock (_lock)
+        {
+            _pendingChanges.Enqueue(change);
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -81,8 +112,6 @@ public class IngressController : BackgroundHostedService
             {
                 registration.Dispose();
             }
-
-            _queue.Dispose();
         }
 
         base.Dispose(disposing);
@@ -95,10 +124,7 @@ public class IngressController : BackgroundHostedService
     /// <param name="resource">The information as provided by the Kubernetes API server.</param>
     private void Notification(WatchEventType eventType, V1Ingress resource)
     {
-        if (_cache.Update(eventType, resource))
-        {
-            NotificationIngressChanged();
-        }
+        AddPennding(new K8SChange<V1Ingress>() { Data = resource, WatchEventType = eventType });
     }
 
     /// <summary>
@@ -108,11 +134,7 @@ public class IngressController : BackgroundHostedService
     /// <param name="resource">The information as provided by the Kubernetes API server.</param>
     private void Notification(WatchEventType eventType, V1Service resource)
     {
-        var ingressNames = _cache.Update(eventType, resource);
-        if (ingressNames.Count > 0)
-        {
-            NotificationIngressChanged();
-        }
+        AddPennding(new K8SChange<V1Service>() { Data = resource, WatchEventType = eventType });
     }
 
     /// <summary>
@@ -122,11 +144,17 @@ public class IngressController : BackgroundHostedService
     /// <param name="resource">The information as provided by the Kubernetes API server.</param>
     private void Notification(WatchEventType eventType, V1Endpoints resource)
     {
-        var ingressNames = _cache.Update(eventType, resource);
-        if (ingressNames.Count > 0)
-        {
-            NotificationIngressChanged();
-        }
+        AddPennding(new K8SChange<V1Endpoints>() { Data = resource, WatchEventType = eventType });
+    }
+
+    /// <summary>
+    /// Called by the informer with real-time resource updates.
+    /// </summary>
+    /// <param name="eventType">Indicates if the resource new, updated, or deleted.</param>
+    /// <param name="resource">The information as provided by the Kubernetes API server.</param>
+    private void Notification(WatchEventType eventType, V1EndpointSlice resource)
+    {
+        AddPennding(new K8SChange<V1EndpointSlice>() { Data = resource, WatchEventType = eventType });
     }
 
     /// <summary>
@@ -136,7 +164,30 @@ public class IngressController : BackgroundHostedService
     /// <param name="resource">The information as provided by the Kubernetes API server.</param>
     private void Notification(WatchEventType eventType, V1IngressClass resource)
     {
-        _cache.Update(eventType, resource);
+        AddPennding(new K8SChange<V1IngressClass>() { Data = resource, WatchEventType = eventType });
+        if (!string.Equals(_options.ControllerClass, resource.Spec.Controller, StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.LogInformation(
+                "Ignoring {IngressClassNamespace}/{IngressClassName} as the spec.controller is not the same as this ingress",
+                resource.Metadata.NamespaceProperty,
+                resource.Metadata.Name);
+            return;
+        }
+
+        var ingressClassName = resource.Name();
+        lock (_sync)
+        {
+            if (eventType == WatchEventType.Added || eventType == WatchEventType.Modified)
+            {
+                _ingressClassData[ingressClassName] = new IngressClassData(resource);
+            }
+            else if (eventType == WatchEventType.Deleted)
+            {
+                _ingressClassData.Remove(ingressClassName);
+            }
+
+            _isDefaultController = _ingressClassData.Values.Any(ic => ic.IsDefault);
+        }
     }
 
     /// <summary>
@@ -146,17 +197,7 @@ public class IngressController : BackgroundHostedService
     /// <param name="resource">The information as provided by the Kubernetes API server.</param>
     private void Notification(WatchEventType eventType, V1Secret resource)
     {
-        _cache.Update(eventType, resource);
-    }
-
-    private void NotificationIngressChanged()
-    {
-        if (!_registrationsReady)
-        {
-            return;
-        }
-
-        _queue.Add(_ingressChangeQueueItem);
+        AddPennding(new K8SChange<V1Secret>() { Data = resource, WatchEventType = eventType });
     }
 
     public override async Task RunAsync(CancellationToken cancellationToken)
@@ -167,39 +208,78 @@ public class IngressController : BackgroundHostedService
             await registration.ReadyAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        // At this point we know that all the Ingress and Endpoint caches are at least in sync
-        // with cluster's state as of the start of this controller.
-        _registrationsReady = true;
-        NotificationIngressChanged();
-
         // Now begin one loop to process work until an application shutdown is requested.
         while (!cancellationToken.IsCancellationRequested)
         {
-            // Dequeue the next item to process
-            var (item, shutdown) = await _queue.GetAsync(cancellationToken).ConfigureAwait(false);
-            if (shutdown)
-            {
-                Logger.LogInformation("Work queue has been shutdown. Exiting reconciliation loop.");
-                return;
-            }
-
+            await Task.Delay(500).ConfigureAwait(false);
+            var queue = ChangePenndingQueue();
+            if (queue is null || queue.Count == 0)
+                continue;
             try
             {
-                await _reconciler.ProcessAsync(cancellationToken).ConfigureAwait(false);
+                await _reconciler.ProcessAsync(Reduce(queue), cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
-                Logger.LogInformation("Rescheduling {Change}", item.Change);
-
-                // Any failure to process this item results in being re-queued
-                _queue.Add(item);
-            }
-            finally
-            {
-                _queue.Done(item);
+                Logger.LogError(ex.Message, ex);
             }
         }
 
         Logger.LogInformation("Reconciliation loop cancelled");
+    }
+
+    private IEnumerable<IK8SChange> Reduce(Queue<IK8SChange> queue)
+    {
+        var dict = new Dictionary<string, IK8SChange>();
+        while (queue.TryDequeue(out var r))
+        {
+            if (r is K8SChange<V1Ingress> ing)
+            {
+                if (IsVKProxyIngress(ing.Data))
+                {
+                    var key = $"V1Ingress/{ing.Data.Namespace()}/{ing.Data.Name()}";
+                    dict[key] = r;
+                }
+            }
+            else if (r is K8SChange<V1Service> svc)
+            {
+                var key = $"V1Service/{svc.Data.Namespace()}/{svc.Data.Name()}";
+                dict[key] = r;
+            }
+            else if (r is K8SChange<V1Endpoints> end)
+            {
+                var key = $"V1Endpoints/{end.Data.Namespace()}/{end.Data.Name()}";
+                dict[key] = r;
+            }
+            else if (r is K8SChange<V1EndpointSlice> endp)
+            {
+                var key = $"V1EndpointSlice/{endp.Data.Namespace()}/{endp.Data.Name()}";
+                dict[key] = r;
+            }
+            else if (r is K8SChange<V1IngressClass> ic)
+            {
+                var key = $"V1IngressClass/{ic.Data.Namespace()}/{ic.Data.Name()}";
+                dict[key] = r;
+            }
+            else if (r is K8SChange<V1Secret> sec)
+            {
+                var key = $"V1Secret/{sec.Data.Namespace()}/{sec.Data.Name()}";
+                dict[key] = r;
+            }
+        }
+        return dict.Values;
+    }
+
+    private bool IsVKProxyIngress(V1Ingress ingress)
+    {
+        if (ingress.Spec.IngressClassName is null)
+        {
+            return _isDefaultController;
+        }
+
+        lock (_sync)
+        {
+            return _ingressClassData.ContainsKey(ingress.Spec.IngressClassName);
+        }
     }
 }

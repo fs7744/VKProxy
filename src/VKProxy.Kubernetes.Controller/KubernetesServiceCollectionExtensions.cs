@@ -42,12 +42,12 @@ public static class KubernetesServiceCollectionExtensions
         });
 
         services.AddHostedService<IngressController>();
-        services.AddSingleton<ICache, IngressCache>();
         services.AddTransient<IReconciler, Reconciler>();
 
         services.RegisterResourceInformer<V1Ingress, V1IngressResourceInformer>();
         services.RegisterResourceInformer<V1Service, V1ServiceResourceInformer>();
         services.RegisterResourceInformer<V1Endpoints, V1EndpointsResourceInformer>();
+        services.RegisterResourceInformer<V1EndpointSlice, V1EndpointSlicesResourceInformer>();
         services.RegisterResourceInformer<V1IngressClass, V1IngressClassResourceInformer>();
         services.RegisterResourceInformer<V1Secret, V1SecretResourceInformer>("type=kubernetes.io/tls");
 
