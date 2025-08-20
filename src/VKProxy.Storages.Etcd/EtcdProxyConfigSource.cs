@@ -2,6 +2,7 @@
 using Google.Protobuf;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Mvccpb;
 using System.Text;
@@ -25,6 +26,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
     private readonly string prefix;
     private readonly TimeSpan delay;
     private CancellationTokenSource cts;
+    private ReverseProxyOptions reverseProxyOptions;
     private ProxyConfigSnapshot currentSnapshot;
     private readonly Lock configChangedLock = new Lock();
     private readonly List<ListenConfig> stop = new();
@@ -33,7 +35,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
     public IProxyConfig CurrentSnapshot => currentSnapshot;
 
     public EtcdProxyConfigSource([FromKeyedServices(nameof(EtcdProxyConfigSource))] IEtcdClient client, EtcdProxyConfigSourceOptions options, ProxyLogger logger,
-        IValidator<IProxyConfig> validator, IHttpSelector httpSelector, ISniSelector sniSelector, IActiveHealthCheckMonitor healthCheckMonitor)
+        IValidator<IProxyConfig> validator, IHttpSelector httpSelector, ISniSelector sniSelector, IActiveHealthCheckMonitor healthCheckMonitor, IOptions<ReverseProxyOptions> reverseProxyOptions)
     {
         this.client = client;
         this.logger = logger;
@@ -44,6 +46,7 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
         this.prefix = options.Prefix;
         this.delay = options.Delay.GetValueOrDefault(EtcdHostBuilderExtensions.defaultDelay);
         cts = new CancellationTokenSource();
+        this.reverseProxyOptions = reverseProxyOptions.Value;
     }
 
     public void Dispose()
@@ -200,6 +203,10 @@ public class EtcdProxyConfigSource : IConfigSource<IProxyConfig>
                     {
                         case Mvccpb.Event.Types.EventType.Put:
                             var vv = JsonSerializer.Deserialize<RouteConfig>(evt.Kv.Value.Span);
+                            if (!vv.Timeout.HasValue)
+                            {
+                                vv.Timeout = reverseProxyOptions.DefaultProxyTimeout;
+                            }
                             vv.Key = k;
                             if (currentSnapshot.Routes.TryGetValue(k, out var v))
                             {

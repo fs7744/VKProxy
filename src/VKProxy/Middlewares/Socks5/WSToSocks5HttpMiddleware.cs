@@ -63,7 +63,7 @@ internal class WSToSocks5HttpMiddleware : IMiddleware
             var output = PipeWriter.Create(stream, writerOptions);
             var feature = context.Features.Get<IReverseProxyFeature>();
             var route = feature.Route;
-            using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout);
+            using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout.Value);
             var token = cts.Token;
             context.Features.Set<IL4ReverseProxyFeature>(new L4ReverseProxyFeature() { IsDone = true, Route = route });
             await socks5Middleware.Proxy(new WebSocketConnection(context.Features)

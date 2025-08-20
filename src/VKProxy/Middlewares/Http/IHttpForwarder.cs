@@ -41,7 +41,7 @@ public class HttpForwarder : IHttpForwarder
             throw new ArgumentException("Invalid destination prefix.", nameof(destinationPrefix));
         }
         var route = proxyFeature.Route;
-        var activityCancellationSource = ActivityCancellationTokenSource.Rent(route.Timeout, context.RequestAborted);
+        var activityCancellationSource = ActivityCancellationTokenSource.Rent(route.Timeout.Value, context.RequestAborted);
         var requestConfig = cluster.HttpRequest ?? ForwarderRequestConfig.Empty;
         var httpClient = cluster.HttpMessageHandler ?? throw new ArgumentNullException("httpClient");
         var hasSend = false;

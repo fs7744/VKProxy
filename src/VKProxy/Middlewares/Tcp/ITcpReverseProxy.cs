@@ -86,7 +86,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
         ConnectionContext upstream = null;
         try
         {
-            using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout);
+            using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout.Value);
             var token = cts.Token;
             await init(context, token);
             if (feature.IsDone) return;
@@ -103,7 +103,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
                         , upstream.Transport.Input.CopyToAsync(new MiddlewarePipeWriter(context.Transport.Output, context, resp), token));
                 if (task.IsCanceled)
                 {
-                    logger.ProxyTimeout(route.Key, route.Timeout);
+                    logger.ProxyTimeout(route.Key, route.Timeout.Value);
                 }
             }
         }
@@ -161,7 +161,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
             else
             {
                 feature.SelectedDestination?.ConcurrencyCounter.Increment();
-                using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout);
+                using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout.Value);
                 var t = cts.Token;
                 await r.CopyToAsync(upstream.Transport.Output, t);
                 context.Transport.Input.AdvanceTo(r.Buffer.End);
@@ -170,7 +170,7 @@ internal class TcpReverseProxy : ITcpReverseProxy
                         , upstream.Transport.Input.CopyToAsync(new MiddlewarePipeWriter(context.Transport.Output, context, resp), t));
                 if (task.IsCanceled)
                 {
-                    logger.ProxyTimeout(route.Key, route.Timeout);
+                    logger.ProxyTimeout(route.Key, route.Timeout.Value);
                 }
             }
         }

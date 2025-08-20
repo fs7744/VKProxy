@@ -117,7 +117,7 @@ internal class Socks5ToWSMiddleware : ITcpProxyMiddleware
         {
             using var destinationStream = await destinationResponse.Content.ReadAsStreamAsync(token);
             var clientStream = new DuplexPipeStreamAdapter<Stream>(null, context.Transport, static i => i);
-            var activityCancellationSource = ActivityCancellationTokenSource.Rent(route.Timeout);
+            var activityCancellationSource = ActivityCancellationTokenSource.Rent(route.Timeout.Value);
             var requestTask = StreamCopier.CopyAsync(isRequest: true, clientStream, destinationStream, StreamCopier.UnknownLength, timeProvider, activityCancellationSource,
                 // HTTP/2 HttpClient request streams buffer by default.
                 autoFlush: destinationResponse.Version == HttpVersion.Version20, token).AsTask();

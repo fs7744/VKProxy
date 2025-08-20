@@ -53,7 +53,7 @@ internal class UdpReverseProxy : IUdpReverseProxy
         if (route is null) return;
         try
         {
-            using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout);
+            using var cts = CancellationTokenSourcePool.Default.Rent(route.Timeout.Value);
             var token = cts.Token;
             await init(context, token);
             if (!feature.IsDone)

@@ -17,9 +17,9 @@ public class RouteConfig
     /// <summary>
     /// tcp : read / write timeout not connection timeout, udp revice response timeout, http ...
     /// </summary>
-    public TimeSpan Timeout { get; set; }
+    public TimeSpan? Timeout { get; set; }
 
-    public int UdpResponses { get; set; }
+    public int? UdpResponses { get; set; }
     public RouteMatch? Match { get; set; }
 
     public IReadOnlyList<IReadOnlyDictionary<string, string>>? Transforms { get; set; }

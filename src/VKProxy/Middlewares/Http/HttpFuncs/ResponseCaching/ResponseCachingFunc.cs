@@ -41,7 +41,7 @@ public class ResponseCachingFunc : IHttpFunc
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
     {
-        var timeout = config.Timeout;
+        var timeout = config.Timeout.Value;
         var routeId = string.Concat(config.Key.ToUpperInvariant(), "#");
         var (cc, cache, maximumBodySize, when, forceCache, cacheTime) = GetCacheKeyFunc(config);
         if (cc == null || cache == null)

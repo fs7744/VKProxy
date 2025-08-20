@@ -13,7 +13,7 @@ public class ClusterConfig
 
     public HealthCheckConfig? HealthCheck { get; set; }
 
-    public IReadOnlyList<DestinationConfig>? Destinations { get; set; }
+    public IList<DestinationConfig>? Destinations { get; set; }
 
     public HttpClientConfig? HttpClientConfig { get; set; }
     public ForwarderRequestConfig? HttpRequest { get; set; }
@@ -48,7 +48,7 @@ public class ClusterConfig
         return string.Equals(t.Key, other.Key, StringComparison.OrdinalIgnoreCase)
             && string.Equals(t.LoadBalancingPolicy, other.LoadBalancingPolicy, StringComparison.OrdinalIgnoreCase)
             && HealthCheckConfig.Equals(t.HealthCheck, other.HealthCheck)
-            && CollectionUtilities.Equals(t.Destinations, other.Destinations, DestinationConfig.Comparer)
+            && CollectionUtilities.EqualsList(t.Destinations, other.Destinations, DestinationConfig.Comparer)
             && HttpClientConfig.Equals(t.HttpClientConfig, other.HttpClientConfig)
             && t.HttpRequest?.Equals(other.HttpRequest) == true
             && CollectionUtilities.Equals(t.Metadata, other.Metadata);

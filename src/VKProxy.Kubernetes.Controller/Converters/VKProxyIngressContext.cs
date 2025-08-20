@@ -11,7 +11,7 @@ public sealed class VKProxyIngressContext
         Endpoints = endpoints;
     }
 
-    //public VKProxyIngressOptions Options { get; set; } = new VKProxyIngressOptions();
+    public VKProxyIngressOptions Options { get; set; } = new VKProxyIngressOptions();
     public IngressData Ingress { get; }
 
     public List<ServiceData> Services { get; }
