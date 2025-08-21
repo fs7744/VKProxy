@@ -19,6 +19,8 @@ public class IngressConversionTests
 {
     [Theory]
     [InlineData("basic-ingress-ExternalName")]
+    [InlineData("https")]
+    [InlineData("https_EndpointSlice")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);
@@ -91,6 +93,8 @@ public class IngressConversionTests
         typeMap.Add("networking.k8s.io/v1/Ingress", typeof(V1Ingress));
         typeMap.Add("v1/Service", typeof(V1Service));
         typeMap.Add("v1/Endpoints", typeof(V1Endpoints));
+        typeMap.Add("discovery.k8s.io/v1/EndpointSlice", typeof(V1EndpointSlice));
+        typeMap.Add("v1/Secret", typeof(V1Secret));
 
         if (ingressClass is not null)
         {
@@ -112,6 +116,14 @@ public class IngressConversionTests
             else if (obj is V1Endpoints endpoints)
             {
                 cache.Update(WatchEventType.Added, endpoints);
+            }
+            else if (obj is V1EndpointSlice endpointSlices)
+            {
+                cache.Update(WatchEventType.Added, endpointSlices);
+            }
+            else if (obj is V1Secret secret)
+            {
+                cache.Update(WatchEventType.Added, secret);
             }
         }
 

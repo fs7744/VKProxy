@@ -52,8 +52,77 @@ public static class VKProxyParser
                     var servicePort = service.Spec.Ports.SingleOrDefault(p => MatchesPort(p, path.Backend.Service.Port));
                     if (servicePort != null)
                     {
-                        //todo
-                        //HandleIngressRulePath(ingressContext, servicePort, endpoints, defaultSubsets, rule, path, configContext);
+                        HandleIngressRulePath(ingressContext, servicePort, endpoints, defaultEndpoints, rule, path, configContext);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void HandleIngressRulePath(VKProxyIngressContext ingressContext, V1ServicePort servicePort, List<Endpoints> endpoints, Endpoints? defaultEndpoints, V1IngressRule rule, V1HTTPIngressPath path, VKProxyConfigContext configContext)
+    {
+        var backend = path.Backend;
+        var ingressServiceBackend = backend.Service;
+        var subsets = defaultEndpoints;
+        var routes = configContext.Routes;
+
+        if (!string.IsNullOrEmpty(ingressServiceBackend?.Name))
+        {
+            subsets = endpoints.SingleOrDefault(x => x.Name == ingressServiceBackend?.Name);
+        }
+
+        if (!subsets.HasValue) return;
+        var e = subsets.Value;
+
+        var cluster = GetOrAddCluster(ingressContext, configContext, ingressServiceBackend);
+
+        if (e.Subsets is not null)
+        {
+            foreach (var subset in e.Subsets)
+            {
+                var isRoutePresent = false;
+                foreach (var port in subset.Ports ?? Enumerable.Empty<Corev1EndpointPort>())
+                {
+                    if (!MatchesPort(port, servicePort))
+                    {
+                        continue;
+                    }
+
+                    if (!isRoutePresent)
+                    {
+                        var route = CreateRoute(ingressContext, path, cluster, rule.Host);
+                        configContext.Routes[route.Key] = route;
+                        isRoutePresent = true;
+                    }
+
+                    // Add destination for every endpoint address
+                    foreach (var address in subset.Addresses ?? Enumerable.Empty<V1EndpointAddress>())
+                    {
+                        AddDestination(cluster, ingressContext, address.Ip, port.Port);
+                    }
+                }
+            }
+        }
+        else if (e.EndpointList is not null)
+        {
+            var isRoutePresent = false;
+            foreach (var endpoint in e.EndpointList)
+            {
+                foreach (var port in e.Ports)
+                {
+                    if (!MatchesPort(port, servicePort))
+                    {
+                        continue;
+                    }
+                    if (!isRoutePresent)
+                    {
+                        var route = CreateRoute(ingressContext, path, cluster, rule.Host);
+                        configContext.Routes[route.Key] = route;
+                        isRoutePresent = true;
+                    }
+                    foreach (var address in endpoint.Addresses ?? Enumerable.Empty<string>())
+                    {
+                        AddDestination(cluster, ingressContext, address, port.Port);
                     }
                 }
             }
@@ -227,6 +296,40 @@ public static class VKProxyParser
             options.Limit = YamlDeserializer.Deserialize<ConcurrentConnectionLimitOptions>(limit);
         }
         //todo
+    }
+
+    private static bool MatchesPort(Corev1EndpointPort port1, V1ServicePort port2)
+    {
+        if (port1 is null || port2?.TargetPort is null)
+        {
+            return false;
+        }
+        if (int.TryParse(port2.TargetPort, out var port2Number) && port2Number == port1.Port)
+        {
+            return true;
+        }
+        if (string.Equals(port2.Name, port1.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private static bool MatchesPort(Discoveryv1EndpointPort port1, V1ServicePort port2)
+    {
+        if (port1 is null || port2?.TargetPort is null)
+        {
+            return false;
+        }
+        if (int.TryParse(port2.TargetPort, out var port2Number) && port2Number == port1.Port)
+        {
+            return true;
+        }
+        if (string.Equals(port2.Name, port1.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
     }
 
     private static bool MatchesPort(V1ServicePort port1, V1ServiceBackendPort port2)
