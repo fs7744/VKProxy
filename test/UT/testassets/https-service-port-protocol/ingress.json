@@ -1,0 +1,70 @@
+{
+  "Clusters": {
+    "frontend.default:443": {
+      "Key": "frontend.default:443",
+      "Destinations": [
+        {
+          "Address": "https://10.244.2.38:443"
+        }
+      ]
+    },
+    "frontend.default:https": {
+      "Key": "frontend.default:https",
+      "Destinations": [
+        {
+          "Address": "https://10.244.2.38:443"
+        }
+      ]
+    },
+    "frontend.default:80": {
+      "Key": "frontend.default:80",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.38:80"
+        }
+      ]
+    }
+  },
+  "Routes": {
+    "minimal-ingress.default:/foo": {
+      "Order": 0,
+      "Key": "minimal-ingress.default:/foo",
+      "ClusterId": "frontend.default:443",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ]
+      }
+    },
+    "minimal-ingress.default:/fee": {
+      "Order": 0,
+      "Key": "minimal-ingress.default:/fee",
+      "ClusterId": "frontend.default:https",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/fee*"
+        ]
+      }
+    },
+    "minimal-ingress.default:/faa": {
+      "Order": 0,
+      "Key": "minimal-ingress.default:/faa",
+      "ClusterId": "frontend.default:80",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/faa*"
+        ]
+      }
+    }
+  },
+  "Sni": {}
+}

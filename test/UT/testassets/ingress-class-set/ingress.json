@@ -1,0 +1,31 @@
+{
+  "Clusters": {
+    "the-service.default:http": {
+      "Key": "the-service.default:http",
+      "Destinations": [
+        {
+          "Address": "http://10.244.1.11:80"
+        },
+        {
+          "Address": "http://10.244.1.12:80"
+        }
+      ]
+    }
+  },
+  "Routes": {
+    "the-ingress.default:/": {
+      "Order": 0,
+      "Key": "the-ingress.default:/",
+      "ClusterId": "the-service.default:http",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/"
+        ]
+      }
+    }
+  },
+  "Sni": {}
+}

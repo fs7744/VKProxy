@@ -22,6 +22,10 @@ public class IngressConversionTests
     [InlineData("basic-ingress-ExternalName")]
     [InlineData("https")]
     [InlineData("https_EndpointSlice")]
+    [InlineData("https-service-port-protocol")]
+    [InlineData("ingress-class-not-set")]
+    [InlineData("ingress-class-set")]
+    [InlineData("ingress-class-set-not-vkproxy")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);
