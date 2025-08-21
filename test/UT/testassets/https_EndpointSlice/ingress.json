@@ -2,12 +2,12 @@
   "Sni": {
   },
   "Routes": {
-    "minimal-ingress.default:/foo": {
+    "minimal-ingress.default:subdomain1.example.com/foo*": {
       "Order": 0,
-      "Key": "minimal-ingress.default:/foo",
+      "Key": "minimal-ingress.default:subdomain1.example.com/foo*",
       "Match": {
-        "Hosts": [ "*" ],
-        "Paths": [ "/foo" ]
+        "Hosts": [ "subdomain1.example.com" ],
+        "Paths": [ "/foo*" ]
       },
       "ClusterId": "frontend.default:443"
     }

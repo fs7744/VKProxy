@@ -1,4 +1,5 @@
-﻿using VKProxy.Kubernetes.Controller.Caching;
+﻿using VKProxy.HttpRoutingStatement;
+using VKProxy.Kubernetes.Controller.Caching;
 
 namespace VKProxy.Kubernetes.Controller.Converters;
 
@@ -16,4 +17,5 @@ public sealed class VKProxyIngressContext
 
     public List<ServiceData> Services { get; }
     public List<Endpoints> Endpoints { get; }
+    public IRouteStatementFactory StatementFactory { get; set; }
 }

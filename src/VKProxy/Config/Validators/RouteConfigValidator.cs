@@ -9,11 +9,13 @@ public class RouteConfigValidator : IValidator<RouteConfig>
 {
     private IHttpFunc[] funcs;
     private readonly HttpReverseProxy http;
+    private readonly IRouteStatementFactory statementFactory;
 
-    public RouteConfigValidator(IEnumerable<IHttpFunc> funcs, HttpReverseProxy http)
+    public RouteConfigValidator(IEnumerable<IHttpFunc> funcs, HttpReverseProxy http, IRouteStatementFactory statementFactory)
     {
         this.funcs = funcs.OrderByDescending(i => i.Order).ToArray();
         this.http = http;
+        this.statementFactory = statementFactory;
     }
 
     public ValueTask<bool> ValidateAsync(RouteConfig? value, List<Exception> exceptions, CancellationToken cancellationToken)
@@ -30,7 +32,7 @@ public class RouteConfigValidator : IValidator<RouteConfig>
             {
                 try
                 {
-                    match.StatementFunc = HttpRoutingStatementParser.ConvertToFunction(match.Statement);
+                    match.StatementFunc = statementFactory.ConvertToFunction(match.Statement);
                 }
                 catch (Exception ex)
                 {

@@ -106,7 +106,7 @@ public static class VKProxyParser
         else if (e.EndpointList is not null)
         {
             var isRoutePresent = false;
-            foreach (var endpoint in e.EndpointList)
+            foreach (var endpoint in e.EndpointList.Where(i => i.Conditions == null || i.Conditions.Ready == true))
             {
                 foreach (var port in e.Ports)
                 {
@@ -280,7 +280,7 @@ public static class VKProxyParser
         }
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/route-statement", out var statement))
         {
-            HttpRoutingStatementParser.ConvertToFunction(statement);
+            ingressContext.StatementFactory?.ConvertToFunction(statement);
             options.RouteStatement = statement;
         }
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/route-metadata", out var routeMetadata))

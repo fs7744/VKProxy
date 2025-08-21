@@ -10,10 +10,12 @@ public class ContentFunc : IHttpFunc
 {
     public int Order => 30;
     private readonly ProxyLogger logger;
+    private readonly IRouteStatementFactory statementFactory;
 
-    public ContentFunc(ProxyLogger logger)
+    public ContentFunc(ProxyLogger logger, IRouteStatementFactory statementFactory)
     {
         this.logger = logger;
+        this.statementFactory = statementFactory;
     }
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
@@ -55,7 +57,7 @@ public class ContentFunc : IHttpFunc
                     c.ContentType = "text/plain";
                 if (config.Metadata.TryGetValue($"{k}When", out var when))
                 {
-                    c.Func = HttpRoutingStatementParser.ConvertToFunction(when);
+                    c.Func = statementFactory.ConvertToFunction(when);
                 }
                 else
                     c.Func = static context => true;

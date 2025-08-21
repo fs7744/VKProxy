@@ -17,6 +17,7 @@ public class ResponseCachingFunc : IHttpFunc
     private readonly FrozenDictionary<string, IResponseCache> caches;
     private readonly TimeProvider timeProvider;
     private readonly ITemplateStatementFactory templateStatementFactory;
+    private readonly IRouteStatementFactory statementFactory;
     private readonly ILogger logger;
     private static readonly TimeSpan DefaultExpirationTimeSpan = TimeSpan.FromSeconds(10);
 
@@ -31,11 +32,12 @@ public class ResponseCachingFunc : IHttpFunc
 
     public int Order => 10;
 
-    public ResponseCachingFunc(IEnumerable<IResponseCache> caches, TimeProvider timeProvider, ProxyLogger logger, ITemplateStatementFactory templateStatementFactory)
+    public ResponseCachingFunc(IEnumerable<IResponseCache> caches, TimeProvider timeProvider, ProxyLogger logger, ITemplateStatementFactory templateStatementFactory, IRouteStatementFactory statementFactory)
     {
         this.caches = caches.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
         this.timeProvider = timeProvider;
         this.templateStatementFactory = templateStatementFactory;
+        this.statementFactory = statementFactory;
         this.logger = logger.generalLogger;
     }
 
@@ -611,7 +613,7 @@ public class ResponseCachingFunc : IHttpFunc
         {
             try
             {
-                whenFunc = HttpRoutingStatementParser.ConvertToFunction(when);
+                whenFunc = statementFactory.ConvertToFunction(when);
             }
             catch (Exception ex)
             {

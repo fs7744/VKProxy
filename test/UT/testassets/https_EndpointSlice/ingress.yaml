@@ -7,10 +7,11 @@ metadata:
     vkproxy.ingress.kubernetes.io/backend-protocol: https
 spec:
   rules:
-  - http:
+  - host: 'subdomain1.example.com'
+    http:
       paths:
-      - path: /foo
-        pathType: ExactMatch
+      - path: /foo*
+        pathType: ImplementationSpecific
         backend:
           service:
             name: frontend
@@ -48,4 +49,11 @@ endpoints:
       ready: true
     hostname: pod-1
     nodeName: node-1
+    zone: us-west2-a
+  - addresses:
+      - "10.244.2.35"
+    conditions:
+      ready: false
+    hostname: pod-2
+    nodeName: node-2
     zone: us-west2-a

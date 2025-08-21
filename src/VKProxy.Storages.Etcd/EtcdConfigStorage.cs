@@ -11,11 +11,13 @@ internal class EtcdConfigStorage : IConfigStorage
 {
     private readonly IEtcdClient client;
     private readonly EtcdProxyConfigSourceOptions options;
+    private readonly IRouteStatementFactory statementFactory;
 
-    public EtcdConfigStorage([FromKeyedServices(nameof(EtcdProxyConfigSource))] IEtcdClient client, EtcdProxyConfigSourceOptions options)
+    public EtcdConfigStorage([FromKeyedServices(nameof(EtcdProxyConfigSource))] IEtcdClient client, EtcdProxyConfigSourceOptions options, IRouteStatementFactory statementFactory)
     {
         this.client = client;
         this.options = options;
+        this.statementFactory = statementFactory;
     }
 
     public async Task<long> DeleteClusterAsync(string key, CancellationToken cancellationToken)
@@ -142,7 +144,7 @@ internal class EtcdConfigStorage : IConfigStorage
         {
             try
             {
-                HttpRoutingStatementParser.ConvertToFunction(config.Match.Statement);
+                statementFactory.ConvertToFunction(config.Match.Statement);
             }
             catch (Exception ex)
             {

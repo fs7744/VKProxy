@@ -8,12 +8,14 @@ namespace VKProxy.Middlewares.Http.HttpFuncs;
 public class WAFFunc : IHttpFunc
 {
     private readonly ProxyLogger logger;
+    private readonly IRouteStatementFactory statementFactory;
 
     public int Order => -100;
 
-    public WAFFunc(ProxyLogger logger)
+    public WAFFunc(ProxyLogger logger, IRouteStatementFactory statementFactory)
     {
         this.logger = logger;
+        this.statementFactory = statementFactory;
     }
 
     public RequestDelegate Create(RouteConfig config, RequestDelegate next)
@@ -47,7 +49,7 @@ public class WAFFunc : IHttpFunc
             {
                 try
                 {
-                    var f = HttpRoutingStatementParser.ConvertToFunction(v);
+                    var f = statementFactory.ConvertToFunction(v);
                     list.Add(new KeyValuePair<string, Func<HttpContext, bool>>(k, f));
                 }
                 catch (Exception ex)

@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Certificates;
@@ -33,7 +34,7 @@ public class IngressConversionTests
         {
             if (cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
             {
-                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList);
+                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList) { StatementFactory = new DefaultRouteStatementFactory() };
                 VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
             }
         }

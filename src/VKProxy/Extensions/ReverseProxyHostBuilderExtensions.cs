@@ -21,6 +21,7 @@ using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features.Limits;
 using VKProxy.Health;
 using VKProxy.Health.ActiveHealthCheckers;
+using VKProxy.HttpRoutingStatement;
 using VKProxy.LoadBalancing;
 using VKProxy.LoadBalancing.SessionAffinity;
 using VKProxy.Middlewares;
@@ -138,6 +139,7 @@ public static class ReverseProxyHostBuilderExtensions
 
         services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
         services.TryAddSingleton<ITemplateStatementFactory, TemplateStatementFactory>();
+        services.TryAddSingleton<IRouteStatementFactory, DefaultRouteStatementFactory>();
 
         services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
         services.AddSingleton<IApplicationBuilder>(i =>

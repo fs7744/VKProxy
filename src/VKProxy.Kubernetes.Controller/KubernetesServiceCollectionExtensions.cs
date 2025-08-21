@@ -1,9 +1,11 @@
 ﻿using k8s;
 using k8s.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
+using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Certificates;
 using VKProxy.Kubernetes.Controller.Client;
@@ -51,6 +53,7 @@ public static class KubernetesServiceCollectionExtensions
         services.RegisterResourceInformer<V1EndpointSlice, V1EndpointSlicesResourceInformer>();
         services.RegisterResourceInformer<V1IngressClass, V1IngressClassResourceInformer>();
         services.RegisterResourceInformer<V1Secret, V1SecretResourceInformer>("type=kubernetes.io/tls");
+        services.TryAddSingleton<IRouteStatementFactory, DefaultRouteStatementFactory>();
 
         services.AddSingleton<IServerCertificateSelector, ServerCertificateSelector>();
         services.AddSingleton<ICertificateHelper, CertificateHelper>();
