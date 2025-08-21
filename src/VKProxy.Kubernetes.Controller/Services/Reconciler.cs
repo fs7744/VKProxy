@@ -1,6 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using k8s;
+using k8s.Models;
+using Microsoft.Extensions.Logging;
+using VKProxy.Config;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Client;
+using VKProxy.Kubernetes.Controller.ConfigProvider;
 using VKProxy.Kubernetes.Controller.Converters;
 
 namespace VKProxy.Kubernetes.Controller.Services;
@@ -12,47 +16,45 @@ namespace VKProxy.Kubernetes.Controller.Services;
 public partial class Reconciler : IReconciler
 {
     private readonly IIngressResourceStatusUpdater _ingressResourceStatusUpdater;
+    private readonly ICache _cache;
     private readonly ILogger<Reconciler> _logger;
+    private readonly IUpdateConfig _updateConfig;
 
-    public Reconciler(IIngressResourceStatusUpdater ingressResourceStatusUpdater, ILogger<Reconciler> logger)
+    public Reconciler(IIngressResourceStatusUpdater ingressResourceStatusUpdater, ICache cache, IUpdateConfig updateConfig, ILogger<Reconciler> logger)
     {
         ArgumentNullException.ThrowIfNull(ingressResourceStatusUpdater);
 
         _ingressResourceStatusUpdater = ingressResourceStatusUpdater;
+        this._cache = cache;
         _logger = logger;
+        _updateConfig = updateConfig;
     }
 
-    public async Task ProcessAsync(IEnumerable<IK8SChange> changes, CancellationToken cancellationToken)
+    public async Task ProcessAsync(CancellationToken cancellationToken)
     {
         try
         {
-            // todo
-            //var ingresses = _cache.GetIngresses().ToArray();
+            var ingresses = _cache.GetIngresses().ToArray();
 
-            //var configContext = new VKProxyConfigContext();
+            var configContext = new VKProxyConfigContext();
 
-            //foreach (var ingress in ingresses)
-            //{
-            //    try
-            //    {
-            //        if (_cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
-            //        {
-            //            var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList);
-            //            VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        _logger.LogWarning(ex, "Uncaught exception occurred while reconciling ingress {IngressNamespace}/{IngressName}", ingress.Metadata.NamespaceProperty, ingress.Metadata.Name);
-            //    }
-            //}
+            foreach (var ingress in ingresses)
+            {
+                try
+                {
+                    if (_cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
+                    {
+                        var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList);
+                        VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Uncaught exception occurred while reconciling ingress {IngressNamespace}/{IngressName}", ingress.Metadata.NamespaceProperty, ingress.Metadata.Name);
+                }
+            }
 
-            //var clusters = configContext.BuildClusterConfig();
-
-            //_logger.LogInformation(JsonSerializer.Serialize(configContext.Routes));
-            //_logger.LogInformation(JsonSerializer.Serialize(clusters));
-
-            //await _updateConfig.UpdateAsync(configContext.Routes, clusters, cancellationToken).ConfigureAwait(false);
+            await _updateConfig.UpdateAsync(configContext, cancellationToken).ConfigureAwait(false);
             await _ingressResourceStatusUpdater.UpdateStatusAsync(cancellationToken);
         }
         catch (Exception ex)

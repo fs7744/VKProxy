@@ -42,6 +42,7 @@ public static class KubernetesServiceCollectionExtensions
         });
 
         services.AddHostedService<IngressController>();
+        services.AddTransient<ICache, IngressCache>();
         services.AddTransient<IReconciler, Reconciler>();
 
         services.RegisterResourceInformer<V1Ingress, V1IngressResourceInformer>();

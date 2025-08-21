@@ -20,22 +20,22 @@ public static class VKProxyParser
         var spec = ingressContext.Ingress.Spec;
         var defaultBackend = spec?.DefaultBackend;
         var defaultService = defaultBackend?.Service;
-        IList<V1EndpointSubset> defaultSubsets = default;
+        Endpoints? defaultEndpoints = default;
 
-        //if (!string.IsNullOrEmpty(defaultService?.Name))
-        //{
-        //    defaultSubsets = ingressContext.Endpoints.SingleOrDefault(x => x.Name == defaultService?.Name).Subsets;
-        //}
+        if (!string.IsNullOrEmpty(defaultService?.Name))
+        {
+            defaultEndpoints = ingressContext.Endpoints.SingleOrDefault(x => x.Name == defaultService?.Name);
+        }
 
         HandleAnnotations(ingressContext, ingressContext.Ingress.Metadata);
 
         foreach (var rule in spec?.Rules ?? Enumerable.Empty<V1IngressRule>())
         {
-            HandleIngressRule(ingressContext, ingressContext.Endpoints, defaultSubsets, rule, configContext);
+            HandleIngressRule(ingressContext, ingressContext.Endpoints, defaultEndpoints, rule, configContext);
         }
     }
 
-    private static void HandleIngressRule(VKProxyIngressContext ingressContext, List<Endpoints> endpoints, IList<V1EndpointSubset>? defaultSubsets, V1IngressRule rule, VKProxyConfigContext configContext)
+    private static void HandleIngressRule(VKProxyIngressContext ingressContext, List<Endpoints> endpoints, Endpoints? defaultEndpoints, V1IngressRule rule, VKProxyConfigContext configContext)
     {
         var http = rule.Http;
         foreach (var path in http.Paths ?? Enumerable.Empty<V1HTTPIngressPath>())
@@ -162,14 +162,15 @@ public static class VKProxyParser
         return $"{namespaceName}-INVALID";
     }
 
-    private static void HandleAnnotations(VKProxyIngressContext context, V1ObjectMeta metadata)
+    private static void HandleAnnotations(VKProxyIngressContext ingressContext, V1ObjectMeta metadata)
     {
         var annotations = metadata.Annotations;
         if (annotations is null)
         {
             return;
         }
-        var options = context.Options;
+
+        var options = ingressContext.Options;
         //cluster
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/load-balancing", out var loadBalancing))
         {

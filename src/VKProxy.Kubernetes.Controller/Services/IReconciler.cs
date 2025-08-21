@@ -2,5 +2,5 @@
 
 public interface IReconciler
 {
-    Task ProcessAsync(IEnumerable<IK8SChange> changes, CancellationToken cancellationToken);
+    Task ProcessAsync(CancellationToken cancellationToken);
 }

@@ -18,73 +18,73 @@ internal class EtcdConfigStorage : IConfigStorage
         this.options = options;
     }
 
-    public async Task<long> DeleteClusterAsync(string key)
+    public async Task<long> DeleteClusterAsync(string key, CancellationToken cancellationToken)
     {
-        var r = await client.DeleteAsync($"{options.Prefix}cluster/{key}");
+        var r = await client.DeleteAsync($"{options.Prefix}cluster/{key}", cancellationToken: cancellationToken);
         return r.Deleted;
     }
 
-    public async Task<long> DeleteListenAsync(string key)
+    public async Task<long> DeleteListenAsync(string key, CancellationToken cancellationToken)
     {
-        var r = await client.DeleteAsync($"{options.Prefix}listen/{key}");
+        var r = await client.DeleteAsync($"{options.Prefix}listen/{key}", cancellationToken: cancellationToken);
         return r.Deleted;
     }
 
-    public async Task<long> DeleteRouteAsync(string key)
+    public async Task<long> DeleteRouteAsync(string key, CancellationToken cancellationToken)
     {
-        var r = await client.DeleteAsync($"{options.Prefix}route/{key}");
+        var r = await client.DeleteAsync($"{options.Prefix}route/{key}", cancellationToken: cancellationToken);
         return r.Deleted;
     }
 
-    public async Task<long> DeleteSniAsync(string key)
+    public async Task<long> DeleteSniAsync(string key, CancellationToken cancellationToken)
     {
-        var r = await client.DeleteAsync($"{options.Prefix}sni/{key}");
+        var r = await client.DeleteAsync($"{options.Prefix}sni/{key}", cancellationToken: cancellationToken);
         return r.Deleted;
     }
 
-    public async Task<bool> ExistsClusterAsync(string key)
+    public async Task<bool> ExistsClusterAsync(string key, CancellationToken cancellationToken)
     {
         var r = await client.RangeAsync(new Etcdserverpb.RangeRequest()
         {
             CountOnly = true,
             Key = ByteString.CopyFromUtf8($"{options.Prefix}cluster/{key}")
-        });
+        }, cancellationToken: cancellationToken);
         return r.Count > 0;
     }
 
-    public async Task<bool> ExistsListenAsync(string key)
+    public async Task<bool> ExistsListenAsync(string key, CancellationToken cancellationToken)
     {
         var r = await client.RangeAsync(new Etcdserverpb.RangeRequest()
         {
             CountOnly = true,
             Key = ByteString.CopyFromUtf8($"{options.Prefix}listen/{key}")
-        });
+        }, cancellationToken: cancellationToken);
         return r.Count > 0;
     }
 
-    public async Task<bool> ExistsRouteAsync(string key)
+    public async Task<bool> ExistsRouteAsync(string key, CancellationToken cancellationToken)
     {
         var r = await client.RangeAsync(new Etcdserverpb.RangeRequest()
         {
             CountOnly = true,
             Key = ByteString.CopyFromUtf8($"{options.Prefix}route/{key}")
-        });
+        }, cancellationToken: cancellationToken);
         return r.Count > 0;
     }
 
-    public async Task<bool> ExistsSniAsync(string key)
+    public async Task<bool> ExistsSniAsync(string key, CancellationToken cancellationToken)
     {
         var r = await client.RangeAsync(new Etcdserverpb.RangeRequest()
         {
             CountOnly = true,
             Key = ByteString.CopyFromUtf8($"{options.Prefix}sni/{key}")
-        });
+        }, cancellationToken: cancellationToken);
         return r.Count > 0;
     }
 
-    public async Task<IEnumerable<ClusterConfig>> GetClusterAsync(string? prefix)
+    public async Task<IEnumerable<ClusterConfig>> GetClusterAsync(string? prefix, CancellationToken cancellationToken)
     {
-        var res = await client.GetRangeAsync($"{options.Prefix}cluster/{prefix}");
+        var res = await client.GetRangeAsync($"{options.Prefix}cluster/{prefix}", cancellationToken: cancellationToken);
         return res.Kvs.Select(i =>
         {
             var r = JsonSerializer.Deserialize<ClusterConfig>(i.Value.Span);
@@ -93,9 +93,9 @@ internal class EtcdConfigStorage : IConfigStorage
         });
     }
 
-    public async Task<IEnumerable<ListenConfig>> GetListenAsync(string prefix)
+    public async Task<IEnumerable<ListenConfig>> GetListenAsync(string prefix, CancellationToken cancellationToken)
     {
-        var res = await client.GetRangeAsync($"{options.Prefix}listen/{prefix}");
+        var res = await client.GetRangeAsync($"{options.Prefix}listen/{prefix}", cancellationToken: cancellationToken);
         return res.Kvs.Select(i =>
         {
             var r = JsonSerializer.Deserialize<ListenConfig>(i.Value.Span);
@@ -104,9 +104,9 @@ internal class EtcdConfigStorage : IConfigStorage
         });
     }
 
-    public async Task<IEnumerable<RouteConfig>> GetRouteAsync(string? prefix)
+    public async Task<IEnumerable<RouteConfig>> GetRouteAsync(string? prefix, CancellationToken cancellationToken)
     {
-        var res = await client.GetRangeAsync($"{options.Prefix}route/{prefix}");
+        var res = await client.GetRangeAsync($"{options.Prefix}route/{prefix}", cancellationToken: cancellationToken);
         return res.Kvs.Select(i =>
         {
             var r = JsonSerializer.Deserialize<RouteConfig>(i.Value.Span);
@@ -115,9 +115,9 @@ internal class EtcdConfigStorage : IConfigStorage
         });
     }
 
-    public async Task<IEnumerable<SniConfig>> GetSniAsync(string? prefix)
+    public async Task<IEnumerable<SniConfig>> GetSniAsync(string? prefix, CancellationToken cancellationToken)
     {
-        var res = await client.GetRangeAsync($"{options.Prefix}sni/{prefix}");
+        var res = await client.GetRangeAsync($"{options.Prefix}sni/{prefix}", cancellationToken: cancellationToken);
         return res.Kvs.Select(i =>
         {
             var r = JsonSerializer.Deserialize<SniConfig>(i.Value.Span);
@@ -126,17 +126,17 @@ internal class EtcdConfigStorage : IConfigStorage
         });
     }
 
-    public async Task UpdateClusterAsync(ClusterConfig config)
+    public async Task UpdateClusterAsync(ClusterConfig config, CancellationToken cancellationToken)
     {
-        await client.PutAsync($"{options.Prefix}cluster/{config.Key}", JsonSerializer.Serialize(config));
+        await client.PutAsync($"{options.Prefix}cluster/{config.Key}", JsonSerializer.Serialize(config), cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateListenAsync(ListenConfig config)
+    public async Task UpdateListenAsync(ListenConfig config, CancellationToken cancellationToken)
     {
-        await client.PutAsync($"{options.Prefix}listen/{config.Key}", JsonSerializer.Serialize(config));
+        await client.PutAsync($"{options.Prefix}listen/{config.Key}", JsonSerializer.Serialize(config), cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateRouteAsync(RouteConfig config)
+    public async Task UpdateRouteAsync(RouteConfig config, CancellationToken cancellationToken)
     {
         if (config.Match != null && config.Match.Statement != null)
         {
@@ -149,11 +149,11 @@ internal class EtcdConfigStorage : IConfigStorage
                 throw new ArgumentException(ex.Message, "Statement");
             }
         }
-        await client.PutAsync($"{options.Prefix}route/{config.Key}", JsonSerializer.Serialize(config));
+        await client.PutAsync($"{options.Prefix}route/{config.Key}", JsonSerializer.Serialize(config), cancellationToken: cancellationToken);
     }
 
-    public async Task UpdateSniAsync(SniConfig config)
+    public async Task UpdateSniAsync(SniConfig config, CancellationToken cancellationToken)
     {
-        await client.PutAsync($"{options.Prefix}sni/{config.Key}", JsonSerializer.Serialize(config));
+        await client.PutAsync($"{options.Prefix}sni/{config.Key}", JsonSerializer.Serialize(config), cancellationToken: cancellationToken);
     }
 }

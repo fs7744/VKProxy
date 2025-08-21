@@ -150,6 +150,33 @@ public class NamespaceCache
         }
     }
 
+    public ImmutableList<string> Update(WatchEventType eventType, V1Endpoints endpoints)
+    {
+        ArgumentNullException.ThrowIfNull(endpoints);
+
+        var serviceName = endpoints.Name();
+        lock (_sync)
+        {
+            if (eventType == WatchEventType.Added || eventType == WatchEventType.Modified)
+            {
+                _endpointsData[serviceName] = new Endpoints(endpoints);
+            }
+            else if (eventType == WatchEventType.Deleted)
+            {
+                _endpointsData.Remove(serviceName);
+            }
+
+            if (_serviceToIngressNames.TryGetValue(serviceName, out var ingressNames))
+            {
+                return ingressNames;
+            }
+            else
+            {
+                return ImmutableList<string>.Empty;
+            }
+        }
+    }
+
     public ImmutableList<string> Update(WatchEventType eventType, V1EndpointSlice endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);

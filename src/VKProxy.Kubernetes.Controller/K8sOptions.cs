@@ -23,4 +23,6 @@ public class K8sOptions
     /// This field is required.
     /// </summary>
     public string ControllerServiceNamespace { get; set; } = "vkproxy";
+
+    public double K8SVersion { get; set; } = 1.33;
 }
