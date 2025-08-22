@@ -98,7 +98,7 @@ public static class VKProxyParser
                     // Add destination for every endpoint address
                     foreach (var address in subset.Addresses ?? Enumerable.Empty<V1EndpointAddress>())
                     {
-                        AddDestination(cluster, ingressContext, address.Ip, port.Port);
+                        AddDestination(configContext, cluster, ingressContext, address.Ip, port.Port);
                     }
                 }
             }
@@ -122,7 +122,7 @@ public static class VKProxyParser
                     }
                     foreach (var address in endpoint.Addresses ?? Enumerable.Empty<string>())
                     {
-                        AddDestination(cluster, ingressContext, address, port.Port);
+                        AddDestination(configContext, cluster, ingressContext, address, port.Port);
                     }
                 }
             }
@@ -137,10 +137,10 @@ public static class VKProxyParser
         var cluster = GetOrAddCluster(ingressContext, configContext, ingressServiceBackend);
         var route = CreateRoute(ingressContext, path, cluster, rule.Host);
         configContext.Routes[route.Key] = route;
-        AddDestination(cluster, ingressContext, externalName, ingressServiceBackend.Port.Number);
+        AddDestination(configContext, cluster, ingressContext, externalName, ingressServiceBackend.Port.Number);
     }
 
-    private static void AddDestination(ClusterConfig cluster, VKProxyIngressContext ingressContext, string host, int? port)
+    private static void AddDestination(VKProxyConfigContext configContext, ClusterConfig cluster, VKProxyIngressContext ingressContext, string host, int? port)
     {
         var isHttps =
             ingressContext.Options.Https ||
@@ -154,10 +154,20 @@ public static class VKProxyParser
         {
             uri += $":{port}";
         }
-        cluster.Destinations.Add(new DestinationConfig()
+        if (!configContext.Destinations.TryGetValue(cluster.Key, out var d))
         {
-            Address = uri,
-        });
+            d = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            configContext.Destinations.TryAdd(cluster.Key, d);
+        }
+
+        if (!d.Contains(uri))
+        {
+            d.Add(uri);
+            cluster.Destinations.Add(new DestinationConfig()
+            {
+                Address = uri,
+            });
+        }
     }
 
     private static RouteConfig CreateRoute(VKProxyIngressContext ingressContext, V1HTTPIngressPath path, ClusterConfig cluster, string host)

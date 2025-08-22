@@ -1,8 +1,8 @@
-﻿using VKProxy.Kubernetes.Controller.Converters;
+﻿using VKProxy.Config;
 
 namespace VKProxy.Kubernetes.Controller.ConfigProvider;
 
 public interface IUpdateConfig
 {
-    Task UpdateAsync(VKProxyConfigContext configContext, CancellationToken cancellationToken);
+    Task UpdateAsync(IReadOnlyProxyConfig config, CancellationToken cancellationToken);
 }

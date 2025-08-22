@@ -1,11 +1,11 @@
-﻿using VKProxy.Kubernetes.Controller.Converters;
+﻿using VKProxy.Config;
 
 namespace VKProxy.Kubernetes.Controller.ConfigProvider;
 
 internal class KubernetesEtcdConfigUpdater : IUpdateConfig
 {
     //todo diff etcd config change and update
-    public Task UpdateAsync(VKProxyConfigContext configContext, CancellationToken cancellationToken)
+    public Task UpdateAsync(IReadOnlyProxyConfig config, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

@@ -1,0 +1,28 @@
+{
+  "Routes": {
+    "port-diff-name.default:/foo": {
+      "Order": 0,
+      "Key": "port-diff-name.default:/foo",
+      "ClusterId": "backend.default:88",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ]
+      }
+    }
+  },
+  "Clusters": {
+    "backend.default:88": {
+      "Key": "backend.default:88",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.33:80"
+        }
+      ]
+    }
+  },
+  "Sni": {}
+}

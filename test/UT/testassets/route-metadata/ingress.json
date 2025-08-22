@@ -1,0 +1,32 @@
+{
+  "Routes": {
+    "minimal-ingress.default:/foo": {
+      "Order": 0,
+      "Key": "minimal-ingress.default:/foo",
+      "ClusterId": "frontend.default:80",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ]
+      },
+      "Metadata": {
+        "foo": "bar",
+        "another-key": "another-value"
+      }
+    }
+  },
+  "Clusters": {
+    "frontend.default:80": {
+      "Key": "frontend.default:80",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.38:80"
+        }
+      ]
+    }
+  },
+  "Sni": {}
+}

@@ -57,7 +57,7 @@ public partial class Reconciler : IReconciler
                 }
             }
 
-            await _updateConfig.UpdateAsync(configContext, cancellationToken).ConfigureAwait(false);
+            await _updateConfig.UpdateAsync(configContext.Build(), cancellationToken).ConfigureAwait(false);
             await _ingressResourceStatusUpdater.UpdateStatusAsync(cancellationToken);
         }
         catch (Exception ex)

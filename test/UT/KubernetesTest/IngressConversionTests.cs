@@ -26,6 +26,20 @@ public class IngressConversionTests
     [InlineData("ingress-class-not-set")]
     [InlineData("ingress-class-set")]
     [InlineData("ingress-class-set-not-vkproxy")]
+    [InlineData("mapped-port")]
+    [InlineData("missing-svc")]
+    [InlineData("multiple-endpoints-ports")]
+    [InlineData("multiple-endpoints-same-port")]
+    [InlineData("multiple-hosts")]
+    [InlineData("multiple-ingresses")]
+    [InlineData("multiple-ingresses-one-svc")]
+    [InlineData("multiple-namespaces")]
+    [InlineData("port-diff-name")]
+    [InlineData("port-mismatch")]
+    [InlineData("route-methods")]
+    [InlineData("route-order")]
+    [InlineData("route-metadata")]
+    [InlineData("route-statement")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);
@@ -42,7 +56,7 @@ public class IngressConversionTests
                 VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
             }
         }
-        VerifyJson(System.Text.Json.JsonSerializer.Serialize(configContext, options), name, "ingress.json");
+        VerifyJson(System.Text.Json.JsonSerializer.Serialize(configContext.Build(), options), name, "ingress.json");
     }
 
     private static void VerifyJson(string json, string name, string fileName)

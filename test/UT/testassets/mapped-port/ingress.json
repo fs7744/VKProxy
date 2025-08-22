@@ -1,0 +1,28 @@
+{
+  "Clusters": {
+    "backend.default:5011": {
+      "Key": "backend.default:5011",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.33:80"
+        }
+      ]
+    }
+  },
+  "Routes": {
+    "mapped-port.default:/foo": {
+      "Order": 0,
+      "Key": "mapped-port.default:/foo",
+      "ClusterId": "backend.default:5011",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ]
+      }
+    }
+  },
+  "Sni": {}
+}

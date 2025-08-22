@@ -1,0 +1,48 @@
+{
+  "Routes": {
+    "first-ingress.default:/foo": {
+      "Order": 0,
+      "Key": "first-ingress.default:/foo",
+      "ClusterId": "frontend.default:80",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ],
+        "Methods": [
+          "GET"
+        ]
+      }
+    },
+    "second-ingress.default:/foo": {
+      "Order": 0,
+      "Key": "second-ingress.default:/foo",
+      "ClusterId": "frontend.default:80",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ],
+        "Methods": [
+          "POST",
+          "PUT"
+        ]
+      }
+    }
+  },
+  "Clusters": {
+    "frontend.default:80": {
+      "Key": "frontend.default:80",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.38:80"
+        }
+      ]
+    }
+  },
+  "Sni": {}
+}

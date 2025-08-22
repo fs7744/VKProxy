@@ -1,0 +1,55 @@
+{
+  "Routes": {
+    "repro-1-ingress.foo:subdomain1.example.com/": {
+      "Order": 0,
+      "Key": "repro-1-ingress.foo:subdomain1.example.com/",
+      "ClusterId": "repro-1-service.foo:http",
+      "Match": {
+        "Hosts": [
+          "subdomain1.example.com"
+        ],
+        "Paths": [
+          "/"
+        ]
+      }
+    },
+    "repro-2-ingress.foo:subdomain2.example.com/": {
+      "Order": 0,
+      "Key": "repro-2-ingress.foo:subdomain2.example.com/",
+      "ClusterId": "repro-2-service.foo:http",
+      "Match": {
+        "Hosts": [
+          "subdomain2.example.com"
+        ],
+        "Paths": [
+          "/"
+        ]
+      }
+    }
+  },
+  "Clusters": {
+    "repro-1-service.foo:http": {
+      "Key": "repro-1-service.foo:http",
+      "Destinations": [
+        {
+          "Address": "http://10.244.1.11:80"
+        },
+        {
+          "Address": "http://10.244.1.12:80"
+        }
+      ]
+    },
+    "repro-2-service.foo:http": {
+      "Key": "repro-2-service.foo:http",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.22:80"
+        },
+        {
+          "Address": "http://10.244.2.23:80"
+        }
+      ]
+    }
+  },
+  "Sni": {}
+}

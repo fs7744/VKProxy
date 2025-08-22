@@ -1,0 +1,55 @@
+{
+  "Routes": {
+    "the-ingress.ns-one:subdomain1.example.com/": {
+      "Order": 0,
+      "Key": "the-ingress.ns-one:subdomain1.example.com/",
+      "ClusterId": "the-service.ns-one:http",
+      "Match": {
+        "Hosts": [
+          "subdomain1.example.com"
+        ],
+        "Paths": [
+          "/"
+        ]
+      }
+    },
+    "the-ingress.ns-two:subdomain2.example.com/": {
+      "Order": 0,
+      "Key": "the-ingress.ns-two:subdomain2.example.com/",
+      "ClusterId": "the-service.ns-two:http",
+      "Match": {
+        "Hosts": [
+          "subdomain2.example.com"
+        ],
+        "Paths": [
+          "/"
+        ]
+      }
+    }
+  },
+  "Clusters": {
+    "the-service.ns-one:http": {
+      "Key": "the-service.ns-one:http",
+      "Destinations": [
+        {
+          "Address": "http://10.244.1.11:80"
+        },
+        {
+          "Address": "http://10.244.1.12:80"
+        }
+      ]
+    },
+    "the-service.ns-two:http": {
+      "Key": "the-service.ns-two:http",
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.22:80"
+        },
+        {
+          "Address": "http://10.244.2.23:80"
+        }
+      ]
+    }
+  },
+  "Sni": {}
+}
