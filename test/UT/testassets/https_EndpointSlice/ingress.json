@@ -18,6 +18,9 @@
       "Destinations": [
         {
           "Address": "https://10.244.2.38:443"
+        },
+        {
+          "Address": "https://10.244.12.38:443"
         }
       ]
     }

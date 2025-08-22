@@ -42,9 +42,19 @@ ports:
   - name: https
     protocol: TCP
     port: 443
+  - name: http
+    protocol: TCP
+    port: 80
 endpoints:
   - addresses:
       - "10.244.2.38"
+    conditions:
+      ready: true
+    hostname: pod-1
+    nodeName: node-1
+    zone: us-west2-a
+  - addresses:
+      - "10.244.12.38"
     conditions:
       ready: true
     hostname: pod-1
