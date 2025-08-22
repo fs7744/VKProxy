@@ -1,0 +1,78 @@
+{
+  "Routes": {
+    "minimal-ingress.default:/foo": {
+      "Order": 0,
+      "Key": "minimal-ingress.default:/foo",
+      "ClusterId": "frontend.default:80",
+      "Timeout": "00:10:00",
+      "Match": {
+        "Hosts": [
+          "*"
+        ],
+        "Paths": [
+          "/foo*"
+        ]
+      },
+      "Transforms": [
+        {
+          "PathPrefix": "/apis"
+        },
+        {
+          "RequestHeader": "header1",
+          "Append": "bar"
+        }
+      ],
+      "Metadata": {
+        "PathPrefix": "/apis",
+        "RequestHeader": "header1",
+        "Append": "bar"
+      },
+      "Limit": {
+        "Policy": "TokenBucket",
+        "By": "Key",
+        "PermitLimit": 1000,
+        "QueueLimit": 50,
+        "SegmentsPerWindow": 10,
+        "TokensPerPeriod": 100,
+        "Header": "x-k",
+        "Window": "00:10:00",
+        "Cookie": "k"
+      }
+    }
+  },
+  "Clusters": {
+    "frontend.default:80": {
+      "Key": "frontend.default:80",
+      "LoadBalancingPolicy": "Random",
+      "HealthCheck": {
+        "Active": {
+          "Interval": "00:00:10",
+          "Timeout": "00:00:10",
+          "Policy": "Connect",
+          "Passes": 1,
+          "Fails": 1,
+          "Path": "/api/health",
+          "Query": "?foo=bar",
+          "Method": "POST"
+        }
+      },
+      "Destinations": [
+        {
+          "Address": "http://10.244.2.38:80"
+        }
+      ],
+      "HttpClientConfig": {
+        "SslProtocols": "Ssl3",
+        "DangerousAcceptAnyServerCertificate": true,
+        "MaxConnectionsPerServer": 2
+      },
+      "HttpRequest": {
+        "ActivityTimeout": "00:01:00",
+        "Version": "2.0",
+        "VersionPolicy": "RequestVersionExact",
+        "AllowResponseBuffering": false
+      }
+    }
+  },
+  "Sni": {}
+}

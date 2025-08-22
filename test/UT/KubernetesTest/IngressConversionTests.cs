@@ -40,6 +40,8 @@ public class IngressConversionTests
     [InlineData("route-order")]
     [InlineData("route-metadata")]
     [InlineData("route-statement")]
+    [InlineData("cluster-annotations")]
+    [InlineData("annotations")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);

@@ -52,14 +52,14 @@ public static class VKProxyParser
                     var servicePort = service.Spec.Ports.SingleOrDefault(p => MatchesPort(p, path.Backend.Service.Port));
                     if (servicePort != null)
                     {
-                        HandleIngressRulePath(ingressContext, servicePort, endpoints, defaultEndpoints, rule, path, configContext);
+                        HandleIngressRulePath(ingressContext, servicePort, endpoints, defaultEndpoints, rule, path, configContext, service.Metadata);
                     }
                 }
             }
         }
     }
 
-    private static void HandleIngressRulePath(VKProxyIngressContext ingressContext, V1ServicePort servicePort, List<Endpoints> endpoints, Endpoints? defaultEndpoints, V1IngressRule rule, V1HTTPIngressPath path, VKProxyConfigContext configContext)
+    private static void HandleIngressRulePath(VKProxyIngressContext ingressContext, V1ServicePort servicePort, List<Endpoints> endpoints, Endpoints? defaultEndpoints, V1IngressRule rule, V1HTTPIngressPath path, VKProxyConfigContext configContext, V1ObjectMeta metadata)
     {
         var backend = path.Backend;
         var ingressServiceBackend = backend.Service;
@@ -74,7 +74,7 @@ public static class VKProxyParser
         if (!subsets.HasValue) return;
         var e = subsets.Value;
 
-        var cluster = GetOrAddCluster(ingressContext, configContext, ingressServiceBackend);
+        var cluster = GetOrAddCluster(ingressContext, configContext, ingressServiceBackend, metadata);
 
         if (e.Subsets is not null)
         {
@@ -134,7 +134,7 @@ public static class VKProxyParser
         var backend = path.Backend;
         var ingressServiceBackend = backend.Service;
 
-        var cluster = GetOrAddCluster(ingressContext, configContext, ingressServiceBackend);
+        var cluster = GetOrAddCluster(ingressContext, configContext, ingressServiceBackend, null);
         var route = CreateRoute(ingressContext, path, cluster, rule.Host);
         configContext.Routes[route.Key] = route;
         AddDestination(configContext, cluster, ingressContext, externalName, ingressServiceBackend.Port.Number);
@@ -205,12 +205,13 @@ public static class VKProxyParser
         }
     }
 
-    private static ClusterConfig GetOrAddCluster(VKProxyIngressContext ingressContext, VKProxyConfigContext configContext, V1IngressServiceBackend ingressServiceBackend)
+    private static ClusterConfig GetOrAddCluster(VKProxyIngressContext ingressContext, VKProxyConfigContext configContext, V1IngressServiceBackend ingressServiceBackend, V1ObjectMeta metadata)
     {
         var key = UpstreamName(ingressContext.Ingress.Metadata.NamespaceProperty, ingressServiceBackend);
         var cluster = CollectionsMarshal.GetValueRefOrAddDefault(configContext.Clusters, key, out _) ??= new ClusterConfig();
         cluster.Key = key;
-        var options = ingressContext.Options;
+        var options = ingressContext.Options.Clone();
+        HandleClusterAnnotations(options, metadata);
         cluster.LoadBalancingPolicy = options.LoadBalancingPolicy;
         cluster.HealthCheck = options.HealthCheck;
         cluster.HttpClientConfig = options.HttpClientConfig;
@@ -241,16 +242,17 @@ public static class VKProxyParser
         return $"{namespaceName}-INVALID";
     }
 
-    private static void HandleAnnotations(VKProxyIngressContext ingressContext, V1ObjectMeta metadata)
+    private static void HandleClusterAnnotations(VKProxyIngressOptions options, V1ObjectMeta metadata, bool needClusterMetadata = true)
     {
+        if (metadata is null)
+        {
+            return;
+        }
         var annotations = metadata.Annotations;
         if (annotations is null)
         {
             return;
         }
-
-        var options = ingressContext.Options;
-        //cluster
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/load-balancing", out var loadBalancing))
         {
             options.LoadBalancingPolicy = loadBalancing;
@@ -267,15 +269,28 @@ public static class VKProxyParser
         {
             options.HttpRequest = YamlDeserializer.Deserialize<ForwarderRequestConfig>(httpRequest);
         }
-        if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/cluster-metadata", out var clusterMetadata))
+        if (needClusterMetadata && annotations.TryGetValue("vkproxy.ingress.kubernetes.io/metadata", out var clusterMetadata))
         {
             options.ClusterMetadata = YamlDeserializer.Deserialize<Dictionary<string, string>>(clusterMetadata);
         }
+    }
+
+    private static void HandleAnnotations(VKProxyIngressContext ingressContext, V1ObjectMeta metadata)
+    {
+        var annotations = metadata.Annotations;
+        if (annotations is null)
+        {
+            return;
+        }
+
+        var options = ingressContext.Options;
+        //cluster
+        HandleClusterAnnotations(options, metadata, false);
+        //route
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/backend-protocol", out var http))
         {
             options.Https = http.Equals("https", StringComparison.OrdinalIgnoreCase);
         }
-        //route
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/transforms", out var transforms))
         {
             options.Transforms = YamlDeserializer.Deserialize<List<Dictionary<string, string>>>(transforms);
@@ -293,7 +308,7 @@ public static class VKProxyParser
             ingressContext.StatementFactory?.ConvertToFunction(statement);
             options.RouteStatement = statement;
         }
-        if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/route-metadata", out var routeMetadata))
+        if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/metadata", out var routeMetadata))
         {
             options.RouteMetadata = YamlDeserializer.Deserialize<Dictionary<string, string>>(routeMetadata);
         }

@@ -18,4 +18,24 @@ public class VKProxyIngressOptions
     public Dictionary<string, string> RouteMetadata { get; set; }
     public TimeSpan? Timeout { get; set; }
     public ConcurrentConnectionLimitOptions Limit { get; set; }
+
+    internal VKProxyIngressOptions Clone()
+    {
+        return new VKProxyIngressOptions
+        {
+            Https = Https,
+            Transforms = Transforms,
+            LoadBalancingPolicy = LoadBalancingPolicy,
+            HealthCheck = HealthCheck,
+            RouteOrder = RouteOrder,
+            HttpRequest = HttpRequest,
+            HttpClientConfig = HttpClientConfig,
+            ClusterMetadata = ClusterMetadata,
+            RouteMethods = RouteMethods,
+            RouteStatement = RouteStatement,
+            RouteMetadata = RouteMetadata,
+            Timeout = Timeout,
+            Limit = Limit
+        };
+    }
 }
