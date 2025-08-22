@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.Diagnostics.CodeAnalysis;
+using VKProxy.Core.Config;
 using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Certificates;
@@ -54,8 +55,8 @@ public static class KubernetesServiceCollectionExtensions
         services.RegisterResourceInformer<V1IngressClass, V1IngressClassResourceInformer>();
         services.RegisterResourceInformer<V1Secret, V1SecretResourceInformer>("type=kubernetes.io/tls");
         services.TryAddSingleton<IRouteStatementFactory, DefaultRouteStatementFactory>();
+        services.TryAddSingleton<ICertificateLoader, CertificateLoader>();
 
-        services.AddSingleton<IServerCertificateSelector, ServerCertificateSelector>();
         services.AddSingleton<ICertificateHelper, CertificateHelper>();
         services.AddSingleton<IIngressResourceStatusUpdater, V1IngressResourceStatusUpdater>();
         services.AddKubernetesCore();

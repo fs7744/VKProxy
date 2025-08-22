@@ -47,7 +47,7 @@ public partial class Reconciler : IReconciler
                 {
                     if (_cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
                     {
-                        var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList) { StatementFactory = statementFactory };
+                        var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList, data.Tls) { StatementFactory = statementFactory };
                         VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
                     }
                 }

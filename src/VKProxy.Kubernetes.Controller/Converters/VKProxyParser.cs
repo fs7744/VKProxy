@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using VKProxy.Config;
 using VKProxy.Features.Limits;
-using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller.Caching;
 using YamlDotNet.Serialization;
 
@@ -32,6 +31,26 @@ public static class VKProxyParser
         foreach (var rule in spec?.Rules ?? Enumerable.Empty<V1IngressRule>())
         {
             HandleIngressRule(ingressContext, ingressContext.Endpoints, defaultEndpoints, rule, configContext);
+        }
+
+        foreach (var tls in spec?.Tls ?? Enumerable.Empty<V1IngressTLS>())
+        {
+            HandleIngressTls(ingressContext, tls, configContext);
+        }
+    }
+
+    private static void HandleIngressTls(VKProxyIngressContext ingressContext, V1IngressTLS tls, VKProxyConfigContext configContext)
+    {
+        if (tls == null || !ingressContext.Tls.TryGetValue(tls.SecretName, out var t)) return;
+        var options = HandleTlsAnnotations(t.Secret.Metadata);
+        var key = $"{ingressContext.Ingress.Metadata.Name}.{ingressContext.Ingress.Metadata.NamespaceProperty}:{tls.SecretName}";
+        var sni = CollectionsMarshal.GetValueRefOrAddDefault(configContext.Sni, key, out _) ??= new SniConfig();
+        sni.Key = key;
+        sni.Host = (sni.Host ?? Enumerable.Empty<string>()).Union(tls.Hosts ?? Enumerable.Empty<string>()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        sni.Certificate = t.Certificate;
+        if (options != null)
+        {
+            sni.Order = options.RouteOrder;
         }
     }
 
@@ -275,6 +294,25 @@ public static class VKProxyParser
         }
     }
 
+    private static VKProxyIngressOptions HandleTlsAnnotations(V1ObjectMeta metadata)
+    {
+        if (metadata is null)
+        {
+            return null;
+        }
+        var annotations = metadata.Annotations;
+        if (annotations is null)
+        {
+            return null;
+        }
+        var options = new VKProxyIngressOptions();
+        if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/route-order", out var routeOrder))
+        {
+            options.RouteOrder = int.Parse(routeOrder, CultureInfo.InvariantCulture);
+        }
+        return options;
+    }
+
     private static void HandleAnnotations(VKProxyIngressContext ingressContext, V1ObjectMeta metadata)
     {
         var annotations = metadata.Annotations;
@@ -320,7 +358,6 @@ public static class VKProxyParser
         {
             options.Limit = YamlDeserializer.Deserialize<ConcurrentConnectionLimitOptions>(limit);
         }
-        //todo
     }
 
     private static bool MatchesPort(Corev1EndpointPort port1, V1ServicePort port2)

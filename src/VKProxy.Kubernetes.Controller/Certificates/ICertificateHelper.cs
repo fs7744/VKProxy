@@ -1,9 +1,9 @@
 ﻿using k8s.Models;
-using System.Security.Cryptography.X509Certificates;
+using VKProxy.Core.Config;
 
 namespace VKProxy.Kubernetes.Controller.Certificates;
 
 public interface ICertificateHelper
 {
-    X509Certificate2 ConvertCertificate(NamespacedName namespacedName, V1Secret secret);
+    CertificateConfig ConvertHttpsConfig(NamespacedName namespacedName, V1Secret secret);
 }

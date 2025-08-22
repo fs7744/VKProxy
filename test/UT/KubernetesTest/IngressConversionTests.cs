@@ -1,5 +1,6 @@
 ﻿using k8s;
 using k8s.Models;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -8,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using VKProxy.Core.Config;
 using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller;
 using VKProxy.Kubernetes.Controller.Caching;
@@ -42,6 +44,8 @@ public class IngressConversionTests
     [InlineData("route-statement")]
     [InlineData("cluster-annotations")]
     [InlineData("annotations")]
+    [InlineData("tls")]
+    [InlineData("tls-base64")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);
@@ -54,7 +58,7 @@ public class IngressConversionTests
         {
             if (cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
             {
-                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList) { StatementFactory = new DefaultRouteStatementFactory() };
+                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList, data.Tls) { StatementFactory = new DefaultRouteStatementFactory() };
                 VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
             }
         }
@@ -102,13 +106,13 @@ public class IngressConversionTests
     {
         var mockLogger = new Mock<ILogger<IngressCache>>();
         var mockOptions = new Mock<IOptions<K8sOptions>>();
-        var certificateSelector = new Mock<IServerCertificateSelector>();
         var loggerHelper = new Mock<ILogger<CertificateHelper>>();
-        var certificateHelper = new CertificateHelper(loggerHelper.Object);
+        var e = new Mock<IHostEnvironment>();
+        var certificateHelper = new CertificateHelper(loggerHelper.Object, new CertificateLoader(e.Object));
 
         mockOptions.SetupGet(o => o.Value).Returns(new K8sOptions { ControllerClass = "vkproxy/ingress" });
 
-        var cache = new IngressCache(mockOptions.Object, certificateSelector.Object, certificateHelper, mockLogger.Object);
+        var cache = new IngressCache(mockOptions.Object, certificateHelper, mockLogger.Object);
 
         var typeMap = new Dictionary<string, Type>();
         typeMap.Add("networking.k8s.io/v1/Ingress", typeof(V1Ingress));

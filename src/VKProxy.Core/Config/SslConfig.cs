@@ -5,26 +5,26 @@ namespace VKProxy.Core.Config;
 public class CertificateConfig
 {
     public bool IsPEM => !string.IsNullOrEmpty(PEM);
-    public string? PEM { get; init; }
-    public string? PEMKey { get; init; }
+    public string? PEM { get; set; }
+    public string? PEMKey { get; set; }
     public bool IsFileCert => !string.IsNullOrEmpty(Path);
 
-    public string? Path { get; init; }
+    public string? Path { get; set; }
 
-    public string? KeyPath { get; init; }
+    public string? KeyPath { get; set; }
 
-    public string? Password { get; init; }
+    public string? Password { get; set; }
 
     [MemberNotNullWhen(true, nameof(Subject))]
     public bool IsStoreCert => !string.IsNullOrEmpty(Subject);
 
-    public string? Subject { get; init; }
+    public string? Subject { get; set; }
 
-    public string? Store { get; init; }
+    public string? Store { get; set; }
 
-    public string? Location { get; init; }
+    public string? Location { get; set; }
 
-    public bool? AllowInvalid { get; init; }
+    public bool? AllowInvalid { get; set; }
 
     public static bool Equals(CertificateConfig? t, CertificateConfig? other)
     {

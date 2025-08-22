@@ -124,4 +124,36 @@ public static class X509CertificateExtensions
         }
         return certificatePem;
     }
+
+    public static (string, string) ExportPemPair(this X509Certificate2 cert)
+    {
+        string text = cert.ExportCertificatePem();
+        if (cert.HasPrivateKey)
+        {
+            AsymmetricAlgorithm asymmetricAlgorithm = cert.GetRSAPrivateKey();
+            if (asymmetricAlgorithm == null)
+            {
+                asymmetricAlgorithm = cert.GetECDsaPrivateKey();
+            }
+
+            if (asymmetricAlgorithm == null)
+            {
+                asymmetricAlgorithm = cert.GetDSAPrivateKey();
+            }
+
+            if (asymmetricAlgorithm == null)
+            {
+                asymmetricAlgorithm = cert.GetECDiffieHellmanPrivateKey();
+            }
+
+            if (asymmetricAlgorithm != null)
+            {
+                string value = asymmetricAlgorithm.ExportSubjectPublicKeyInfoPem();
+                string value2 = asymmetricAlgorithm.ExportPkcs8PrivateKeyPem();
+                return (text, $"{value}{Environment.NewLine}{value2}");
+            }
+        }
+
+        return (text, null);
+    }
 }

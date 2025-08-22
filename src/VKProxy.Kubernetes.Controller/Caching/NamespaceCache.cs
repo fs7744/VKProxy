@@ -1,6 +1,7 @@
 ﻿using k8s;
 using k8s.Models;
 using System.Collections.Immutable;
+using VKProxy.Kubernetes.Controller.Certificates;
 using VKProxy.Kubernetes.Controller.Services;
 
 namespace VKProxy.Kubernetes.Controller.Caching;
@@ -17,6 +18,7 @@ public class NamespaceCache
     private readonly Dictionary<string, IngressData> _ingressData = new Dictionary<string, IngressData>();
     private readonly Dictionary<string, ServiceData> _serviceData = new Dictionary<string, ServiceData>();
     private readonly Dictionary<string, Endpoints> _endpointsData = new Dictionary<string, Endpoints>();
+    private readonly Dictionary<string, TlsSecret> _secretData = new Dictionary<string, TlsSecret>();
 
     public void Update(WatchEventType eventType, V1Ingress ingress)
     {
@@ -218,6 +220,7 @@ public class NamespaceCache
     {
         var endpointsList = new List<Endpoints>();
         var servicesList = new List<ServiceData>();
+        var tls = new List<TlsSecret>();
 
         lock (_sync)
         {
@@ -248,9 +251,38 @@ public class NamespaceCache
                 data = default;
                 return false;
             }
-
-            data = new ReconcileData(ingress, servicesList, endpointsList);
+            foreach (var t in ingress.Spec?.Tls ?? Enumerable.Empty<V1IngressTLS>())
+            {
+                if (_secretData.TryGetValue(t.SecretName, out var e))
+                {
+                    tls.Add(e);
+                }
+            }
+            data = new ReconcileData(ingress, servicesList, endpointsList, tls);
             return true;
+        }
+    }
+
+    internal void Update(WatchEventType eventType, V1Secret secret, ICertificateHelper certificateHelper)
+    {
+        var serviceName = secret.Name();
+        lock (_sync)
+        {
+            if (eventType == WatchEventType.Added || eventType == WatchEventType.Modified)
+            {
+                var namespacedName = NamespacedName.From(secret);
+                var certificate = certificateHelper.ConvertHttpsConfig(namespacedName, secret);
+                if (certificate is null)
+                {
+                    _secretData.Remove(serviceName);
+                    return;
+                }
+                _secretData[serviceName] = new TlsSecret(secret, certificate);
+            }
+            else if (eventType == WatchEventType.Deleted)
+            {
+                _secretData.Remove(serviceName);
+            }
         }
     }
 }

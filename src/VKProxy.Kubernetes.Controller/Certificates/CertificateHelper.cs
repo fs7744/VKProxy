@@ -1,8 +1,8 @@
 ﻿using k8s.Models;
 using Microsoft.Extensions.Logging;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using VKProxy.Core.Config;
 
 namespace VKProxy.Kubernetes.Controller.Certificates;
 
@@ -10,46 +10,49 @@ public class CertificateHelper : ICertificateHelper
 {
     private const string TlsCertKey = "tls.crt";
     private const string TlsPrivateKeyKey = "tls.key";
+    private const string TlsPassword = "password";
 
     private readonly ILogger<CertificateHelper> _logger;
+    private readonly ICertificateLoader loader;
 
-    public CertificateHelper(ILogger<CertificateHelper> logger)
+    public CertificateHelper(ILogger<CertificateHelper> logger, ICertificateLoader loader)
     {
         ArgumentNullException.ThrowIfNull(logger);
         _logger = logger;
+        this.loader = loader;
     }
 
-    public X509Certificate2 ConvertCertificate(NamespacedName namespacedName, V1Secret secret)
+    public CertificateConfig ConvertHttpsConfig(NamespacedName namespacedName, V1Secret secret)
     {
+        var c = new CertificateConfig
+        {
+            PEM = secret?.StringData?[TlsCertKey],
+            PEMKey = secret?.StringData?[TlsPrivateKeyKey],
+            Password = secret?.StringData?[TlsPassword]
+        };
+
+        if (c.PEM == null)
+        {
+            var cert = secret?.Data?[TlsCertKey];
+            var privateKey = secret?.Data?[TlsPrivateKeyKey];
+            var password = secret?.Data?[TlsPassword];
+            c.PEM = cert == null ? null : EnsurePemFormat(cert, "CERTIFICATE");
+            c.Password = password == null ? null : Encoding.UTF8.GetString(Convert.FromBase64String(Encoding.ASCII.GetString(password)));
+            c.PEMKey = privateKey == null ? null : EnsurePemFormat(privateKey, password != null ? "ENCRYPTED PRIVATE KEY" : "PRIVATE KEY");
+        }
+
         try
         {
-            var cert = secret?.Data[TlsCertKey];
-            var privateKey = secret?.Data[TlsPrivateKeyKey];
-
-            if (cert == null || cert.Length == 0 || privateKey == null || privateKey.Length == 0)
-            {
-                _logger.LogWarning("TLS secret '{NamespacedName}' contains invalid data.", namespacedName);
+            var (p, cc) = loader.LoadCertificate(c);
+            if (p == null)
                 return null;
-            }
-
-            var certString = EnsurePemFormat(cert, "CERTIFICATE");
-            var privateString = EnsurePemFormat(privateKey, "PRIVATE KEY");
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Cert needs converting. Read https://github.com/dotnet/runtime/issues/23749#issuecomment-388231655
-                using var convertedCertificate = X509Certificate2.CreateFromPem(certString, privateString);
-                return new X509Certificate2(convertedCertificate.Export(X509ContentType.Pkcs12));
-            }
-
-            return X509Certificate2.CreateFromPem(certString, privateString);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to convert secret '{NamespacedName}'", namespacedName);
+            return null;
         }
-
-        return null;
+        return c;
     }
 
     /// <summary>

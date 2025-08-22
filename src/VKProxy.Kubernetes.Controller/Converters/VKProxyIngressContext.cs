@@ -5,11 +5,12 @@ namespace VKProxy.Kubernetes.Controller.Converters;
 
 public sealed class VKProxyIngressContext
 {
-    public VKProxyIngressContext(IngressData ingress, List<ServiceData> services, List<Endpoints> endpoints)
+    public VKProxyIngressContext(IngressData ingress, List<ServiceData> services, List<Endpoints> endpoints, IReadOnlyDictionary<string, TlsSecret> tls)
     {
         Ingress = ingress;
         Services = services;
         Endpoints = endpoints;
+        Tls = tls;
     }
 
     public VKProxyIngressOptions Options { get; set; } = new VKProxyIngressOptions();
@@ -17,5 +18,6 @@ public sealed class VKProxyIngressContext
 
     public List<ServiceData> Services { get; }
     public List<Endpoints> Endpoints { get; }
+    public IReadOnlyDictionary<string, TlsSecret> Tls { get; }
     public IRouteStatementFactory StatementFactory { get; set; }
 }

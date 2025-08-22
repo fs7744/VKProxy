@@ -18,21 +18,18 @@ public class IngressCache : ICache
     private readonly Dictionary<string, IngressClassData> _ingressClassData = new Dictionary<string, IngressClassData>();
     private readonly Dictionary<string, NamespaceCache> _namespaceCaches = new Dictionary<string, NamespaceCache>();
     private readonly K8sOptions _options;
-    private readonly IServerCertificateSelector _certificateSelector;
     private readonly ICertificateHelper _certificateHelper;
     private readonly ILogger<IngressCache> _logger;
 
     private bool _isDefaultController;
 
-    public IngressCache(IOptions<K8sOptions> options, IServerCertificateSelector certificateSelector, ICertificateHelper certificateHelper, ILogger<IngressCache> logger)
+    public IngressCache(IOptions<K8sOptions> options, ICertificateHelper certificateHelper, ILogger<IngressCache> logger)
     {
         ArgumentNullException.ThrowIfNull(options?.Value);
-        ArgumentNullException.ThrowIfNull(certificateSelector);
         ArgumentNullException.ThrowIfNull(certificateHelper);
         ArgumentNullException.ThrowIfNull(logger);
 
         _options = options.Value;
-        _certificateSelector = certificateSelector;
         _certificateHelper = certificateHelper;
         _logger = logger;
     }
@@ -93,30 +90,7 @@ public class IngressCache : ICache
 
     public void Update(WatchEventType eventType, V1Secret secret)
     {
-        var namespacedName = NamespacedName.From(secret);
-        _logger.LogDebug("Found secret '{NamespacedName}'. Checking against default {CertificateSecretName}", namespacedName, _options.DefaultSslCertificate);
-
-        if (!string.Equals(namespacedName.ToString(), _options.DefaultSslCertificate, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        _logger.LogInformation("Found secret `{NamespacedName}` to use as default certificate for HTTPS traffic", namespacedName);
-
-        var certificate = _certificateHelper.ConvertCertificate(namespacedName, secret);
-        if (certificate is null)
-        {
-            return;
-        }
-
-        if (eventType == WatchEventType.Added || eventType == WatchEventType.Modified)
-        {
-            _certificateSelector.AddCertificate(namespacedName, certificate);
-        }
-        else if (eventType == WatchEventType.Deleted)
-        {
-            _certificateSelector.RemoveCertificate(namespacedName);
-        }
+        Namespace(secret.Namespace()).Update(eventType, secret, _certificateHelper);
     }
 
     public bool TryGetReconcileData(NamespacedName key, out ReconcileData data)
