@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using VKProxy.Kubernetes.Controller;
+using VKProxy.Storages.Etcd;
 
 namespace VKProxy.CommandLine.Kubernetes;
 
@@ -51,6 +52,7 @@ internal class K8SCommand : ArgsCommand<K8sOptions>
             op.ServerCertificates = Args.ServerCertificates;
         });
 
+        b.Services.UseEtcdConfigFromEnv();
         b.Services.AddControllers()
             .AddKubernetesDispatchController();
 

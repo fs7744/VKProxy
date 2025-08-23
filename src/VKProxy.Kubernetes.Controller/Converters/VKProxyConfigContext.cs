@@ -9,7 +9,7 @@ public class VKProxyConfigContext
     public Dictionary<string, SniConfig> Sni { get; set; } = new Dictionary<string, SniConfig>(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, HashSet<string>> Destinations { get; set; } = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
-    public IReadOnlyProxyConfig Build()
+    public IProxyConfig Build()
     {
         return new ProxyConfigSnapshot(Routes, Clusters, null, Sni);
     }

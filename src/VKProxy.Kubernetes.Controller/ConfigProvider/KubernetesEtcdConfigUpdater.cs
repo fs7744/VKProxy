@@ -5,14 +5,14 @@ namespace VKProxy.Kubernetes.Controller.ConfigProvider;
 internal class KubernetesEtcdConfigUpdater : IUpdateConfig
 {
     private readonly IConfigStorage storage;
-    private IReadOnlyProxyConfig old;
+    private IProxyConfig old;
 
     public KubernetesEtcdConfigUpdater(IConfigStorage storage)
     {
         this.storage = storage;
     }
 
-    public async Task UpdateAsync(IReadOnlyProxyConfig config, CancellationToken cancellationToken)
+    public async Task UpdateAsync(IProxyConfig config, CancellationToken cancellationToken)
     {
         if (old == null)
         {
@@ -26,7 +26,7 @@ internal class KubernetesEtcdConfigUpdater : IUpdateConfig
         await UpdateSniDiffAsync(old, config, cancellationToken);
     }
 
-    private async Task UpdateRouteDiffAsync(IReadOnlyProxyConfig old, IReadOnlyProxyConfig config, CancellationToken cancellationToken)
+    private async Task UpdateRouteDiffAsync(IProxyConfig old, IProxyConfig config, CancellationToken cancellationToken)
     {
         var oldRoutes = old.Routes ?? new Dictionary<string, RouteConfig>();
         var newRoutes = config.Routes ?? new Dictionary<string, RouteConfig>();
@@ -44,7 +44,7 @@ internal class KubernetesEtcdConfigUpdater : IUpdateConfig
         }
     }
 
-    private async Task UpdateClusterDiffAsync(IReadOnlyProxyConfig old, IReadOnlyProxyConfig config, CancellationToken cancellationToken)
+    private async Task UpdateClusterDiffAsync(IProxyConfig old, IProxyConfig config, CancellationToken cancellationToken)
     {
         var oldClusters = old.Clusters ?? new Dictionary<string, ClusterConfig>();
         var newClusters = config.Clusters ?? new Dictionary<string, ClusterConfig>();
@@ -62,7 +62,7 @@ internal class KubernetesEtcdConfigUpdater : IUpdateConfig
         }
     }
 
-    private async Task UpdateSniDiffAsync(IReadOnlyProxyConfig old, IReadOnlyProxyConfig config, CancellationToken cancellationToken)
+    private async Task UpdateSniDiffAsync(IProxyConfig old, IProxyConfig config, CancellationToken cancellationToken)
     {
         var oldSni = old.Sni ?? new Dictionary<string, SniConfig>();
         var newSni = config.Sni ?? new Dictionary<string, SniConfig>();
@@ -80,7 +80,7 @@ internal class KubernetesEtcdConfigUpdater : IUpdateConfig
         }
     }
 
-    private IReadOnlyProxyConfig ReplaceKeys(IReadOnlyProxyConfig config)
+    private IProxyConfig ReplaceKeys(IProxyConfig config)
     {
         return new ProxyConfigSnapshot(config.Routes?.Values.ToDictionary(static v =>
         {
@@ -99,7 +99,7 @@ internal class KubernetesEtcdConfigUpdater : IUpdateConfig
         }, StringComparer.OrdinalIgnoreCase));
     }
 
-    private async Task<IReadOnlyProxyConfig?> LoadAllAsync(CancellationToken cancellationToken)
+    private async Task<IProxyConfig?> LoadAllAsync(CancellationToken cancellationToken)
     {
         var routes = (await storage.GetRouteAsync("/k8s/", cancellationToken).ConfigureAwait(false)).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase);
         var clusters = (await storage.GetClusterAsync("/k8s/", cancellationToken).ConfigureAwait(false)).ToDictionary(i => i.Key, StringComparer.OrdinalIgnoreCase);
