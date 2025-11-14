@@ -13,7 +13,7 @@
 	  <ProjectReference Include="..\VKProxy\VKProxy.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+	  <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0-beta.98" />
 	</ItemGroup>
 
 </Project>

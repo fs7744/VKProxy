@@ -81,5 +81,6 @@ public static class HostBuilderExtensions
 # else
         return services;
     }
+
 #endif
 }

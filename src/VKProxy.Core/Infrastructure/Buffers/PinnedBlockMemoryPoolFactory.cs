@@ -1,15 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
 
 namespace VKProxy.Core.Buffers;
-
-/// todo remove when net10
-public interface IMemoryPoolFactory<T>
-{
-    MemoryPool<T> Create();
-}
 
 public interface IMemoryPoolSizeFactory<T> : IMemoryPoolFactory<T>
 {
@@ -67,6 +62,11 @@ public class PinnedBlockMemoryPoolFactory : IMemoryPoolSizeFactory<byte>, IAsync
         }, _pools);
 
         return pool;
+    }
+
+    public MemoryPool<byte> Create(MemoryPoolOptions? options = null)
+    {
+        return Create();
     }
 
     public async ValueTask DisposeAsync()

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Collections.Concurrent;
+using static DotNext.Threading.AsyncLockAcquisition;
 
 namespace VKProxy.Core.Infrastructure;
 
@@ -100,7 +101,7 @@ public class DiskCache : IDiskCache
     public async Task RefreshAsync(string key, CancellationToken token = default)
     {
         if (!caches.TryGetValue(key, out var info)) return;
-        using (await info.Lock.AcquireWriteLockAsync(token))
+        using (await AcquireWriteLockAsync(info.Lock, token))
         {
             if (info.Options.SlidingExpiration.HasValue)
                 info.Expire = DateTime.UtcNow.Add(info.Options.SlidingExpiration.Value);
@@ -115,7 +116,7 @@ public class DiskCache : IDiskCache
     public async Task RemoveAsync(string key, CancellationToken token = default)
     {
         if (!caches.TryRemove(key, out var info)) return;
-        using (await info.Lock.AcquireWriteLockAsync(token))
+        using (await AcquireWriteLockAsync(info.Lock, token))
         {
             var old = info.Path;
             if (old != null)
@@ -205,7 +206,7 @@ public class DiskCache : IDiskCache
     public async Task SetAsync(string key, long size, Func<Stream, Task> func, DistributedCacheEntryOptions options, CancellationToken cancellationToken)
     {
         var info = caches.GetOrAdd(key, NewDiskCacheInfo);
-        using (await info.Lock.AcquireWriteLockAsync(cancellationToken))
+        using (await AcquireWriteLockAsync(info.Lock, cancellationToken))
         {
             var old = info.Path;
             var oldSize = info.Size;
@@ -242,7 +243,7 @@ public class DiskCache : IDiskCache
     public async Task SetAsync(string key, ReadOnlyMemory<byte> value, DistributedCacheEntryOptions options, CancellationToken cancellationToken)
     {
         var info = caches.GetOrAdd(key, NewDiskCacheInfo);
-        using (await info.Lock.AcquireWriteLockAsync(cancellationToken))
+        using (await AcquireWriteLockAsync(info.Lock, cancellationToken))
         {
             var old = info.Path;
             var oldSize = info.Size;

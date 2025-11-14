@@ -233,10 +233,12 @@ public abstract class ResourceInformer<TResource, TListResource> : BackgroundHos
                 {
                     ApiVersion = _names.GroupApiVersion,
                     Kind = _names.Kind,
-                    Metadata = new V1ObjectMeta(
-                        name: key.Name,
-                        namespaceProperty: key.Namespace,
-                        ownerReferences: value),
+                    Metadata = new V1ObjectMeta()
+                    {
+                        Name = key.Name,
+                        NamespaceProperty = key.Namespace,
+                        OwnerReferences = value
+                    },
                 };
 
                 InvokeRegistrationCallbacks(WatchEventType.Deleted, item);

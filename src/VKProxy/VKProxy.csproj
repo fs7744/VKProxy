@@ -10,9 +10,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DotNext.Threading" Version="5.23.0" />
-    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.13.1" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="9.0.8" />
+    <PackageReference Include="DotNext.Threading" Version="5.26.1" />
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.14.0" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
