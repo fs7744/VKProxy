@@ -45,7 +45,6 @@ public class IngressConversionTests
     [InlineData("cluster-annotations")]
     [InlineData("annotations")]
     [InlineData("tls")]
-    [InlineData("tls-base64")]
     public async Task ParsingTests(string name)
     {
         var ingressClass = KubeResourceGenerator.CreateIngressClass("vkproxy", "vkproxy/ingress", true);

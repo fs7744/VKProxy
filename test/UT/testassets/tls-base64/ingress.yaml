@@ -80,6 +80,7 @@ metadata:
   namespace: default
   annotations:
     vkproxy.ingress.kubernetes.io/route-order: 10
+type: kubernetes.io/tls
 data:
   tls.crt: |
     MIIFCzCCAvOgAwIBAgIUAi7DqcEn4EsBm1lN4UcmmuxWPq0wDQYJKoZIhvcNAQEL
