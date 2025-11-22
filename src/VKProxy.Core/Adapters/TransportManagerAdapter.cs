@@ -91,7 +91,8 @@ public class TransportManagerAdapter : ITransportManager, IHeartbeat
                 serviceProvider.GetRequiredService<IOptions<KestrelServerOptions>>(),
                 serviceProvider.GetRequiredService<ILoggerFactory>(),
                 null,
-                m
+                m,
+                serviceProvider.GetService(KestrelExtensions.IEnumerableIHeartbeatHandlerType)
             });
             var h = KestrelExtensions.ServiceContextType.GetTypeInfo().DeclaredProperties.First(i => i.Name == "Heartbeat");
             StartHeartbeatMethod = KestrelExtensions.HeartbeatType.GetTypeInfo().DeclaredMethods.First(i => i.Name == "Start");

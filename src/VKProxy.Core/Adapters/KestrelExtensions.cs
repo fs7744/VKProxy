@@ -38,6 +38,8 @@ public static class KestrelExtensions
     internal static readonly Type HeartbeatType;
     internal static readonly Type KestrelMetricsType;
     internal static readonly Type DummyMeterFactoryType;
+    internal static Type IHeartbeatHandlerType;
+    internal static Type IEnumerableIHeartbeatHandlerType;
     internal static readonly object sniConfigDict;
 
     static KestrelExtensions()
@@ -58,6 +60,8 @@ public static class KestrelExtensions
         HeartbeatType = types.First(i => i.Name == "Heartbeat");
         KestrelMetricsType = types.First(i => i.Name == "KestrelMetrics");
         DummyMeterFactoryType = types.First(i => i.Name == "DummyMeterFactory");
+        IHeartbeatHandlerType = types.First(i => i.Name == "IHeartbeatHandler");
+        IEnumerableIHeartbeatHandlerType = typeof(IEnumerable<>).MakeGenericType(IHeartbeatHandlerType);
 
         var httpConnectionBuilderExtensionsType = types.First(i => i.Name == "HttpConnectionBuilderExtensions").GetTypeInfo();
         UseHttpServerMethod = httpConnectionBuilderExtensionsType.DeclaredMethods.First(i => i.Name == "UseHttpServer").MakeGenericMethod(typeof(HttpApplication.Context));
