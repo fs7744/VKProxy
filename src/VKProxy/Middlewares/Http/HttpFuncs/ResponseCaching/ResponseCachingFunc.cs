@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Lmzzz.AspNetCoreTemplate;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
@@ -6,8 +7,6 @@ using System.Collections.Frozen;
 using VKProxy.Config;
 using VKProxy.Core.Http;
 using VKProxy.Core.Loggers;
-using VKProxy.HttpRoutingStatement;
-using VKProxy.TemplateStatement;
 using VKProxy.Middlewares.Http.Transforms;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
@@ -16,8 +15,7 @@ public class ResponseCachingFunc : IHttpFunc
 {
     private readonly FrozenDictionary<string, IResponseCache> caches;
     private readonly TimeProvider timeProvider;
-    private readonly ITemplateStatementFactory templateStatementFactory;
-    private readonly IRouteStatementFactory statementFactory;
+    private readonly ITemplateEngineFactory templateStatementFactory;
     private readonly ILogger logger;
     private static readonly TimeSpan DefaultExpirationTimeSpan = TimeSpan.FromSeconds(10);
 
@@ -32,12 +30,11 @@ public class ResponseCachingFunc : IHttpFunc
 
     public int Order => 10;
 
-    public ResponseCachingFunc(IEnumerable<IResponseCache> caches, TimeProvider timeProvider, ProxyLogger logger, ITemplateStatementFactory templateStatementFactory, IRouteStatementFactory statementFactory)
+    public ResponseCachingFunc(IEnumerable<IResponseCache> caches, TimeProvider timeProvider, ProxyLogger logger, ITemplateEngineFactory templateStatementFactory)
     {
         this.caches = caches.ToFrozenDictionary(i => i.Name, StringComparer.OrdinalIgnoreCase);
         this.timeProvider = timeProvider;
         this.templateStatementFactory = templateStatementFactory;
-        this.statementFactory = statementFactory;
         this.logger = logger.generalLogger;
     }
 
@@ -613,7 +610,7 @@ public class ResponseCachingFunc : IHttpFunc
         {
             try
             {
-                whenFunc = statementFactory.ConvertToFunction(when);
+                whenFunc = templateStatementFactory.ConvertRouteFunction(when);
             }
             catch (Exception ex)
             {
@@ -637,7 +634,7 @@ public class ResponseCachingFunc : IHttpFunc
     {
         try
         {
-            f = templateStatementFactory.Convert(key);
+            f = templateStatementFactory.ConvertTemplate(key);
         }
         catch (Exception ex)
         {

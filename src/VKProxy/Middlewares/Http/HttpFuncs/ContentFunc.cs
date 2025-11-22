@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Lmzzz.AspNetCoreTemplate;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
-using VKProxy.HttpRoutingStatement;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs;
 
@@ -10,9 +10,9 @@ public class ContentFunc : IHttpFunc
 {
     public int Order => 30;
     private readonly ProxyLogger logger;
-    private readonly IRouteStatementFactory statementFactory;
+    private readonly ITemplateEngineFactory statementFactory;
 
-    public ContentFunc(ProxyLogger logger, IRouteStatementFactory statementFactory)
+    public ContentFunc(ProxyLogger logger, ITemplateEngineFactory statementFactory)
     {
         this.logger = logger;
         this.statementFactory = statementFactory;
@@ -57,7 +57,7 @@ public class ContentFunc : IHttpFunc
                     c.ContentType = "text/plain";
                 if (config.Metadata.TryGetValue($"{k}When", out var when))
                 {
-                    c.Func = statementFactory.ConvertToFunction(when);
+                    c.Func = statementFactory.ConvertRouteFunction(when);
                 }
                 else
                     c.Func = static context => true;

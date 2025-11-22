@@ -1,18 +1,18 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Lmzzz.AspNetCoreTemplate;
+using Microsoft.AspNetCore.Http;
 using VKProxy.Config;
 using VKProxy.Core.Loggers;
-using VKProxy.HttpRoutingStatement;
 
 namespace VKProxy.Middlewares.Http.HttpFuncs;
 
 public class WAFFunc : IHttpFunc
 {
     private readonly ProxyLogger logger;
-    private readonly IRouteStatementFactory statementFactory;
+    private readonly ITemplateEngineFactory statementFactory;
 
     public int Order => -100;
 
-    public WAFFunc(ProxyLogger logger, IRouteStatementFactory statementFactory)
+    public WAFFunc(ProxyLogger logger, ITemplateEngineFactory statementFactory)
     {
         this.logger = logger;
         this.statementFactory = statementFactory;
@@ -49,7 +49,7 @@ public class WAFFunc : IHttpFunc
             {
                 try
                 {
-                    var f = statementFactory.ConvertToFunction(v);
+                    var f = statementFactory.ConvertRouteFunction(v);
                     list.Add(new KeyValuePair<string, Func<HttpContext, bool>>(k, f));
                 }
                 catch (Exception ex)

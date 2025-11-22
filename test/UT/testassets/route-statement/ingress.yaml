@@ -4,7 +4,7 @@ metadata:
   name: minimal-ingress
   namespace: default
   annotations:
-    vkproxy.ingress.kubernetes.io/route-statement: "method = 'POST'"
+    vkproxy.ingress.kubernetes.io/route-statement: "Request.Method == 'POST'"
 spec:
   rules:
   - http:

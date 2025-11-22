@@ -1,6 +1,6 @@
 ﻿using DotNext;
+using Lmzzz.AspNetCoreTemplate;
 using Microsoft.AspNetCore.Http;
-using VKProxy.HttpRoutingStatement;
 using VKProxy.Middlewares.Http;
 
 namespace VKProxy.Config.Validators;
@@ -9,9 +9,9 @@ public class RouteConfigValidator : IValidator<RouteConfig>
 {
     private IHttpFunc[] funcs;
     private readonly HttpReverseProxy http;
-    private readonly IRouteStatementFactory statementFactory;
+    private readonly ITemplateEngineFactory statementFactory;
 
-    public RouteConfigValidator(IEnumerable<IHttpFunc> funcs, HttpReverseProxy http, IRouteStatementFactory statementFactory)
+    public RouteConfigValidator(IEnumerable<IHttpFunc> funcs, HttpReverseProxy http, ITemplateEngineFactory statementFactory)
     {
         this.funcs = funcs.OrderByDescending(i => i.Order).ToArray();
         this.http = http;
@@ -32,7 +32,7 @@ public class RouteConfigValidator : IValidator<RouteConfig>
             {
                 try
                 {
-                    match.StatementFunc = statementFactory.ConvertToFunction(match.Statement);
+                    match.StatementFunc = statementFactory.ConvertRouteFunction(match.Statement);
                 }
                 catch (Exception ex)
                 {

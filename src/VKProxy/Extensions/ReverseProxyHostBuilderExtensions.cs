@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Lmzzz.AspNetCoreTemplate;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -21,7 +22,6 @@ using VKProxy.Core.Sockets.Udp;
 using VKProxy.Features.Limits;
 using VKProxy.Health;
 using VKProxy.Health.ActiveHealthCheckers;
-using VKProxy.HttpRoutingStatement;
 using VKProxy.LoadBalancing;
 using VKProxy.LoadBalancing.SessionAffinity;
 using VKProxy.Middlewares;
@@ -31,7 +31,6 @@ using VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 using VKProxy.Middlewares.Http.Transforms;
 using VKProxy.Middlewares.Socks5;
 using VKProxy.ServiceDiscovery;
-using VKProxy.TemplateStatement;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -138,8 +137,7 @@ public static class ReverseProxyHostBuilderExtensions
         services.AddSingleton<IHttpFunc, JwtCheckFunc>();
 
         services.TryAddSingleton<ObjectPoolProvider, DefaultObjectPoolProvider>();
-        services.TryAddSingleton<ITemplateStatementFactory, TemplateStatementFactory>();
-        services.TryAddSingleton<IRouteStatementFactory, DefaultRouteStatementFactory>();
+        services.TryAddSingleton<ITemplateEngineFactory, DefaultTemplateEngineFactory>();
 
         services.AddScoped<IMiddlewareFactory, MiddlewareFactory>();
         services.AddSingleton<IApplicationBuilder>(i =>

@@ -1,4 +1,4 @@
-﻿using VKProxy.HttpRoutingStatement;
+﻿using Lmzzz.AspNetCoreTemplate;
 using VKProxy.Kubernetes.Controller.Caching;
 
 namespace VKProxy.Kubernetes.Controller.Converters;
@@ -19,5 +19,5 @@ public sealed class VKProxyIngressContext
     public List<ServiceData> Services { get; }
     public List<Endpoints> Endpoints { get; }
     public IReadOnlyDictionary<string, TlsSecret> Tls { get; }
-    public IRouteStatementFactory StatementFactory { get; set; }
+    public ITemplateEngineFactory StatementFactory { get; set; }
 }

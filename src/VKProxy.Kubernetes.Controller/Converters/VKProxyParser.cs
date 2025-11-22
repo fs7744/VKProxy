@@ -343,7 +343,7 @@ public static class VKProxyParser
         }
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/route-statement", out var statement))
         {
-            ingressContext.StatementFactory?.ConvertToFunction(statement);
+            ingressContext.StatementFactory?.ConvertRouteFunction(statement);
             options.RouteStatement = statement;
         }
         if (annotations.TryGetValue("vkproxy.ingress.kubernetes.io/metadata", out var routeMetadata))

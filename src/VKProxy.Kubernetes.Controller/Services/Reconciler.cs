@@ -1,8 +1,5 @@
-﻿using k8s;
-using k8s.Models;
+﻿using Lmzzz.AspNetCoreTemplate;
 using Microsoft.Extensions.Logging;
-using VKProxy.Config;
-using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Client;
 using VKProxy.Kubernetes.Controller.ConfigProvider;
@@ -19,10 +16,10 @@ public partial class Reconciler : IReconciler
     private readonly IIngressResourceStatusUpdater _ingressResourceStatusUpdater;
     private readonly ICache _cache;
     private readonly ILogger<Reconciler> _logger;
-    private readonly IRouteStatementFactory statementFactory;
+    private readonly ITemplateEngineFactory statementFactory;
     private readonly IUpdateConfig _updateConfig;
 
-    public Reconciler(IIngressResourceStatusUpdater ingressResourceStatusUpdater, ICache cache, IUpdateConfig updateConfig, ILogger<Reconciler> logger, IRouteStatementFactory statementFactory)
+    public Reconciler(IIngressResourceStatusUpdater ingressResourceStatusUpdater, ICache cache, IUpdateConfig updateConfig, ILogger<Reconciler> logger, ITemplateEngineFactory statementFactory)
     {
         ArgumentNullException.ThrowIfNull(ingressResourceStatusUpdater);
 

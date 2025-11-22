@@ -11,7 +11,7 @@
         "Paths": [
           "/foo*"
         ],
-        "Statement": "method = 'POST'"
+        "Statement": "Request.Method == 'POST'"
       }
     }
   },

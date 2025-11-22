@@ -1,9 +1,9 @@
 ﻿using Etcd;
 using Google.Protobuf;
+using Lmzzz.AspNetCoreTemplate;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
 using VKProxy.Config;
-using VKProxy.HttpRoutingStatement;
 
 namespace VKProxy.Storages.Etcd;
 
@@ -11,9 +11,9 @@ internal class EtcdConfigStorage : IConfigStorage
 {
     private readonly IEtcdClient client;
     private readonly EtcdProxyConfigSourceOptions options;
-    private readonly IRouteStatementFactory statementFactory;
+    private readonly ITemplateEngineFactory statementFactory;
 
-    public EtcdConfigStorage([FromKeyedServices(nameof(EtcdProxyConfigSource))] IEtcdClient client, EtcdProxyConfigSourceOptions options, IRouteStatementFactory statementFactory)
+    public EtcdConfigStorage([FromKeyedServices(nameof(EtcdProxyConfigSource))] IEtcdClient client, EtcdProxyConfigSourceOptions options, ITemplateEngineFactory statementFactory)
     {
         this.client = client;
         this.options = options;
@@ -144,7 +144,7 @@ internal class EtcdConfigStorage : IConfigStorage
         {
             try
             {
-                statementFactory.ConvertToFunction(config.Match.Statement);
+                statementFactory.ConvertRouteFunction(config.Match.Statement);
             }
             catch (Exception ex)
             {

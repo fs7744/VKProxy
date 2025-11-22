@@ -1,5 +1,6 @@
 ﻿using k8s;
 using k8s.Models;
+using Lmzzz.AspNetCoreTemplate;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,7 +11,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using VKProxy.Core.Config;
-using VKProxy.HttpRoutingStatement;
 using VKProxy.Kubernetes.Controller;
 using VKProxy.Kubernetes.Controller.Caching;
 using VKProxy.Kubernetes.Controller.Certificates;
@@ -57,7 +57,7 @@ public class IngressConversionTests
         {
             if (cache.TryGetReconcileData(new NamespacedName(ingress.Metadata.NamespaceProperty, ingress.Metadata.Name), out var data))
             {
-                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList, data.Tls) { StatementFactory = new DefaultRouteStatementFactory() };
+                var ingressContext = new VKProxyIngressContext(ingress, data.ServiceList, data.EndpointsList, data.Tls) { StatementFactory = new DefaultTemplateEngineFactory() };
                 VKProxyParser.ConvertFromKubernetesIngress(ingressContext, configContext);
             }
         }
