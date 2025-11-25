@@ -44,7 +44,7 @@ jobs:
         nugetkey: ${{ secrets.nugetkey }}
       run: for x in  $(find . -name "*.nupkg" -print); do dotnet nuget push --skip-duplicate -k $nugetkey -s https://api.nuget.org/v3/index.json $x; done
     - name: Docker Setup Docker
-      uses: docker/setup-docker-action@v4.3.0
+      uses: docker/setup-docker-action@v4.5.0
     - name: build img
       run: cd src/VKProxy.Cli && docker build -t vkproxy/agent:$RELEASE_VERSION .
     - name: Docker Login
