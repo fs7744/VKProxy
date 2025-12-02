@@ -20,7 +20,7 @@ public class HttpApplication : IHttpApplication<HttpApplication.Context>
         }
         else
         {
-            httpContextFactory = httpContextFactory;
+            this.httpContextFactory = httpContextFactory;
         }
     }
 
