@@ -42,7 +42,7 @@ jobs:
     - name: push
       env: 
         nugetkey: ${{ secrets.nugetkey }}
-      run: for x in  $(find . -name "*.nupkg" -print); do dotnet nuget push -k $nugetkey -s https://api.nuget.org/v3/index.json $x; done
+      run: for x in  $(find . -name "*.nupkg" -print); do dotnet nuget push --skip-duplicate -k $nugetkey -s https://api.nuget.org/v3/index.json $x; done
     - name: Docker Setup Docker
       uses: docker/setup-docker-action@v4.3.0
     - name: build img
