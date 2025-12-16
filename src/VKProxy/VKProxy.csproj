@@ -11,9 +11,9 @@
 
   <ItemGroup>
     <PackageReference Include="DotNext.Threading" Version="5.26.1" />
-    <PackageReference Include="Lmzzz.TemplateEngine.AspNetCore" Version="0.0.1.3" />
+    <PackageReference Include="Lmzzz.TemplateEngine.AspNetCore" Version="0.0.1.4" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.15.0" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.0" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>

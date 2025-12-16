@@ -13,7 +13,7 @@
   <ItemGroup>
 	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="DotNext.Threading" Version="5.26.1" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.0" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.1" />
   </ItemGroup>
 
 </Project>
