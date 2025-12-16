@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 MAINTAINER Victor.x.qu
 
-RUN sudo apt-get install libmsquic
+RUN apt-get install libmsquic
 
 ENV ETCD_CONNECTION_STRING=http://127.0.0.1:2379
 ENV ETCD_PREFIX=/ReverseProxy/
