@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 MAINTAINER Victor.x.qu
 
-RUN curl -sSL -O https://packages.microsoft.com/config/<distribution>/<version>/packages-microsoft-prod.deb && \
+RUN curl -sSL -O https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb && \
 	dpkg -i packages-microsoft-prod.deb && \
 	rm packages-microsoft-prod.deb && \
 	apt-get update
