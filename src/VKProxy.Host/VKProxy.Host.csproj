@@ -24,6 +24,7 @@
     <ProjectReference Include="..\VKProxy.ACME.AspNetCore\VKProxy.ACME.AspNetCore.csproj" />
     <ProjectReference Include="..\VKProxy.ACME\VKProxy.ACME.csproj" />
     <ProjectReference Include="..\VKProxy.Kubernetes.Controller\VKProxy.Kubernetes.Controller.csproj" />
+    <ProjectReference Include="..\VKProxy.Lua\VKProxy.Lua.csproj" />
     <ProjectReference Include="..\VKProxy.StackExchangeRedis\VKProxy.StackExchangeRedis.csproj" />
     <ProjectReference Include="..\VKProxy.Storages.Etcd\VKProxy.Storages.Etcd.csproj" />
   </ItemGroup>

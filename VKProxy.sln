@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.12.35707.178
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11222.15 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F440BF49-22C7-450F-92B8-79AD2EB8F1F5}"
 EndProject
@@ -48,6 +48,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.ACME.AspNetCore", "src\VKProxy.ACME.AspNetCore\VKProxy.ACME.AspNetCore.csproj", "{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.Kubernetes.Controller", "src\VKProxy.Kubernetes.Controller\VKProxy.Kubernetes.Controller.csproj", "{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VKProxy.Lua", "src\VKProxy.Lua\VKProxy.Lua.csproj", "{DAAE2A19-74E3-4082-AA69-6B2C07C92CB0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -123,6 +125,10 @@ Global
 		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAAE2A19-74E3-4082-AA69-6B2C07C92CB0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAAE2A19-74E3-4082-AA69-6B2C07C92CB0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAAE2A19-74E3-4082-AA69-6B2C07C92CB0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAAE2A19-74E3-4082-AA69-6B2C07C92CB0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -145,6 +151,7 @@ Global
 		{B2D3D6CF-35CD-42C1-B8F4-89FC080A668B} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 		{7C9DC9FF-3C47-47AF-A9AE-C923B81FED38} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 		{FFA2C81E-8343-48B0-A500-33AA7E7CB99C} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
+		{DAAE2A19-74E3-4082-AA69-6B2C07C92CB0} = {F440BF49-22C7-450F-92B8-79AD2EB8F1F5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {439F8011-EF6B-4E36-862B-E912231F4FB2}

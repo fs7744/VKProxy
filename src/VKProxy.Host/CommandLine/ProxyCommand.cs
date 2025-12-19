@@ -51,6 +51,7 @@ public class ProxyCommand : ArgsCommand<VKProxyHostOptions>
             }
             Args.EtcdOptions.Delay = TimeSpan.Parse(s);
         }));
+        AddArg(new CommandArg("lua", null, "VKPROXY_LUA", "use lua template", s => Args.UseLua = bool.Parse(s)));
         AddArg(new CommandArg("socks5", null, "VKPROXY_SOCKS5", "use simple socks5 support", s => Args.UseSocks5 = bool.Parse(s)));
         AddArg(new CommandArg("sampler", null, "VKPROXY_SAMPLER", "log sampling, support trace/random/none", s => Args.Sampler = Enum.Parse<Sampler>(s, true)));
         AddArg(new CommandArg("memory-cache-max", null, "VKPROXY_MEMORY_CACHE_MAX", "Memory Cache Size Limit", s =>

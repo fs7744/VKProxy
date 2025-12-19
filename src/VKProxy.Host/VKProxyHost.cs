@@ -108,6 +108,10 @@ public static class VKProxyHost
                     o.SizeLimmit = options.DiskCache.SizeLimmit;
                 });
                 i.AddSingleton<IResponseCache, DiskResponseCache>();
+                if (options.UseLua)
+                {
+                    i.UseLuaTemplate();
+                }
                 if (options.UseSocks5)
                 {
                     i.UseSocks5();

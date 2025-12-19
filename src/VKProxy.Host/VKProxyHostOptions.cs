@@ -20,4 +20,5 @@ public class VKProxyHostOptions
     public string[] Meters { get; set; } = new string[] { "System.Runtime", "Microsoft.AspNetCore.Server.Kestrel", "Microsoft.AspNetCore.Server.Kestrel.Udp", "Microsoft.AspNetCore.MemoryPool", "VKProxy.ReverseProxy" };
     public string[] DropInstruments { get; set; } = new string[] { "kestrel.connection.duration", "kestrel.tls_handshake.duration" };
     public string Exporter { get; set; } = "otlp";
+    public bool UseLua { get; set; }
 }

@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="../../ProjectCommon.targets" />
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Description>l4 / l7 proxy lib with lua</Description>
+		<PackageId>VKProxy.Lua</PackageId>
+		<Title>l4 / l7 proxy lib  with lua</Title>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NLua" Version="1.7.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\VKProxy\VKProxy.csproj" />
+  </ItemGroup>
+
+</Project>
