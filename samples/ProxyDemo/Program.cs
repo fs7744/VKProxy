@@ -14,8 +14,6 @@ var app = VKProxyHost.CreateBuilder(args, (_, o) =>
     {
         o.UseSocks5 = true;
         o.Sampler = VKProxy.Sampler.Random;
-        o.Redis = "172.16.171.52:8579,172.16.171.52:8580,172.16.171.53:8579,172.16.171.53:8580,172.16.171.54:8579,172.16.171.54:8580,password=sp@123";
-        o.RedisDataProtection = "TEST_RedisDataProtection";
         o.Exporter = "otlp";
         //o.Meters = new string[] { "System.Net.Http", "System.Net.NameResolution", "System.Runtime", "Microsoft.AspNetCore.Server.Kestrel", "Microsoft.AspNetCore.Server.Kestrel.Udp", "Microsoft.AspNetCore.MemoryPool", "VKProxy.ReverseProxy" };
     }
