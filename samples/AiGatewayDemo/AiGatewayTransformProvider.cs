@@ -4,6 +4,8 @@ internal class AiGatewayTransformProvider : ITransformProvider
 {
     public void Apply(TransformBuilderContext context)
     {
-        context.RequestTransforms.Add(new AiGatewayRequestTransform());
+        //context.RequestTransforms.Add(new AiGatewayRequestTransform());
+
+        //context.ResponseTransforms.Add(new AiGatewayResponseTransform());
     }
 }

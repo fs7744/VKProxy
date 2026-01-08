@@ -2,7 +2,7 @@
 
 namespace VKProxy.Middlewares.Http.HttpFuncs.ResponseCaching;
 
-internal sealed class ResponseCachingStream : Stream
+public sealed class ResponseCachingStream : Stream
 {
     private readonly Stream _innerStream;
     private readonly long _maxBufferSize;
@@ -10,7 +10,7 @@ internal sealed class ResponseCachingStream : Stream
     private readonly SegmentWriteStream _segmentWriteStream;
     private readonly Func<ValueTask> _startResponseCallback;
 
-    internal ResponseCachingStream(Stream innerStream, long maxBufferSize, int segmentSize, Func<ValueTask> startResponseCallback)
+    public ResponseCachingStream(Stream innerStream, long maxBufferSize, int segmentSize, Func<ValueTask> startResponseCallback)
     {
         _innerStream = innerStream;
         _maxBufferSize = maxBufferSize;
@@ -39,7 +39,7 @@ internal sealed class ResponseCachingStream : Stream
         }
     }
 
-    internal CachedResponseBody GetCachedResponseBody()
+    public CachedResponseBody GetCachedResponseBody()
     {
         if (!BufferingEnabled)
         {
@@ -48,7 +48,7 @@ internal sealed class ResponseCachingStream : Stream
         return new CachedResponseBody(_segmentWriteStream.GetSegments(), _segmentWriteStream.Length);
     }
 
-    internal void DisableBuffering()
+    public void DisableBuffering()
     {
         BufferingEnabled = false;
         _segmentWriteStream.Dispose();
